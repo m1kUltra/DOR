@@ -9,6 +9,7 @@ def create_save(save_name):
     base_path = "database/base.db"
     save_dir = "saves"
     save_path = os.path.join(save_dir, f"{save_name}.db")
+    print("saved")
     os.makedirs(save_dir, exist_ok=True)
     shutil.copyfile(base_path, save_path)
     return save_path
