@@ -1,0 +1,92 @@
+[
+    {
+        "player_id": 16,
+        "name": "Freddie Steward",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 17,
+        "name": "Tommy Freeman",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 18,
+        "name": "Ollie Lawrence",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 19,
+        "name": "Henry Slade",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 20,
+        "name": "Cadan Murley",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 21,
+        "name": "Marcus Smith",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 22,
+        "name": "Alex Mitchell",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 23,
+        "name": "Ellis Genge",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 24,
+        "name": "Luke Cowan-Dickie",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 25,
+        "name": "Will Stuart",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 26,
+        "name": "Maro Itoje",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 27,
+        "name": "George Martin",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 28,
+        "name": "Tom Curry",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 29,
+        "name": "Ben Curry",
+        "nation_id": 2,
+        "current_ability": 150
+    },
+    {
+        "player_id": 30,
+        "name": "Ben Earl",
+        "nation_id": 2,
+        "current_ability": 150
+    }
+]

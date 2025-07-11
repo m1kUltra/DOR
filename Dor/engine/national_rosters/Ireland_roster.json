@@ -1,0 +1,92 @@
+[
+    {
+        "player_id": 1,
+        "name": "Hugo Keenan",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 2,
+        "name": "Mack Hansen",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 3,
+        "name": "Garry Ringrose",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 4,
+        "name": "Bundee Aki",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 5,
+        "name": "James Lowe",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 6,
+        "name": "Sam Prendergast",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 7,
+        "name": "Jamison Gibson-Park",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 8,
+        "name": "Andrew Porter",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 9,
+        "name": "R\u00f3nan Kelleher",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 10,
+        "name": "Finlay Bealham",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 11,
+        "name": "James Ryan",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 12,
+        "name": "Tadhg Beirne",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 13,
+        "name": "Ryan Baird",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 14,
+        "name": "Josh van der Flier",
+        "nation_id": 1,
+        "current_ability": 150
+    },
+    {
+        "player_id": 15,
+        "name": "Caelan Doris ",
+        "nation_id": 1,
+        "current_ability": 150
+    }
+]
