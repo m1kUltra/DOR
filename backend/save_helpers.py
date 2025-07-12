@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 def create_save(save_name):
-    base_path = "database/base.db"
+    base_path = "database/GameData.db"
     save_dir = "saves"
     save_path = os.path.join(save_dir, f"{save_name}.db")
     print("saved")
@@ -24,7 +24,8 @@ def assign_manager_to_save(save_path, manager_name, club_id=None, nation_id=None
     if club_id:
         cursor.execute("UPDATE clubs SET manager_id = ? WHERE club_id = ?", (manager_id, club_id))
     if nation_id:
-        cursor.execute("UPDATE nations SET manager_id = ? WHERE nation_id = ?", (manager_id, nation_id))
+        cursor.execute("UPDATE national_teams SET manager_id = ? WHERE nation_team_id = ?", (manager_id, nation_id))
+
 
     conn.commit()
     conn.close()

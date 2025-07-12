@@ -1,14 +1,19 @@
 import React, { useState } from "react";
 import StartScreen from "./pages/StartScreen";
-import GameShell from "./GameShell"; // The actual game UI lives here
+import NewGame from "./pages/NewGame";
+import GameShell from "./GameShell";
 
 import "./App.css";
 
 export default function App() {
-  const [hasGameStarted, setHasGameStarted] = useState(false);
+  const [screen, setScreen] = useState("start"); // start | newgame | game
 
-  if (!hasGameStarted) {
-    return <StartScreen onStart={() => setHasGameStarted(true)} />;
+  if (screen === "start") {
+    return <StartScreen onStart={() => setScreen("newgame")} />;
+  }
+
+  if (screen === "newgame") {
+    return <NewGame onLaunchGame={() => setScreen("game")} />;
   }
 
   return <GameShell />;

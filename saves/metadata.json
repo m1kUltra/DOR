@@ -1,0 +1,32 @@
+{
+  "New Game": {
+    "manager": "Mr Manage",
+    "club_id": null,
+    "nation_id": 1,
+    "last_played": "2025-07-12T12:53:46.271454"
+  },
+  "My career": {
+    "manager": "Mr Manage",
+    "club_id": null,
+    "nation_id": 1,
+    "last_played": "2025-07-12T12:55:04.057772"
+  },
+  "My Career": {
+    "manager": "Mr Manager",
+    "club_id": null,
+    "nation_id": 1,
+    "last_played": "2025-07-12T13:12:20.930660"
+  },
+  "Mi carerro": {
+    "manager": "Mr Mager",
+    "club_id": null,
+    "nation_id": 2,
+    "last_played": "2025-07-12T13:15:03.133281"
+  },
+  "Tester": {
+    "manager": "Monsuier",
+    "club_id": null,
+    "nation_id": 1,
+    "last_played": "2025-07-12T14:04:34.795185"
+  }
+}

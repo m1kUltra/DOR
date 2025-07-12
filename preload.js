@@ -7,5 +7,10 @@ contextBridge.exposeInMainWorld("api", {
   getTables: () => ipcRenderer.invoke("get-tables"),
   getTableData: (tableName) => ipcRenderer.invoke("get-table-data", tableName),
   updateRow: (table, row) => ipcRenderer.invoke("update-row", table, row),
-   runSaveScript: () => ipcRenderer.send("run-save-script"),  
+  runSaveScript: (payload) => ipcRenderer.send("run-save-script", payload),
+  getAvailableSaves: () => ipcRenderer.invoke("get-available-saves"),
+  loadSave: (savePath) => ipcRenderer.send("load-save", savePath),
+  getManagerInfo: () => ipcRenderer.invoke("get-manager-info"),
+
+  
 });
