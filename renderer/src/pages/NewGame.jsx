@@ -68,7 +68,7 @@ export default function NewGame({ onLaunchGame }) {
           type="text"
           value={managerName}
           onChange={(e) => setManagerName(e.target.value)}
-          placeholder="e.g. Alex Ferguson"
+          placeholder="e.g. Mr. Manager"
         />
       </div>
 
