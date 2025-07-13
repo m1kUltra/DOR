@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("api", {
   loadSave: (savePath) => ipcRenderer.send("load-save", savePath),
   getManagerInfo: () => ipcRenderer.invoke("get-manager-info"),
   commitTempDb: (saveName) => ipcRenderer.send("commit-temp-db", saveName),
-
-  
+getSelection: () => ipcRenderer.invoke("get-selection"),
+saveSelection: (selection) => ipcRenderer.send("save-selection", selection),
+getFullSquad: () => ipcRenderer.invoke("get-full-squad"),
 });

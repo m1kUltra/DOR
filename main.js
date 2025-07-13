@@ -4,6 +4,7 @@ const path = require("path");
 const setupDbHandlers = require("./ipc/dbHandlers");
 const setupPythonHandlers = require("./ipc/pythonHandlers");
 const setupSaveHandlers = require("./ipc/saveHandlers");
+const setupSelectionHandlers = require("./ipc/selectionHandlers");
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -32,4 +33,5 @@ app.whenReady().then(() => {
   setupDbHandlers(ipcMain);
   setupPythonHandlers(ipcMain);
   setupSaveHandlers(ipcMain);
+  setupSelectionHandlers(ipcMain);
 });
