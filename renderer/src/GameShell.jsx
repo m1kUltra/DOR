@@ -10,8 +10,7 @@ import MatchSim from "./pages/MatchSim";
 import Tactics from "./pages/Tactics";
 import RecruitmentHub from "./pages/RecruitmentHub";
 import Editor from "./pages/Editor.jsx";
-
-export default function GameShell() {
+export default function GameShell({ onSave }) {
   const [currentScreen, setCurrentScreen] = useState("dashboard");
 
   const renderScreen = () => {
@@ -39,9 +38,10 @@ export default function GameShell() {
     <div className="app-container">
       <Sidebar onNavigate={setCurrentScreen} />
       <div className="main-panel">
-        <TopBar />
+        <TopBar onSave={ onSave } />
         <div className="screen-container">{renderScreen()}</div>
       </div>
     </div>
+    
   );
 }

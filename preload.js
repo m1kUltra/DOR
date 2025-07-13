@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld("api", {
   getAvailableSaves: () => ipcRenderer.invoke("get-available-saves"),
   loadSave: (savePath) => ipcRenderer.send("load-save", savePath),
   getManagerInfo: () => ipcRenderer.invoke("get-manager-info"),
+  commitTempDb: (saveName) => ipcRenderer.send("commit-temp-db", saveName),
 
   
 });

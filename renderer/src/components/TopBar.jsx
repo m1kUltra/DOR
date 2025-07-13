@@ -2,7 +2,8 @@
 import React from "react";
 import "./TopBar.css";
 
-export default function TopBar() {
+
+export default function TopBar({ onSave }) {
   return (
     <div className="topbar">
       <input
@@ -11,6 +12,7 @@ export default function TopBar() {
         type="text"
       />
       <button className="advance-btn">Advance ⏭️</button>
+      <button className="save-btn" onClick={onSave}>💾 Save</button>
     </div>
   );
 }

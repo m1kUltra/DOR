@@ -50,16 +50,21 @@ module.exports = function setupSaveHandlers(ipcMain) {
       return [];
     }
   });
+ipcMain.on("load-save", (event, savePath) => {
+  try {
+    const tempPath = path.join(__dirname, "../tmp", "temp.db");
 
-  ipcMain.on("load-save", (event, savePath) => {
-    try {
-      // Here you can store the selected path globally or in a config
-      global.currentSavePath = savePath;
-      console.log(`Loaded save: ${savePath}`);
-    } catch (err) {
-      console.error("Failed to load save:", err);
-    }
-  });
+    // ✅ Copy the real save into temp location
+    fs.copyFileSync(savePath, tempPath);
+
+    // ✅ Point all queries at temp
+    global.currentSavePath = tempPath;
+
+    console.log(`🗂️ Loaded save into temp: ${tempPath}`);
+  } catch (err) {
+    console.error("❌ Failed to load save into temp:", err);
+  }
+});
   const sqlite3 = require("sqlite3").verbose();
 
 ipcMain.handle("get-manager-info", async () => {
@@ -92,5 +97,12 @@ ipcMain.handle("get-manager-info", async () => {
     return {};
   }
 });
-
+ipcMain.on("commit-temp-db", (event, saveName) => {
+  const tempPath = path.join(__dirname, "../tmp/temp.db");
+  const targetPath = path.join(__dirname, "../saves", `${saveName}.db`);
+  fs.copyFileSync(tempPath, targetPath);
+  console.log("💾 Save committed to:", targetPath);
+});
 };
+
+
