@@ -9,18 +9,6 @@ const useSelectionStore = create((set) => ({
   },
   setSelection: (newSelection) => set({ selection: newSelection }),
 
-  movePlayer: (playerId, from, to) =>
-    set((state) => {
-      const player = state.selection[from].find((p) => p.player_id === playerId);
-      if (!player) return state;
-      return {
-        selection: {
-          ...state.selection,
-          [from]: state.selection[from].filter((p) => p.player_id !== playerId),
-          [to]: [...state.selection[to], player],
-        },
-      };
-    }),
 
   updatePosition: (playerId, newPos) =>
     set((state) => {
@@ -34,5 +22,35 @@ const useSelectionStore = create((set) => ({
       }
       return state;
     }),
+    movePlayer: (playerId, from, to) =>
+  set((state) => {
+    const newSelection = { ...state.selection };
+
+    // Remove from current slot (preserve null if necessary)
+    newSelection[from] = newSelection[from].map((p) =>
+      p?.player_id === playerId ? null : p
+    );
+
+    // Avoid duplicates: clean from all groups
+    for (const key of Object.keys(newSelection)) {
+      newSelection[key] = newSelection[key].map((p) =>
+        p?.player_id === playerId ? null : p
+      );
+    }
+
+    // Insert into target group
+    const player = state.selection[from].find((p) => p?.player_id === playerId);
+    if (!player) return state;
+
+    const insertIndex = newSelection[to].findIndex((p) => !p);
+    if (insertIndex !== -1) {
+      newSelection[to][insertIndex] = player;
+    } else {
+      newSelection[to].push(player); // for dynamic groups like nis
+    }
+
+    return { selection: newSelection };
+  })
+
 }));
 export default useSelectionStore;

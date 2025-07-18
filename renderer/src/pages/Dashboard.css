@@ -13,3 +13,12 @@
   border-radius: 6px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
+
+.dashboard {
+  padding: 1rem;
+  
+  overflow: hidden;
+  /* optional: fix height to parent if needed */
+  height: 100%;
+  box-sizing: border-box;
+}

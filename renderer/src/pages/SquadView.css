@@ -1,13 +1,183 @@
-.squad-view {
-  padding: 1rem;
-}
-
-.squad-view table {
+/* === Main Wrapper === */
+.squad-view-wrapper {
+  display: flex;
   width: 100%;
-  border-collapse: collapse;
+  height: 100%;
+  background-color: #121212;
+  overflow: hidden;
+  border: 2px solid #f0c040;
+  box-sizing: border-box;
 }
 
-.squad-view th, .squad-view td {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
+/* === Scrollable container for Squad columns === */
+.squad-scroll-container {
+  flex: 1;
+  overflow-x: auto;
+  padding: 1rem;
+  background-color: #121212;
+  box-sizing: border-box;
+}
+
+/* === Grid for Starters / Subs+Res / NIS === */
+.squad-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+  height: 100%;
+  min-width: 1000px;
+}
+
+.squad-column {
+  background-color: #2a2a2a;
+  padding: 1rem;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  /* Remove vertical scrolling */
+  overflow: hidden; /* instead of overflow-y:auto */
+  box-sizing: border-box;
+  height: auto; /* let them size naturally */
+}
+.squad-column.nis {
+  /* Let this column scroll vertically */
+  max-height: 100%; /* or set a specific height */
+  overflow-y: auto;
+}
+
+
+.squad-column h3 {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #f0c040;
+}
+
+/* === Tactics Panel === */
+.tactics-panel {
+  flex: 0 0 200px;
+  background-color: #121222;
+  padding: 1rem;
+  color: #ccc;
+  box-sizing: border-box;
+  border-left: 1px solid #444;
+}
+
+/* === Player Tile (15% height reduction) === */
+.player-tile {
+  background: #1e1e1e;
+  padding: 10px 12px; /* slightly reduced padding */
+  border: 1px solid #555;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-size: 0.85rem; /* reduced from 0.95rem */
+  user-select: none;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  height: calc((100% - 15 * 6px) / 15 * 0.85); /* reduce tile height by 15% */
+  min-height: 40px;
+  box-sizing: border-box;
+}
+.player-tile:active {
+  cursor: grabbing;
+}
+.player-tile:hover {
+  background-color: #333;
+}
+.slot-wrapper.over {
+  outline: 2px dashed #00f;
+}
+
+.player-tile.selected {
+  background-color: #444;
+  border-color: #f0c040;
+}
+
+/* === Player Header (contents inside tile) === */
+.player-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: bold;
+  width: 100%;
+}
+
+/* === Squad Number Badge === */
+.squad-number {
+  background-color: #f0c040;
+  color: black;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  width: 24px;
+  text-align: center;
+}
+
+/* === Player Name === */
+.player-name {
+  color: #ffffff;
+  text-decoration: underline;
+  cursor: pointer;
+  flex: 1;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* === Player Ability (aligned right) === */
+.player-ability {
+  color: #ccc;
+  font-size: 0.8rem;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* === Optional: Future meta info under tile === */
+.player-meta {
+  font-size: 0.7em;
+  color: #ccc;
+  margin-top: 2px;
+}
+/* Ensure columns in the group share space equally */
+.squad-column-group .squad-column {
+  flex: 1 1 0; /* equal width columns */
+  min-width: 0; /* prevent overflow */
+}
+
+/* Allow auto-height for substitutes without affecting width */
+.squad-column-group .squad-column.substitutes {
+  height: auto;
+  overflow-y: visible;
+}/* Ensure columns in the group share space equally */
+.squad-column-group .squad-column {
+  flex: 1 1 0; /* equal width columns */
+  min-width: 0; /* prevent overflow */
+}
+
+/* Allow auto-height for substitutes without affecting width */
+.squad-column-group .squad-column.substitutes {
+  height: auto;
+  overflow-y: visible;
+}
+.squad-view-wrapper {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background-color: #121212;
+  /* Remove global scrolling */
+  overflow: hidden; /* keep hidden so nothing else scrolls */
+  border: 2px solid #f0c040;
+  box-sizing: border-box;
+}
+
+.squad-scroll-container {
+  flex: 1;
+  /* Remove horizontal scrolling */
+  overflow: hidden; /* changed from overflow-x:auto */
+  padding: 1rem;
+  background-color: #121212;
+  box-sizing: border-box;
 }
