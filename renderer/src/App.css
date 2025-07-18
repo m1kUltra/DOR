@@ -61,4 +61,38 @@
   padding: 0;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 🚫 block any scrolling */
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 🚫 block any scrolling */
+}
+
+.app-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /* 🚫 block scroll at shell level */
+}
+
+.main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden; /* 🚫 block scroll inside main panel */
+}
+
+.screen-container {
+  flex: 1;
+  overflow: hidden; /* 🚫 block scroll inside screen container */
+  display: flex;
+}
 

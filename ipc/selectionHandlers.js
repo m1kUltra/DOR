@@ -74,4 +74,38 @@ module.exports = function setupSelectionHandlers(ipcMain) {
       );
     });
   });
+  ipcMain.on("save-selection", (event, selection) => {
+  try {
+    const dbPath = global.currentSavePath || path.join(__dirname, "../saves/default.db");
+    const db = new sqlite3.Database(dbPath);
+
+    // Build the JSON structure to save
+    const squadJson = JSON.stringify({ selection });
+
+    // Update the national_teams row for the user manager
+    db.run(
+      `
+      UPDATE national_teams
+      SET squad_json = ?
+      WHERE manager_id = (
+        SELECT manager_id FROM managers WHERE is_user = 1 LIMIT 1
+      )
+    `,
+      [squadJson],
+      function (err) {
+        if (err) {
+          console.error(" Failed to update squad_json:", err);
+        } else {
+          console.log("Squad selection saved to DB.");
+        }
+      }
+    );
+
+    db.close();
+  } catch (err) {
+    console.error("Error in save-selection handler:", err);
+  }
+});
+
+
 };

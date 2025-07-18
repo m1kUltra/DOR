@@ -22,35 +22,42 @@ const useSelectionStore = create((set) => ({
       }
       return state;
     }),
-    movePlayer: (playerId, from, to) =>
+
+
+   movePlayer: (playerId, fromGroup, toGroup, targetIndex) =>
   set((state) => {
     const newSelection = { ...state.selection };
 
-    // Remove from current slot (preserve null if necessary)
-    newSelection[from] = newSelection[from].map((p) =>
-      p?.player_id === playerId ? null : p
-    );
+    // find source
+    const fromIndex = newSelection[fromGroup].findIndex((p) => p?.player_id === playerId);
+    if (fromIndex === -1) return state;
 
-    // Avoid duplicates: clean from all groups
-    for (const key of Object.keys(newSelection)) {
-      newSelection[key] = newSelection[key].map((p) =>
-        p?.player_id === playerId ? null : p
-      );
+    const sourcePlayer = newSelection[fromGroup][fromIndex];
+    const targetPlayer = newSelection[toGroup][targetIndex];
+
+    // if same group -> swap
+    if (fromGroup === toGroup) {
+      const updated = [...newSelection[fromGroup]];
+      // perform swap
+      updated[fromIndex] = targetPlayer;
+      updated[targetIndex] = sourcePlayer;
+      newSelection[fromGroup] = updated;
+      return { selection: newSelection };
     }
 
-    // Insert into target group
-    const player = state.selection[from].find((p) => p?.player_id === playerId);
-    if (!player) return state;
+    // different groups -> also swap (target may be empty)
+    const updatedFrom = [...newSelection[fromGroup]];
+    const updatedTo = [...newSelection[toGroup]];
 
-    const insertIndex = newSelection[to].findIndex((p) => !p);
-    if (insertIndex !== -1) {
-      newSelection[to][insertIndex] = player;
-    } else {
-      newSelection[to].push(player); // for dynamic groups like nis
-    }
+    updatedFrom[fromIndex] = targetPlayer || null; // may be null if empty slot
+    updatedTo[targetIndex] = sourcePlayer;
+
+    newSelection[fromGroup] = updatedFrom;
+    newSelection[toGroup] = updatedTo;
 
     return { selection: newSelection };
-  })
+  }),
+
 
 }));
 export default useSelectionStore;
