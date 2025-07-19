@@ -1,4 +1,3 @@
-// src/components/TopBar.jsx
 import React from "react";
 import useSelectionStore from "../store/selectionStore";
 import "./TopBar.css";
@@ -21,9 +20,14 @@ export default function TopBar({ onSave }) {
     };
 
     window.api.saveSelection(payload);
-    console.log("✅ Selection saved via Advance");
+    console.log("✅ Selection saved");
+  };
 
-    // Optional: window.api.advance();
+  const handleSaveClick = () => {
+    // Save selection first
+    handleAdvance();
+    // Then switch to the save screen
+    if (onSave) onSave();
   };
 
   return (
@@ -36,7 +40,7 @@ export default function TopBar({ onSave }) {
       <button className="advance-btn" onClick={handleAdvance}>
         Advance ⏭️
       </button>
-      <button className="save-btn" onClick={onSave}>
+      <button className="save-btn" onClick={handleSaveClick}>
         💾 Save
       </button>
     </div>

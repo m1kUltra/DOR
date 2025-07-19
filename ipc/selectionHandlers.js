@@ -3,7 +3,8 @@ const path = require("path");
 
 module.exports = function setupSelectionHandlers(ipcMain) {
   ipcMain.handle("get-full-squad", async () => {
-    const dbPath = global.currentSavePath || path.join(__dirname, "../saves/default.db");
+    const dbPath =
+      global.currentSavePath || path.join(__dirname, "../saves/default.db");
     const db = new sqlite3.Database(dbPath);
 
     return new Promise((resolve, reject) => {
@@ -26,13 +27,11 @@ module.exports = function setupSelectionHandlers(ipcMain) {
             });
           }
 
-          let playerIds = [];
           let parsed = {};
-
+          let playerIds = [];
           try {
             parsed = JSON.parse(row.squad_json);
             const sel = parsed.selection || {};
-
             playerIds = [
               ...(sel.starters || []),
               ...(sel.subs || []),
@@ -44,13 +43,23 @@ module.exports = function setupSelectionHandlers(ipcMain) {
             return reject(parseErr);
           }
 
+          if (playerIds.length === 0) {
+            db.close();
+            return resolve({
+              starters: [],
+              subs: [],
+              res: [],
+              nis: [],
+            });
+          }
+
           const placeholders = playerIds.map(() => "?").join(",");
           db.all(
             `SELECT * FROM players WHERE player_id IN (${placeholders})`,
             playerIds,
-            (err, playerRows) => {
+            (err2, playerRows) => {
               db.close();
-              if (err) return reject(err);
+              if (err2) return reject(err2);
 
               const lookup = Object.fromEntries(
                 playerRows.map((p) => [p.player_id, p])
@@ -74,38 +83,33 @@ module.exports = function setupSelectionHandlers(ipcMain) {
       );
     });
   });
-  ipcMain.on("save-selection", (event, selection) => {
-  try {
-    const dbPath = global.currentSavePath || path.join(__dirname, "../saves/default.db");
-    const db = new sqlite3.Database(dbPath);
 
-    // Build the JSON structure to save
-    const squadJson = JSON.stringify({ selection });
+  // FIXED save-selection handler
+  ipcMain.handle("save-selection", async (event, selection) => {
+    return new Promise((resolve, reject) => {
+      const dbPath =
+        global.currentSavePath || path.join(__dirname, "../saves/default.db");
+      const db = new sqlite3.Database(dbPath);
+      const squadJson = JSON.stringify({ selection });
 
-    // Update the national_teams row for the user manager
-    db.run(
-      `
-      UPDATE national_teams
-      SET squad_json = ?
-      WHERE manager_id = (
-        SELECT manager_id FROM managers WHERE is_user = 1 LIMIT 1
-      )
-    `,
-      [squadJson],
-      function (err) {
-        if (err) {
-          console.error(" Failed to update squad_json:", err);
-        } else {
-          console.log("Squad selection saved to DB.");
+      db.run(
+        `UPDATE national_teams
+         SET squad_json = ?
+         WHERE manager_id = (
+           SELECT manager_id FROM managers WHERE is_user = 1 LIMIT 1
+         )`,
+        [squadJson],
+        (err) => {
+          db.close();
+          if (err) {
+            console.error("Failed to update squad_json:", err);
+            reject(err);
+          } else {
+            console.log(" Squad selection saved to DB.");
+            resolve({ success: true });
+          }
         }
-      }
-    );
-
-    db.close();
-  } catch (err) {
-    console.error("Error in save-selection handler:", err);
-  }
-});
-
-
+      );
+    });
+  });
 };

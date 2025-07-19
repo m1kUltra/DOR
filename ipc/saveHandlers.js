@@ -30,26 +30,30 @@ module.exports = function setupSaveHandlers(ipcMain) {
 });
 
   ipcMain.handle("get-available-saves", async () => {
-    try {
-      const files = fs
-        .readdirSync(savesDir)
-        .filter((file) => file.endsWith(".db"))
-        .map((file) => {
-          const fullPath = path.join(savesDir, file);
-          const stats = fs.statSync(fullPath);
-          return {
-            name: file.replace(/\\.db$/, ""),
-            path: fullPath,
-            modified: stats.mtimeMs,
-          };
-        });
+  try {
+    const files = fs
+      .readdirSync(savesDir)
+      .filter((file) => file.endsWith(".db"))
+      .map((file) => {
+        const fullPath = path.join(savesDir, file);
+        const stats = fs.statSync(fullPath);
+        return {
+          name: file.replace(/\.db$/, ""),
+          path: fullPath,
+          modified: stats.mtimeMs, // last modified timestamp
+        };
+      });
 
-      return files;
-    } catch (err) {
-      console.error("Error reading saves folder:", err);
-      return [];
-    }
-  });
+    //  Sort by modified date (newest first)
+    
+
+    return files;
+  } catch (err) {
+    console.error("Error reading saves folder:", err);
+    return [];
+  }
+});
+
 ipcMain.on("load-save", (event, savePath) => {
   try {
     const tempPath = path.join(__dirname, "../tmp", "temp.db");

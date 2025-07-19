@@ -9,10 +9,19 @@ export default function NewGame({ onLaunchGame }) {
   const [saveReady, setSaveReady] = useState(false);
   const [availableSaves, setAvailableSaves] = useState([]);
 
-  useEffect(() => {
-    window.api.getTableData("national_teams").then(setNations);
-    window.api.getAvailableSaves().then(setAvailableSaves);
-  }, []);
+useEffect(() => {
+  window.api.getTableData("national_teams").then(setNations);
+}, []);
+
+useEffect(() => {
+  window.api.getAvailableSaves().then((data) => {
+    const sorted = [...data].sort((a, b) => b.modified - a.modified);
+    setAvailableSaves(sorted);
+  });
+}, []);
+
+
+
 
   const handleStart = () => {
   if (!saveName) return setStatus("Enter a save name.");

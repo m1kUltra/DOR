@@ -7,16 +7,21 @@ export default function SaveGame({ onReturn }) {
   const [availableSaves, setAvailableSaves] = useState([]);
   const [status, setStatus] = useState("");
   const [saveSuccess, setSaveSuccess] = useState(false);
+useEffect(() => {
+  window.api.getAvailableSaves().then((data) => {
+    const sorted = [...data].sort((a, b) => b.modified - a.modified);
+    setAvailableSaves(sorted);
+  });
+}, []);
 
-  useEffect(() => {
-    window.api.getAvailableSaves().then(setAvailableSaves);
-  }, []);
 
   const handleCommit = () => {
     if (!saveName) return setStatus("Enter a save name.");
     window.api.commitTempDb(saveName);
     setStatus(`✅ Game saved as ${saveName}.db`);
     setSaveSuccess(true);
+    const newSavePath = `saves/${saveName}.db`;
+    window.api.loadSave(newSavePath);
   };
 
   const handleOverwrite = (path) => {
