@@ -22,6 +22,8 @@ export default function SquadView() {
     }
     return {};
   };
+  
+
 
   const handleClick = (playerId, group, index) => {
     if (selectedPlayerId === null) {
@@ -60,29 +62,31 @@ export default function SquadView() {
   };
 
   const renderBox = (player, group, index) => {
-    const isSelected = player?.player_id === selectedPlayerId;
-    const squadNumber =
-      group === "starters" ? index + 1 :
-      group === "subs" ? index + 16 :
-      "";
+  const isSelected = player?.player_id === selectedPlayerId;
+  const squadNumber =
+    group === "starters" ? index + 1 :
+    group === "subs" ? index + 16 :
+    "";
 
-    const id = player?.player_id || `${group}-${index}`;
-    return (
-      <DroppableSlot key={id} id={id} group={group} index={index}>
-        {player ? (
-          <DraggablePlayer
-            player={player}
-            squadNumber={squadNumber}
-            isSelected={isSelected}
-            onClick={() => handleClick(player.player_id, group, index)}
-            onDoubleClick={() => handleDoubleClick(player.player_id)}
-          />
-        ) : (
-          <div className="player-tile empty">(empty)</div>
-        )}
-      </DroppableSlot>
-    );
-  };
+  const id = player?.player_id || `${group}-${index}`;
+  return (
+    <DroppableSlot key={id} id={id} group={group} index={index}>
+      {player ? (
+        <DraggablePlayer
+          player={player}
+          squadNumber={squadNumber}
+          group={group} // ✅ added
+          isSelected={isSelected}
+          onClick={() => handleClick(player.player_id, group, index)}
+          onDoubleClick={() => handleDoubleClick(player.player_id)}
+        />
+      ) : (
+        <div className="player-tile empty">(empty)</div>
+      )}
+    </DroppableSlot>
+  );
+};
+
 
   const renderColumn = (label, group, size = null, fixed = false, minSlots = 0) => {
     const players = selection[group];
@@ -143,7 +147,9 @@ function DroppableSlot({ id, group, index, children }) {
   );
 }
 
-function DraggablePlayer({ player, squadNumber, isSelected, onClick, onDoubleClick }) {
+
+
+function DraggablePlayer({ player, squadNumber, group, isSelected, onClick, onDoubleClick }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useDraggable({ id: player.player_id });
 
@@ -153,20 +159,112 @@ function DraggablePlayer({ player, squadNumber, isSelected, onClick, onDoubleCli
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // ✅ Override the displayed number for reserves/nis
+  let displayNumber = squadNumber;
+  if (group === "res" || group === "nis") {
+    displayNumber = "R";
+  }
+
+  // ✅ Compute abilityDisplay
+  let abilityDisplay = "-";
+  if (player.current_ability !== undefined && player.current_ability !== null) {
+    const parts = String(player.current_ability).split(".");
+    abilityDisplay = parts[0];
+  }
+
+  // ✅ Map of valid codes
+  const positionMap = {
+    1: ["lp"], 2: ["hk"], 3: ["tp"],
+    4: ["sr"], 5: ["sr"], 6: ["br"],
+    7: ["br"], 8: ["br"], 9: ["sh"],
+    10: ["fh"], 11: ["wg"], 12: ["ct"],
+    13: ["ct"], 14: ["wg"], 15: ["fb"],
+    16: ["hk"], 17: ["lp"], 18: ["tp"],
+  };
+
+  const displayName = player.firstname
+    ? `${player.firstname} ${player.surname}`
+    : player.name ?? "";
+
+  // ✅ Build posCodes array
+  let posCodes = [];
+  if (typeof player.position === "string") {
+    posCodes = player.position
+      .split(",")
+      .map(e => e.trim())
+      .filter(e => {
+        const [code, val] = e.split(":");
+        return parseInt(val, 10) > 3;
+      })
+      .map(e => e.split(":")[0]);
+  }
+
+  // ✅ Highlight logic
+  let highlightClass = "";
+  if (squadNumber && squadNumber >= 1 && squadNumber <= 18) {
+    const allowedCodes = positionMap[squadNumber] || [];
+    let matchedValue = 0;
+
+    if (typeof player.position === "string" && player.position.includes(":")) {
+      player.position.split(",").forEach(entry => {
+        const [rawCode, rawVal] = entry.split(":");
+        const code = rawCode.trim();
+        const val = parseInt(rawVal, 10);
+
+        if (allowedCodes.includes(code) && !isNaN(val) && val > matchedValue) {
+          matchedValue = val;
+        }
+      });
+    }
+
+    if (matchedValue === 5) {
+      highlightClass = "";
+    } else if (matchedValue === 4) {
+      highlightClass = "highlight-green";
+    } else if (matchedValue === 3) {
+      highlightClass = "highlight-yellow";
+    } else if (matchedValue === 2) {
+      highlightClass = "highlight-orange";
+    } else {
+      highlightClass = "highlight-red";
+    }
+  }
+
+  const tileClass = `player-tile${isSelected ? " selected" : ""} ${highlightClass}`;
+
   return (
     <div
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
       style={style}
-      className={`player-tile${isSelected ? " selected" : ""}`}
+      className={tileClass}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
     >
       <div className="player-header">
-        {squadNumber && <span className="squad-number">{squadNumber}</span>}
-        <span className="player-name">{player.name}</span>
-        <span className="player-ability">{player.current_ability ?? "-"}</span>
+        {displayNumber && (
+          <div className="squad-number" {...listeners}>
+            {displayNumber}
+          </div>
+        )}
+
+        <span
+          className="player-name"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            alert(`Player details:\n\nName: ${displayName}\nCA: ${abilityDisplay}`);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {displayName}
+        </span>
+
+        {posCodes.length > 0 && (
+          <span className="player-position">{posCodes.join(", ")}</span>
+        )}
+
+        <span className="player-ability">{abilityDisplay}</span>
       </div>
     </div>
   );

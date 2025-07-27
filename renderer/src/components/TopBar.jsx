@@ -7,17 +7,23 @@ export default function TopBar({ onSave }) {
 
   const handleAdvance = () => {
     const cleanGroup = (group) =>
-      group.map((p) => ({
-        player_id: p.player_id,
-        position: p.position,
-      }));
+  group
+    .filter((p) => p && p.player_id) // 👈 remove null/empty slots
+    .map((p) => ({
+      player_id: p.player_id,
+      position: p.position,
+    }));
 
-    const payload = {
-      starters: cleanGroup(selection.starters),
-      subs: cleanGroup(selection.subs),
-      res: cleanGroup(selection.res),
-      nis: cleanGroup(selection.nis),
-    };
+const payload = {
+  starters: cleanGroup(selection.starters),
+  subs: cleanGroup(selection.subs),
+  res: cleanGroup(selection.res),
+  nis: cleanGroup(selection.nis),
+};
+
+
+
+
 
     window.api.saveSelection(payload);
     console.log("✅ Selection saved");

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./newgame.css";
+
 export default function NewGame({ onLaunchGame }) {
   const [nations, setNations] = useState([]);
   const [selectedNationId, setSelectedNationId] = useState(null);
@@ -9,42 +10,53 @@ export default function NewGame({ onLaunchGame }) {
   const [saveReady, setSaveReady] = useState(false);
   const [availableSaves, setAvailableSaves] = useState([]);
 
-useEffect(() => {
-  window.api.getTableData("national_teams").then(setNations);
-}, []);
+  useEffect(() => {
+    window.api.getTableData("national_teams").then(setNations);
+  }, []);
 
-useEffect(() => {
-  window.api.getAvailableSaves().then((data) => {
-    const sorted = [...data].sort((a, b) => b.modified - a.modified);
-    setAvailableSaves(sorted);
-  });
-}, []);
+  useEffect(() => {
+    window.api.getAvailableSaves().then((data) => {
+      const sorted = [...data].sort((a, b) => b.modified - a.modified);
+      setAvailableSaves(sorted);
+    });
+  }, []);
 
-
-
+  // ✅ Listen for save script completion
+  useEffect(() => {
+    if (!window.api.onSaveScriptComplete) return;
+    const handler = (_event, data) => {
+      if (data.success) {
+        window.api.loadSave(data.savePath);
+        setStatus(`✅ New save ready: ${data.savePath}`);
+        setSaveReady(true);
+      } else {
+        setStatus(`❌ Failed: ${data.error}`);
+      }
+    };
+    window.api.onSaveScriptComplete(handler);
+  }, []);
 
   const handleStart = () => {
-  if (!saveName) return setStatus("Enter a save name.");
-  if (!managerName) return setStatus("Enter a manager name.");
-  if (!selectedNationId) return setStatus("Select a team.");
+    if (!saveName) return setStatus("Enter a save name.");
+    if (!managerName) return setStatus("Enter a manager name.");
+    if (!selectedNationId) return setStatus("Select a team.");
 
-  const payload = {
-    save_name: saveName,
-    manager_name: managerName,
-    nation_id: selectedNationId,
+    const payload = {
+      save_name: saveName,
+      manager_name: managerName,
+      nation_id: selectedNationId,
+    };
+
+    try {
+      setStatus("⏳ Creating new save...");
+      window.api.runSaveScript(payload); // triggers Python script
+      // ❌ removed immediate loadSave
+      // ✅ we'll wait for the onSaveScriptComplete event
+    } catch (err) {
+      console.error("Error starting save:", err);
+      setStatus("❌ Failed to start game.");
+    }
   };
-
-  try {
-    window.api.runSaveScript(payload); // still triggers Python script
-    const newSavePath = `saves/${saveName}.db`;
-    window.api.loadSave(newSavePath);  // set the new DB as active
-    setStatus("Save script launched.");
-    setSaveReady(true);
-  } catch (err) {
-    console.error("Error starting save:", err);
-    setStatus("Failed to start game.");
-  }
-};
 
   const handleLoadSave = (savePath) => {
     window.api.loadSave(savePath);

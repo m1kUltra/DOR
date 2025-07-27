@@ -7,7 +7,7 @@ const savesDir = path.join(__dirname, "../saves"); // Must be here, top-level
 
 
 module.exports = function setupSaveHandlers(ipcMain) {
-  ipcMain.on("run-save-script", (event, payload) => {
+ipcMain.on("run-save-script", (event, payload) => {
   try {
     const filePath = path.join(__dirname, "../tmp", "new_save.json");
     fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
@@ -15,19 +15,28 @@ module.exports = function setupSaveHandlers(ipcMain) {
     const saveName = payload.save_name;
     const saveDbPath = path.join(__dirname, "../saves", `${saveName}.db`);
 
-    exec("python backend/create_save.py", (error, stdout, stderr) => {
-      if (error) return console.error(error);
+    exec("python3 backend/create_save.py", (error, stdout, stderr) => {
+      if (error) {
+        console.error(error);
+        event.reply("run-save-script-complete", { success: false, error: error.message });
+        return;
+      }
       if (stderr) console.error(stderr);
       console.log(stdout);
 
-      // After creation, set the current save path
       global.currentSavePath = saveDbPath;
       console.log(`New save created and loaded: ${saveDbPath}`);
+
+      // ✅ Notify renderer
+      event.reply("run-save-script-complete", { success: true, savePath: saveDbPath });
     });
   } catch (err) {
     console.error("Error saving new_save.json:", err);
+    event.reply("run-save-script-complete", { success: false, error: err.message });
   }
 });
+
+
 
   ipcMain.handle("get-available-saves", async () => {
   try {
