@@ -1,35 +1,70 @@
 .match-sim-screen {
-  padding: 20px;
-  font-family: sans-serif;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.play-button {
-  margin-bottom: 16px;
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #0066cc;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+.field-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.play-button:disabled {
-  background-color: #999;
-  cursor: not-allowed;
+.pitch-canvas {
+  position: relative;
+  width: 900px;
+  height: 500px;
+  background-color: green;
+  overflow: hidden;
+  border: 2px solid black;
+}
+
+.pitch-background {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  z-index: 0;
+}
+
+.player {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  color: black;
+  text-align: center;
+  font-size: 12px;
+}
+
+.player-a {
+  background-color: red;
+}
+
+.player-b {
+  background-color: blue;
+}
+
+.ball {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: yellow;
+  border-radius: 50%;
+  z-index: 2;
 }
 
 .match-log {
-  background-color: #111;
-  color: #0f0;
-  font-family: monospace;
-  padding: 12px;
-  height: 300px;
-  overflow-y: scroll;
-  border: 1px solid #444;
-  border-radius: 4px;
-}
-
-.log-line {
-  margin-bottom: 4px;
+  width: 90%;
+  height: 200px;
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #111;
+  color: lime;
+  overflow-y: auto;
 }

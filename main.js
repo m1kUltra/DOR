@@ -18,12 +18,17 @@ function createWindow() {
   });
 
   win.webContents.openDevTools();
+    // win.loadFile("renderer/dist/index.html");
   win.loadURL("http://localhost:5173");
-  // win.loadFile("renderer/dist/index.html");
+
+  return win; //
 }
 
+
+
+
 app.whenReady().then(() => {
-  createWindow();
+  const win = createWindow();
 
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -31,7 +36,7 @@ app.whenReady().then(() => {
 
   // Register all IPC handlers
   setupDbHandlers(ipcMain);
-  setupPythonHandlers(ipcMain);
+  setupPythonHandlers(ipcMain, win);
   setupSaveHandlers(ipcMain);
   setupSelectionHandlers(ipcMain);
 });

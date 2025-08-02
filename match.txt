@@ -1,0 +1,107 @@
+Match.py 
+Main controller that everything runs through
+Tracks everything
+
+On starts _ setup.py
+SPlits position number from json into squad number (sn) and role number (rn)
+sn is what is displayed on the 2d node and rn governs what position the player aftually plays
+
+team class (name , squad list, tactics)
+mainly referential for what team is in possession etc for now
+will be used later for tactics etc
+but there is team a and team b sjhown as vars a and b for simplicity
+
+player (name,sn,rn , loaction [3d] attributes (hiiden & normal) height, weight)
+
+ball (loaction, holder)
+holder is determined by a code of sn & team code
+e.g 15a will mean the balls position is locked to teh position of sn 15 on team a 
+
+pitch (game environment)
+dimensions are horziontal pitch
+trylines at 0,100
+touchlines are 0, 70
+play is allowed to spill out pver this but the platyers and ball are both out of bounds
+deadball line is at -10, 110
+co-ordiobnates for 3d is (0,0,X)
+this allows players to jump for balls and teh ball to be kivked in attributes
+The co-ordinates are in meteres so floats will be used to tarck players precise details for higher accuracy
+
+
+states,  events that trigger desicion making and specific positioning
+pks (punts or goalkicks)
+tap & gos, (quick and set plays)
+scrums, 
+mauls,
+lineouts,
+rucks,
+kick return,
+turnover,
+restarts
+
+actions
+Anything a player with the ball  will fall into one of these categories in open play
+
+pass,
+kick,
+enter contact,
+catch, 
+run,
+
+desicions - determine the path they choose
+at every tick every player has a variety of options to choose from  (mental)
+and theior attributes determine the outcome that arises form tehir desicion (mental and physical, techinical
+
+Players shouldf take into acciunt several factors when positioning themselves:
+Game state.
+WHo is in possession (team)
+and their rn
+in attack 
+forwards should look to make arrow shapes off the ruck or off 10 
+9 shpould always aim to be at the ruck to pass the ball but not look to enter the ruck 
+10 should be 5,5 away from teh ruck (keeping in mind picth orientation and dire ction of play
+
+In defense forwards should go near the ruck spacing ..5 away from ruck first then 1m than 2, then everyone elses spaces 3m out in a line
+
+rn 15 takes postion on the same y axis as the ball but at a median point ebtween the ball and his tryline on the x axis 
+
+It is paramount to avoid confusin that there is as little dupliaction of variables as possible so we can have a fluid lean system
+/game_engine/
+├── __init__.py
+├── Match.py             # Main controller, game tick loop, state tracker
+├── setup.py             # Initializes players, teams, ball from JSON
+├── constants.py         # Field dimensions, role maps, default tactics
+├── pitch.py             # Pitch class & geometry logic
+├── team.py              # Team class, manages team-level tactics & context
+├── player.py            # Player class, roles, decisions, positioning
+├── ball.py              # Ball class, holder logic
+├── states/
+│   ├── __init__.py
+│   ├── base_state.py    # Base class for game states
+│   ├── scrum.py
+│   ├── ruck.py
+│   ├── maul.py
+│   ├── kick_return.py
+│   └── ...
+├── actions/
+│   ├── __init__.py
+│   ├── pass_action.py
+│   ├── kick.py
+│   ├── run.py
+│   ├── enter_contact.py
+│   └── catch.py
+├── utils/
+│   ├── position_utils.py    # Positioning calculations
+│   ├── decision_engine.py   # Mental logic, decision trees
+│   └── attribute_modifiers.py  # Influence of attributes
+/react_frontend/
+├── src/
+│   ├── components/
+│   │   ├── Pitch.jsx
+│   │   ├── Player.jsx
+│   │   ├── Ball.jsx
+│   │   └── HUD.jsx
+│   ├── utils/
+│   │   └── positioning.js
+│   ├── App.jsx
+│   └── main.jsx

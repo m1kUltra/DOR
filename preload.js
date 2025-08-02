@@ -17,4 +17,6 @@ contextBridge.exposeInMainWorld("api", {
 getSelection: () => ipcRenderer.invoke("get-selection"),
 saveSelection: (selection) => ipcRenderer.invoke("save-selection", selection),
 getFullSquad: () => ipcRenderer.invoke("get-full-squad"),
+getPlayerById: (id) => ipcRenderer.invoke("get-player-by-id", id),
+onMatchTick: (callback) => ipcRenderer.on("match-tick", (_event, data) => callback(data)),
 });

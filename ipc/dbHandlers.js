@@ -49,4 +49,14 @@ module.exports = function setupDbHandlers(ipcMain) {
       });
     });
   });
+
+  ipcMain.handle("get-player-by-id", async (_, playerId) => {
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT * FROM players WHERE player_id = ?`, [playerId], (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+});
+
 };

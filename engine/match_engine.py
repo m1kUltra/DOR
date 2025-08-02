@@ -68,21 +68,19 @@ def simulate_match(team1_name, team1_players, team2_name, team2_players, turns=2
 
     return score, events
 
+from load_squad_from_db import load_team_from_db
 
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    db_path = "tmp/temp.db"  # <-- your active temp save
+    england_name, england_players = load_team_from_db(db_path, nation_team_id=2)
+    ireland_name, ireland_players = load_team_from_db(db_path, nation_team_id=1)
 
-    england_roster_file = os.path.join(script_dir, 'national_rosters/England_roster.json')
-    ireland_roster_file = os.path.join(script_dir, 'national_rosters/Ireland_roster.json')
-
-    england_players = load_roster(england_roster_file)
-    ireland_players = load_roster(ireland_roster_file)
-
-    final_score, match_events = simulate_match('England', england_players, 'Ireland', ireland_players)
+    final_score, match_events = simulate_match(england_name, england_players, ireland_name, ireland_players)
 
     print("Match Events:")
     for event in match_events:
         print(event)
 
     print("\nFinal Score:")
-    print(f"England {final_score['England']} - {final_score['Ireland']} Ireland")
+    print(f"{england_name} {final_score[england_name]} - {final_score[ireland_name]} {ireland_name}")
+

@@ -1,0 +1,112 @@
+.player-details {
+  background: #111;             
+  color: #fff;                  
+  padding: 20px;
+  padding-bottom: 40px; /* 👈 Added extra 20px beyond the original 20px */
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ========== BACK BUTTON ========== */
+.back-btn {
+  background: none;
+  border: 2px solid #f5c518;
+  color: #f5c518;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  align-self: flex-start;
+  transition: background 0.2s ease, color 0.2s ease;
+  margin-bottom: 16px;
+}
+.back-btn:hover {
+  background: #f5c518;
+  color: #111;
+}
+
+.player-details .player-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f5c518;
+  margin: 0 0 20px;
+}
+
+/* ========== PLAYER INFO CARD ========== */
+.player-info {
+  background: #222;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+.player-info p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+.player-info strong {
+  color: #f5c518;
+}
+
+/* ========== ATTRIBUTES GRID ========== */
+.attributes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+/* ========== ATTRIBUTES SECTION ========== */
+.attributes-section {
+  flex: 1;
+  min-width: 220px;            /* Ensures readable width */
+  background: #222;
+  padding: 14px;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.4);
+}
+.attributes-section h3 {
+  border-bottom: 2px solid #f5c518;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  color: #f5c518;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ========== INDIVIDUAL ATTRIBUTES ========== */
+.attr-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+  font-size: 14px;
+}
+.attr-name {
+  text-transform: capitalize;
+  color: #ddd;
+}
+.attr-value {
+  font-weight: bold;
+  color: #fff;
+}
+
+/* ========== RESPONSIVENESS ========== */
+@media (max-width: 768px) {
+  .player-name {
+    font-size: 1.5rem;
+  }
+  .player-info {
+    padding: 12px;
+  }
+  .attributes-section {
+    min-width: 100%;
+  }
+}

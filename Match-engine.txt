@@ -1,0 +1,336 @@
+Match-engine 
+darts //ability tyo throw the ball in at a lineout combined depending on situation with composure
+finishing// ability to score a try (find the line through a tackle or utilising an acrobatic dive - a supllemenmtal attribute)
+footwork //ability to use close footwork to negate collision impacxt of tackle whe. carrying effect likelihood of succesful tackle by opponent
+goal_kicking// accuracy off the tee for penalty kicks field goals and is supplemental for drop kicks and punts(free kicks and penalties)
+handling // ability to catch the ball
+kicking	// accuracy off the foot in open play and is supplemental for drop kicks and punts(free kicks and penalties)
+kicking_power// mhow far a player can kick the ball. effect max distance and the likelihood of error for longer kicks if well within their range
+lineouts // for lineout jumpers only ability to jump in lineout and succesfully get hand to ball. In attack and defence
+marking // how the player marks the fringes around the ruck or tight forward carries. Only used off ruckj and maul defence
+offloading //ability to get a hand free and deliver a successful offload. 
+passing	// ability to pass the ball to its intended target
+scrummaging // technique and form while scrumming. Only applies to the front row and primarily props 
+rucking	// rucking ability. Mainly applies to jackalers but has some bearing on a successsful clearout and successful counter rucks and ripping of the ball of the ball carrier
+technique // artisty and grace a player has with the ball. Opens up more options to a player to do more skillful actions with higher success. 
+aggression	// williongness to get stuck in and how much more likely trhey are to exert force on opposition - go for a dominant tackle or run ov er someon as opposed to stepping them
+anticipation // how quick a player is to think and react to situations. Notice an overlap react to a loose ball notice a mismatch  etc	
+bravery	// willingness to put themselves in dangerous situations for the good of the tean. effects decision ,makimg and tackle se;ection 
+composure// how much they are effected to opposing players being near rthem or pressure kicks
+concentration//  how well the player can focus mentally and pay attention to detail on an event-by-event basis. efefcts positioning an dlapses in focus especially when tired 
+decisions // how lilkely a player is to make the correct choice . Notre a player doesnt knoiw the certain outcome befor et happnes the p(success) is avaialable 
+determination// how much the player gives. effects and balances out pure strenght in a way. Effects counter -rucking  and clearoutsand more importantly scrums in the second phase especially for srs
+flair //opens up likelihood of riskier options. essentially the creativity of a player and willingness t o try the sublime
+leadership //influnce oin the pitch in terms of organisingf the team around them e.g linout caller, 10 & 9 for organising pods and their backs and the hooker for organising the scrum
+off_the_ball // movement while attackinmg wothout the ball. supposrt lines running their lines ina strike move etc. co mbines well with antcipation in open play 
+positioning // hpw well a player covers the space around them while defending the backfield for kicks and coming up when there is an overlap etc. It also impacts how players defend the wider channles of defence (<10 meteres between attackers)
+teamwork// how slefless a player is. wiilgness to do the donkey work for the good of the team. give there all in a thankless carry and not try and score or clearout a ruck with all theor effort
+vision // how likely a player is to make decisons following the tactical gameplkane and call plays that follow the coaches orders. Important for 10s and 9s
+work_rate//  memntakl drive to cover ground and make tackles as hard as they can teamwork decides descions and workrate determines output
+acceleration// how quickly player reaches top speed. combines with strenght and weight for collison logic
+agility	// : how well a player can start, stop, and move in different directions at varying levels of speed (pace).
+balance	// how well a player can keep their balance in situations both with and without the ball (important for collison logic and slighhly impact the iniitial process of scrums for props )
+jumping_reach//: how good a player is at reaching the ball in the air (does not impact lineout and contesting kicks only)
+natural_fitness // how fit a player will stay fit when injured or not training. This helps to determine how quickly players recover from injury, how well they retain their physical attributes as they go past their peak, and how fast they recover between matches. Not part of match logic 
+pace//the player’s top speed effected by condition
+stamina//  detremines how much pf an effect each action has on the players condition
+strength // the player’s ability to exert their physical force on an opponent to gain an advantage. used in all collisons tackeles scrums mauls counter rucks cl;earouts 
+Consistency	// used formula run at game start to see if players attributes dip for game 
+Controversy // does not impact match engien for offlield descions	
+Dirtiness // reflects a player’s tendency to bend or break the rules during a match, increasing the risk of yellow and red cards. However can be beneficial if. aplayer gets a way with be extra rough or niggly to gain an edge 	
+Important Matches	// sed formula run at game start to see if players attributes dip for game 
+Injury Proneness //a player’s likelihood of sustaining injuries. The higher the value, the greater the chance of getting injured. can be due to chance fatigue or a big collison 
+Loyalty	 // likelihood to not be swayed by cash or repuattion, does not efefect math engine
+Pressure // how likely a player is to become nervous in close games or games when their is an upset happening
+Professionalism	// not part of mathc engine . effects growth
+Sportsmanship	/// how likely a player is to adhere to fairplay , more disciplined genreally and more likeabe 
+Temperament	// how well a player maintains self-control and composure when faced with setbacks, adversity, or frustration,  effects moood 
+Versatility	//: how well a player can perform outside their preferred position or role and their ability to learn new ones. effects negative motifiers for mentals when put of position
+Ambition	//not part opf match engine, reflects the extent to which a player is driven to achieve success, pursue ambitious goals, and continually push boundaries, reflecting their aspiration
+Adaptability // not part of math engine : how well a player adjusts to new environments, such as moving to a new club or country.
+
+A. Player Context Layer (Static & Dynamic State)
+
+Each player has a base profile (attributes  listed).
+
+Dynamic state includes: current condition %,
+ morale/pressure, position on pitch, current role (carrier, support, tackler), and situational modifiers (fatigue (impacted by stamina & ball in play time and actions in phase ), injuries, momentum, weather).
+
+
+ morale and pressure is determined by hidden attribuets tempremenat and pressure and teamwork determination
+ Mood Name	Description	Likely Causes	Gameplay Impacts (examples)
+ Note moods are handled by a different function as outlined further down in mood_controller spec{}
+🔥 Fired Up	Highly motivated, aggressive	Big team talk, derby match, leading well	+Aggression, +Work Rate, more dominant tackles and carries
+😠 Frustrated	Angry after repeated mistakes or ref calls	Poor calls, losing badly	+Aggression (riskier tackles), −Decisions, −Composure (more penalties)
+🧊 Calm	Steady, unfazed	High Temperament, low pressure situations	+Concentration, +Composure, consistent skill execution
+🤯 Anxious	Feeling the pressure, hesitant	Big final, low Pressure attribute	−Composure, −Decisions, −Goal Kicking accuracy
+😤 Determined	Gritting teeth through adversity	High Determination, comeback situation	+Work Rate, +Rucking, +Tackle success even when fatigued
+😎 Confident	Believes they can dominate	Good recent form, early try	+Flair (will attempt more creative plays), +Technique
+🫣 Rattled	Shaken by errors or dominant opponents	Low Temperament, big hits	−Passing, −Handling, panic kicks
+🪫 Flat	Low energy or demotivated	Losing streak, low morale	−Work Rate, −Teamwork, less effective support running
+🤝 Selfless	Prioritises team over self	High Teamwork, good morale	+Teamwork effects (more support lines, ruck support), −Flair (fewer individual risks)
+🤬 Reckless	Overly aggressive, not thinking	High Aggression + Frustration	+Tackle dominance, but +Dirtiness (more cards), −Decisions
+. 
+Attribute	Mood Effect Example
+Passing	A player in “Anxious” mood might have −10% effective Passing and −5% Handling (hurried throws).
+Aggression	“Fired Up” or “Reckless” gives +10% Aggression → more dominant tackles, but higher chance of conceding penalties (Dirtiness check).
+Composure	“Anxious” −20% Composure → Goal Kicking suffers, pressured passes more likely to fail.
+Work Rate	“Determined” +15% Work Rate → player covers more ground, more ruck involvements.
+Flair	“Confident” +15% Flair → attempts offloads and tricky passes, leading to spectacular breaks or costly turnovers.
+Teamwork	“Selfless” +10% Teamwork → more likely to hit rucks, run dummy/support lines.
+Technique	“Calm” +5% Technique → executes skills smoothly under pressure.
+
+
+Attribute Category	Fatigue Impact	Condition Impact	Description
+Physical	✅ Strong	✅ Strong	Speed, strength, agility all drop noticeably.
+Technical	✅ Moderate	✅ Moderate	Passing, handling, goal kicking, offloading get sloppier.
+Mental (Concentration, Decisions, Composure)	✅ Strong	☑️ Some	Fatigue causes rushed decisions, mental errors, defensive lapses.
+Hidden/Behavioral (Bravery, Aggression)	☑️ Slight	❌ None	Players may “choose” easier options when fatigued.
+Set-piece Specific (e.g., Scrummaging, Lineouts)	✅ Moderate	✅ Moderate	Form and timing break down under fatigue.
+
+Fatigue starts is effected by where condition is it get resets to the upper limit that condition is at 
+
+Impact of collisions - Standard is 3 , dominant 1 boosts resolve , being dominated is 8, 
+Impact of set piece - ruck jackaling or sealing off is 1 . being cleared out is 3/6 for dominant clear out, Counter rucks contest is determined by time of ruck in seconds by (0.25) until ruck contest is over
+maul (0.25) until maul is over  in seconds
+scrums initial bind is 8
+scrum (0.25) until scrum is over in seconds 
+
+kicking - no effect
+
+running 1m = 0.1 per m * speed/attribute.pace
+
+ 
+condition = condition - fatigue/(stamina*10)
+fatigue reset to 0 at each break in play
+condition = condition +natural fitness (@halftime) and 
+condition = condition +(natural fitness)/2 (@yellowcard) or subbed off 
+if fatigue >= condition:
+    player.exhausted = True
+
+)
+condition = min(condition, 100)
+Attribute Group	Max Fatigue Penalty	Max Condition Penalty	Notes
+Physical (pace, accel, strength, agility)	−30% @ fatigue 100	−25% @ condition 0	Core physicality degrades steeply
+Technical (passing, handling, goal_kicking, offloading)	−20%	−20%	Mild degradation with sloppier output
+Mental (decisions, concentration, composure)	−30%	−15%	Strong short-term effect from fatigue, less from long-term drain
+Hidden/Behavioral (bravery, aggression)	−10%	0%	Fatigue nudges decisions safer, but no real stat drop
+Set Piece Specific (scrummaging, lineouts, technique)	−20%	−20%	Worsens both with fatigue and declining reserve
+
+westher, these can be combined and scaled 
+Weather Type	Effects
+Clear	No effect
+Rain	More knock-ons, lower handling, slower ground speed
+Wet ground	Lower footing = worse balance, agility, more slips
+Windy	Kicking accuracy drops (goal_kicking, touch finders)
+Hot	Fatigue accumulates faster
+Cold	Minor stiffness: −acceleration, −agility early in match
+
+
+Momentum is a match state that can boost performance for a team (or suppress it).
+it doesn not get reset and is present for the whole game but only remembers the last 10 minutes 
+🛠️ Momentum Triggers
+Gained by:
+
+Scoring a try + 10
+
+Forcing a turnover + 5
+
+Huge defensive stand (Opposing team eneters within 20 metres but acheives no points) = 10
+
+Big dominant hit or linebreak (+5)
+
+Lost by:
+
+Conceding penalty (-5)
+
+Missed tackle → try
+repeated knock-ons erors lossing possession (-5), -15 in opposing 22 or your own
+ or kick to touch os less than 10 metres and is in not in opposing teams 22 - 15
+
+🎚️ Momentum Meter (−100 to +100)
+0 = neutral
+
++100 = max boost for one team, −100 for the other
+
+🧠 Effect of Momentum
+
++momentum effecs mood of players 
+mood_controller 
+governed by Base traits (temperament, pressure, teamwork, determination, aggression)
+anxiety - confidence axis (governed by momentum) debuffs are negated by pressure 
+frustrated- calm axis (governed by penalty count and scoreline and number of drop balls) debuffs negated by composure and exarcebated by temperament
+flat-motivated axis (effected by scoreline within and match importance) improved by aggression and teamwork and workrate
+debuffs negated by teamwork and workrate
+
+All players on a team have the same base for axis  but how their mental attributes arew eighted detremined their current mood
+
+Mood	Confidence	Stability	Motivation
+🔥 Fired Up	High	Mid	High
+😠 Frustrated	Mid	Low	Mid
+🧊 Calm	Mid	High	Mid
+🤯 Anxious	Low	Mid	High (often anxious energy)
+😤 Determined	Mid	High	High
+😎 Confident	High	High	High
+🫣 Rattled	Low	Low	Mid
+🪫 Flat	Low	Mid	Low
+🤝 Selfless	Mid	High	Mid
+🤬 Reckless	High	Low	High
+
+
+injuries are detrmined by a players  Injury proness (condition- fatigue ) 
+this occurs when aplayer undertakes a collison or a sprint at max pace with a rand operator for variance
+Injuroes efefect the relevant place head leg etc depending on the casue of Injury
+These are located in the sql table injuries and injury causes
+
+
+B. Decision Layer (Mental/Tactical AI)
+
+Decides what action a player will attempt (pass, run, kick, offload, clearout, tackle type, etc.).
+
+Driven by attributes like:
+decisions, anticipation, vision, leadership, teamwork, aggression, flair, off_the_ball, positioning.
+
+Layer B is dtermined by a player having options available and them choosing the correct one
+
+
+
+C. Action Layer (Execution & Resolution)
+
+Simulates how well the chosen action is performed.
+
+Driven by technical & physical attributes relevant to the action, with situational modifiers (pressure, fatigue):
+
+e.g. Passing resolution = function(passing, handling, composure, concentration, pressure).
+
+D. Contest Layer (Opposition Interaction)
+
+Resolves opposed actions: tackle vs footwork, lineout jumper vs defender, jackal vs clearout.
+
+Uses attributes from both players (strength, balance, footwork, aggression, bravery, technique).
+
+E. Outcome Layer (Game State Update)
+
+Updates ball location, possession, score events, injuries, cards, stamina drains.
+
+Feeds back into player context layer.
+
+🔧 2. Key Subsystems and Attribute Usage
+📌 A. Open Play (Ball in Hand)
+Running / Carrying
+
+Outcome: break tackle, gain metres, or get tackled.
+
+Attributes: acceleration, pace, agility, balance, footwork (avoid tackle), strength, aggression (win collision), anticipation (choose gap), bravery.
+
+Contest with tackler’s positioning, tackling (use strength/aggression), anticipation, aggression.
+
+Passing / Offloading
+
+Attributes: passing, handling, technique, decisions, composure.
+
+Offload extra check: offloading, strength (free arm), anticipation, flair.
+
+Modifiers: fatigue (stamina), pressure (composure).
+
+Kicking
+
+Attributes: kicking, kicking_power, decisions, vision, composure.
+
+Context: territory vs attacking kick (decision/vision layer).
+
+📌 B. Set Pieces
+Scrums
+
+Front row contest: scrummaging, strength, determination, aggression, balance.
+
+Team synergy: teamwork, leadership, technique.
+
+Outcome: stable ball, penalty, turnover.
+
+Lineouts
+
+Hooker throw: darts, composure, decisions.
+
+Jumper: lineouts, jumping_reach, balance, aggression.
+
+Contest with defenders: opposed rolls (attacking jumper vs defensive jumper).
+
+📌 C. Rucks and Mauls
+Jackal vs Clearout
+
+Jackal: rucking, bravery, aggression, strength.
+
+Clearout: rucking, teamwork, aggression, determination.
+
+Contest layer resolves possession retention or turnover.
+
+Maul
+
+Collective strength, teamwork, aggression vs opposition pack.
+
+📌 D. Defence
+Tackling
+
+Tackler: aggression, strength, positioning, anticipation, bravery.
+
+Ball carrier contest: footwork, balance, agility, strength.
+
+Marking & Off-the-ball
+
+Wider defenders: marking, positioning, anticipation.
+
+Attackers support: off_the_ball, vision, decisions.
+
+📌 E. Goal Kicking
+Penalty/Conversion: goal_kicking, composure, concentration, pressure.
+
+🔄 3. Match Engine Flow
+Here’s a high-level flow you can implement in your engine loop:
+
+Context Update
+
+Update stamina drain, pressure states, position tracking.
+
+Decision Phase
+
+For ball carrier: choose action (run, pass, kick, offload) using weighted AI (decisions, vision, anticipation, teamwork).
+
+For defenders: choose tackle type/mark assignment.
+
+For support players: choose support line, ruck involvement.
+
+Execution Phase
+
+Roll skill checks: action attribute ± modifiers (fatigue, pressure, technique).
+
+Opposed checks where relevant (e.g., footwork vs tackling).
+
+Outcome Resolution
+
+Update ball position, metres gained, turnovers.
+
+Apply stamina cost, injuries (injury proneness + impact), potential cards (dirtiness).
+
+Set-piece/Restart Resolution
+
+Scrums, lineouts, kickoffs processed similarly with relevant attributes.
+
+Repeat until match ends
+
+✨ Other Implementation Notes
+Attribute Interactions:
+Use primary and supplemental attributes. For example:
+
+Technique as a global multiplier: if high, small bonus to all technical skills.
+
+Composure and Pressure as situational modifiers for kicks/passes in high-stress moments.
+
+Consistency & Important Matches: pre-match roll to modify attributes (±5–10%).
+
+Physics Layer 
+For more realism, you could simulate collisions using mass weight, strength, acceleration, and balance in a simple physics formula.
+
+
+
+

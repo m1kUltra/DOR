@@ -3,7 +3,7 @@ import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
 import useSelectionStore from "../store/selectionStore";
 import "./SquadView.css";
 
-export default function SquadView() {
+export default function SquadView({ onSelectPlayer }) {
   const { selection, setSelection, movePlayer } = useSelectionStore();
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
 
@@ -79,6 +79,7 @@ export default function SquadView() {
           isSelected={isSelected}
           onClick={() => handleClick(player.player_id, group, index)}
           onDoubleClick={() => handleDoubleClick(player.player_id)}
+          onSelectPlayer={onSelectPlayer} //
         />
       ) : (
         <div className="player-tile empty">(empty)</div>
@@ -149,7 +150,8 @@ function DroppableSlot({ id, group, index, children }) {
 
 
 
-function DraggablePlayer({ player, squadNumber, group, isSelected, onClick, onDoubleClick }) {
+function DraggablePlayer({ player, squadNumber, group, isSelected, onClick, onDoubleClick, onSelectPlayer }) {
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useDraggable({ id: player.player_id });
 
@@ -253,7 +255,7 @@ function DraggablePlayer({ player, squadNumber, group, isSelected, onClick, onDo
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            alert(`Player details:\n\nName: ${displayName}\nCA: ${abilityDisplay}`);
+            onSelectPlayer(player.player_id); // passed from GameShell
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >
