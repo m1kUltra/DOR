@@ -1,70 +1,99 @@
+/* --- Layout Containers --- */
 .match-sim-screen {
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  background-color: #f2f2f2;
+}
+
+/* --- Field and Pitch Area --- */
+.field-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.field-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-top: 1rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .pitch-canvas {
   position: relative;
-  width: 900px;
-  height: 500px;
+  width: 100%;
+  max-width: 1280px;
+  aspect-ratio: 136 / 76; /* Keeps pitch shape accurate */
   background-color: green;
   overflow: hidden;
-  border: 2px solid black;
+  border: 3px solid #222;
+  border-radius: 12px;
 }
 
 .pitch-background {
+  position: absolute;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  position: absolute;
+  object-fit: contain;
   z-index: 0;
 }
 
+/* --- Player and Ball Styles --- */
 .player {
   position: absolute;
   z-index: 1;
-  width: 20px;
-  height: 20px;
   border-radius: 50%;
-  background: white;
-  color: black;
   text-align: center;
-  font-size: 12px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
 .player-a {
-  background-color: red;
+  background-color: #d62828;
 }
 
 .player-b {
-  background-color: blue;
+  background-color: #003f88;
 }
 
 .ball {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  background: yellow;
+  background: #f9dc5c;
   border-radius: 50%;
   z-index: 2;
+  pointer-events: none;
 }
 
+/* --- Match Log --- */
 .match-log {
-  width: 90%;
+  width: 100%;
+  max-width: 1000px;
   height: 200px;
-  margin-top: 2rem;
   padding: 1rem;
-  background: #111;
-  color: lime;
+  background: #0d0d0d;
+  color: #aaffaa;
+  font-family: monospace;
   overflow-y: auto;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.2);
+}
+
+/* --- Responsive Controls (Optional future use) --- */
+@media (min-width: 768px) {
+  .field-wrapper {
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+
+  .match-log {
+    height: 250px;
+  }
 }

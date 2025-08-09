@@ -1,0 +1,44 @@
+/* MatchRenderer.css */
+
+.pitch-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 2px solid #000;
+  border-radius: 8px;
+  background-color: green;
+}
+
+.pitch-background {
+  position: absolute;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.player {
+  position: absolute;
+  z-index: 2;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.ball {
+  position: absolute;
+  z-index: 3;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: yellow;
+  border-radius: 50%;
+  pointer-events: none;
+}
