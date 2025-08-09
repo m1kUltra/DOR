@@ -56,7 +56,7 @@ class Match:
         for _ in range(ticks):
             self.update()
             packet = json.dumps(self.serialize_tick())
-            print(f"__IPC__::match-tick::{packet}", flush=True)
+            print(json.dumps(self.serialize_tick()), flush=True)  # <-- no prefix
 
 
     def serialize_tick(self):

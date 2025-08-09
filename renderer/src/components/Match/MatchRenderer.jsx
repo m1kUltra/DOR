@@ -1,12 +1,11 @@
-// File: MatchRenderer.jsx
+// File: renderer/src/components/MatchRenderer.jsx
 import React, { useRef, useEffect, useState } from "react";
 import Player from "./Player";
 import Ball from "./Ball";
 import pitchImage from "../../assets/pitch.png";
-import "./MatchRenderer.css";
 
-const FIELD_METERS = { width: 136, height: 76 }; // Total field incl. padding
-const FIELD_OFFSET = { x: 18, y: 3 };            // Origin shift to match true (0,0)
+const FIELD_METERS = { width: 136, height: 76 }; // Deadball + padding included
+const FIELD_OFFSET = { x: 18, y: 3 };            // Origin shift
 
 export default function MatchRenderer({ players, ball }) {
   const containerRef = useRef();
@@ -36,21 +35,17 @@ export default function MatchRenderer({ players, ball }) {
   };
 
   return (
-    <div ref={containerRef} className="pitch-canvas">
-      <img src={pitchImage} alt="Rugby Pitch" className="pitch-background" />
-          {/* ✅ TEST HARDCODED PLAYER — REMOVE THIS AFTER DEBUGGING */}
-    <Player
-      player={{
-        sn: 99,
-        name: "Debug Player",
-        team_code: "a",
-        action: "press",
-        location: [50, 35, 0],  // mid-pitch
-      }}
-      toPixels={toPixels}
-      pxPerMeter={pxPerMeterX}
-    />
-
+    <div
+      ref={containerRef}
+      className="pitch-canvas"
+      style={{ position: "relative", width: "100%", height: "100%" }}
+    >
+      <img
+        src={pitchImage}
+        alt="Rugby Pitch"
+        className="pitch-background"
+        style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute" }}
+      />
       {players.map((p) => (
         <Player
           key={`${p.sn}-${p.team_code}`}
