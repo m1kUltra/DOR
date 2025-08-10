@@ -9,9 +9,17 @@ class Match:
     def __init__(self, db_path, team_a_id, team_b_id):
         self.tick_count = 0
         self.match_time = 0.0  # seconds
-        self.tick_rate = 1  # 10 ticks per second
+        self.tick_rate = 0.05  # 1s per tick (your choice)
 
-        self.team_a, self.team_b, self.players, self.ball, self.pitch = setup_match(db_path, team_a_id, team_b_id)
+        # --- set-piece/event flags (init once here) ---
+        self.pending_scrum = None      # {"x": float, "y": float, "put_in": "a"|"b"}
+        self.pending_lineout = None    # {"x": float, "y": float, "throw_to": "a"|"b"}
+        self.last_touch_team = None    # "a" or "b"
+
+        # build teams/players/ball/pitch
+        self.team_a, self.team_b, self.players, self.ball, self.pitch = setup_match(
+            db_path, team_a_id, team_b_id
+        )
 
         self.current_state: BaseState = None
         self.set_initial_state()
@@ -32,6 +40,21 @@ class Match:
        
         # 2) Ball follows holder
         self.ball.update(self)
+                # 2.1) central routing for set-piece flags created by actions/ball
+        if getattr(self, "pending_lineout", None):
+            data = self.pending_lineout
+            self.pending_lineout = None
+            from states.lineout import LineoutState
+            self.current_state = LineoutState(data["x"], data["y"], data["throw_to"])
+            return  # skip the rest of this tick to avoid double processing
+
+        if getattr(self, "pending_scrum", None):
+            data = self.pending_scrum
+            self.pending_scrum = None
+            from states.scrum import ScrumState
+            self.current_state = ScrumState(data["x"], data["y"], data["put_in"])
+            return
+
 
         # 2.5) possession & scoring checks
         self._sync_possession()

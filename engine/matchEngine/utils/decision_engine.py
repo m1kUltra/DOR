@@ -62,65 +62,21 @@ def _find_support_receivers(holder, teammates, team_dir: float, max_dist=12.0):
 
 def _holder_action(match, holder, team, opp_team) -> Tuple[Action, Target]:
     """
-    Decide what the ball-carrier should do right now.
-    Returns (action, target). For pass/kick/contact, target is holder's current spot.
-    For run, target is a point ahead; BaseState will move them toward it.
+    TEMP: Ball carrier will always just carry forward.
     """
     dir_ = _attack_dir(team)
     hx, hy, hz = holder.location
 
-    # Attributes (defaults if missing)
-    ment = holder.attributes.get("mental", {})
-    tech = holder.attributes.get("technical", {})
-    phys = holder.attributes.get("physical", {})
+    # Just set a run target a few meters ahead
+    ahead = 3.0  # desired gain
+    return "run", (hx + dir_ * ahead, hy, 0.0)
 
-    awareness = float(ment.get("awareness", 55))
-    decision   = float(ment.get("decision_making", ment.get("composure", 55)))
-    kicking    = float(tech.get("kicking", 55))
-    passing    = float(tech.get("passing", 55))
-    speed_attr = float(phys.get("speed", DEFAULT_PLAYER_SPEED))
-
-    # Situational reads
-    opponents = [p for p in match.players if p.team_code != holder.team_code]
-    teammates = [p for p in match.players if p.team_code == holder.team_code]
-
-    nearest_def, dist_nearest = _nearest_defender(holder, opponents)
-    pressure_cone = _count_defenders_ahead(holder, opponents, dir_)
-    supports = _find_support_receivers(holder, teammates, dir_)
-
-    # Field context (very simple for now)
-    in_own_half   = (holder.location[0] < 50.0) if dir_ > 0 else (holder.location[0] > 50.0)
-    near_tryline  = (holder.location[0] > 90.0) if dir_ > 0 else (holder.location[0] < 10.0)
-
-    # Heuristic thresholds
-    safe_run_space   = 5.0   # meters
-    panic_pressure   = 2     # defenders in cone
-    offload_window   = 4.0   # meters
-
-    # 1) Under heavy pressure & in own half: KICK for territory if decent kicker
-    if pressure_cone >= panic_pressure and in_own_half and kicking >= 55 and decision >= 55:
-        return "kick", (hx, hy, hz)
-
-    # 2) Good support near & decent passing: PASS
-    if supports and passing >= 50 and awareness >= 50:
-        # Prefer backs (10/12/13) first, then nearest
-        backs_first = sorted(supports, key=lambda p: (0 if p.rn in {10,12,13} else 1, _dist2(p.location, holder.location)))
-        target_mate = backs_first[0]
-        # mark pass; dispatcher will transfer the ball
-        return "pass", (hx, hy, hz)
-
-    # 3) Space to run (no defender within safe_run_space) OR high pace
-    if (dist_nearest is None or dist_nearest > safe_run_space) or speed_attr >= 6.5:
-        # Set a run target a few meters ahead; BaseState will move the carrier
-        ahead = 3.0  # desired gain this phase; BaseState caps by speed*dt anyway
-        return "run", (hx + dir_*ahead, hy, 0.0)
-
-    # 4) Near tryline & short on options: enter contact to set a ruck
-    if near_tryline or pressure_cone >= 1:
-        return "enter_contact", (hx, hy, hz)
-
-    # Fallback
-    return "run", (hx + dir_*2.0, hy, 0.0)
+    # --- OLD AI logic commented out ---
+    # # Attributes (defaults if missing)
+    # ment = holder.attributes.get("mental", {})
+    # tech = holder.attributes.get("technical", {})
+    # phys = holder.attributes.get("physical", {})
+    # ...
 
 # -------------------------
 # Non-holder positioning (unchanged API)

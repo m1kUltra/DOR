@@ -25,3 +25,4 @@ def dispatch(player, match):
     fn = DISPATCHABLE.get(act)
     if fn is not None:
         fn(player, match)
+   
