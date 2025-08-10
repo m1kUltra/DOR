@@ -1,8 +1,6 @@
-# matchEngine/states/base_state.py
 from typing import Tuple
 from utils.decision_engine import compute_positions_for_teams
 from constants import DEFAULT_PLAYER_SPEED
-
 class BaseState:
     def __init__(self):
         self.name = "base"
@@ -17,23 +15,34 @@ class BaseState:
 
         self.before_decisions(match)
 
-        # batch: decide -> spacing resolve -> move
-        decisions = compute_positions_for_teams(match, self)
-        # inside BaseState.update, replace the two loops with this:
+        # Decide once
         decisions = compute_positions_for_teams(match, self)
 
+        # Apply actions + meta
         for player, bundle in decisions.items():
-            action, target = bundle[0], bundle[1]
-            meta = bundle[2] if len(bundle) > 2 else {}
+            # bundle is (action, target, meta?) where target can be None (e.g., kick)
+            action = bundle[0]
+            target = bundle[1] if len(bundle) > 1 else None
+            meta   = bundle[2] if len(bundle) > 2 else {}
             player.current_action = action
             setattr(player, "action_meta", meta)
 
+        # Move everyone toward their targets (if any)
         for player, bundle in decisions.items():
-            target = bundle[1]
+            target = bundle[1] if len(bundle) > 1 else None
+
             px, py, _ = player.location
-            tx, ty, _ = target
+            if target is None:
+                # No movement target (e.g., kick) -> stay put this tick
+                tx, ty = px, py
+            else:
+                # target is (x, y, z) or (x, y)
+                tx = target[0]
+                ty = target[1]
+
             speed = player.attributes.get('physical', {}).get('speed', DEFAULT_PLAYER_SPEED)
             step = max(0.0, float(speed)) * float(match.tick_rate)
+
             dx, dy = (tx - px), (ty - py)
             d2 = dx*dx + dy*dy
             if d2 > 0.0 and step * step < d2:
@@ -42,9 +51,8 @@ class BaseState:
                 nx, ny = px + dx * k, py + dy * k
             else:
                 nx, ny = tx, ty
-        player.update_location((nx, ny, 0.0))
 
-
+            player.update_location((nx, ny, 0.0))
 
         self.after_decisions(match)
 
