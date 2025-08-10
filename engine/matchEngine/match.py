@@ -267,10 +267,22 @@ class Match:
             
                 if "pending_scrum"   in flag_dict:  self.pending_scrum    = flag_dict["pending_scrum"]
                
-
+    
         self.advantage = new_adv
 
-
+    def start_advantage(self, type_: str, *, to: str, start_x: float, start_y: float) -> None:
+        """
+        Begin an advantage overlay if none is currently active.
+        Used by actions (e.g., knock on → advantage to opposition).
+        """
+        self.advantage = adv_start(
+            self.advantage,
+            type_=type_,
+            to=to,
+            start_x=float(start_x),
+            start_y=float(start_y),
+            start_t=float(self.match_time),
+        )
 
 # python -m matchEngine.match  (if you ever run as module)
 if __name__ == "__main__":

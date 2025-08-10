@@ -19,16 +19,21 @@ class BaseState:
 
         # batch: decide -> spacing resolve -> move
         decisions = compute_positions_for_teams(match, self)
+        # inside BaseState.update, replace the two loops with this:
+        decisions = compute_positions_for_teams(match, self)
 
-        for player, (action, target) in decisions.items():
+        for player, bundle in decisions.items():
+            action, target = bundle[0], bundle[1]
+            meta = bundle[2] if len(bundle) > 2 else {}
             player.current_action = action
+            setattr(player, "action_meta", meta)
 
-        for player, (_, target) in decisions.items():
+        for player, bundle in decisions.items():
+            target = bundle[1]
             px, py, _ = player.location
             tx, ty, _ = target
             speed = player.attributes.get('physical', {}).get('speed', DEFAULT_PLAYER_SPEED)
             step = max(0.0, float(speed)) * float(match.tick_rate)
-
             dx, dy = (tx - px), (ty - py)
             d2 = dx*dx + dy*dy
             if d2 > 0.0 and step * step < d2:
@@ -37,7 +42,9 @@ class BaseState:
                 nx, ny = px + dx * k, py + dy * k
             else:
                 nx, ny = tx, ty
-            player.update_location((nx, ny, 0.0))
+        player.update_location((nx, ny, 0.0))
+
+
 
         self.after_decisions(match)
 
