@@ -57,3 +57,11 @@ ORIGIN = (0.0, 0.0, 0.0)  # Bottom-left corner of in-play area
  # Role Groups
 FORWARDS = {1, 2, 3, 4, 5, 6, 7, 8}
 BACKS = {9, 10, 11, 12, 13, 14, 15}
+MAX_PASS_CANDIDATES = 6
+
+MAX_DEF_CONSIDERED = 7
+
+MAX_RUCK_COMMIT_SCAN = 6 #(per side)
+
+MAX_RECEIVE_CONTESTERS = 5 #(for kicks)
+

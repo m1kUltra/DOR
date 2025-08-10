@@ -1,0 +1,210 @@
+What to add (no code, just functions you can implement)
+1) State machine (top‑level + substates)
+Each state exposes before_decisions(), after_decisions(), check_transition(). Use your existing central routing (flags on match) after ball.update().
+
+OpenPlayState
+
+Substates:
+
+OpenPlay.AttackPhase (team in possession)
+
+OpenPlay.DefensePhase (team not in possession)
+
+OpenPlay.KickChase (when ball is in flight from open play)
+
+OpenPlay.LooseBall (ball free, not a ruck)
+
+New helpers (called from decision_engine):
+
+choose_offensive_action(holder, context) → "run"|"pass"|"kick"
+
+evaluate_pass_targets(holder, teammates, context) → best target or None
+
+choose_kick_type(holder, context) → "clearance"|"bomb"|"grubber"|"chip"|"crossfield"
+
+compute_run_lane(holder, defense_map) → (x,y) lane
+
+assign_primary_tackler(ball_loc, defenders) → defender id
+
+shape_defensive_line(ball_loc, defenders) → per‑defender target spots
+
+place_backfield_cover(defenders) → who drops & where
+
+kick_chase_assignments(kicking_team) → chasers & blocking lanes
+
+loose_ball_scramble(ball_loc, nearby_players) → pickup priority or forms mini‑ruck
+
+RuckState
+
+Substates:
+
+Ruck.Forming (arrival timing)
+
+Ruck.Contest (commit counts, steal odds)
+
+Ruck.Recycle (ball speed outcome: fast/slow)
+
+Functions:
+
+ruck_commit_plan(team, ruck_anchor) → which 2–4 join; others hold shape
+
+resolve_ruck_outcome(a_commit, b_commit, referee_leniency) → 'a'|'b', ball speed enum
+
+post_ruck_reorg(winner) → set 9 pickup, attack/defense shape re‑seed
+
+enforce_offside_ruck(defenders, last_feet_line) → flags/pen if breached
+
+check_not_rolling_away(tacklers) (timer/radius)
+
+ScrumState
+
+Substates:
+
+Scrum.Setup (bind, put‑in side)
+
+Scrum.Engage (simple resolution)
+
+Scrum.Exit (8/9/10 exit patterns)
+
+Functions:
+
+scrum_resolution(put_in) → winner prob, stability (pen chance later)
+
+scrum_exit_call(winner_team) → "8_pick"|"9_box"|"10_exit"
+
+seed_exit_shape(team, call) → targets for 8/9/10 & pods
+
+LineoutState
+
+Substates:
+
+Lineout.Setup (pods align)
+
+Lineout.Throw (short/mid/long arc; jump timing)
+
+Lineout.Resolution (clean/off‑top/maul start)
+
+Functions:
+
+lineout_call(team) → (zone: front/mid/back, length: short/mid/long, off_top|maul)
+
+lineout_steal_chance(defense, call) → bool
+
+start_maul_if_selected() → transition to MaulState
+
+MaulState
+
+Substates:
+
+Maul.Form → Maul.Drive → Maul.Outcome (gain, collapse, turnover/pen)
+
+Functions:
+
+maul_drive_tick(formation, defenders) → meters gained
+
+maul_outcome() → play on / turnover / penalty
+
+RestartState
+
+Substates:
+
+Kickoff.Setup → Kickoff.Flight → Kickoff.Contest/Land
+
+22Dropout, GoalLineDropout, AfterScore.CenterRestart
+
+Functions:
+
+kickoff_pattern(team10) → angle/power
+
+restart_routing_by_law(event) → to Lineout/Scrum or OpenPlay
+
+PenaltyState
+
+Substates:
+
+Penalty.Decision → Penalty.Execution → Penalty.Restart
+
+Functions:
+
+penalty_choice(context) → "kick_to_touch"|"quick_tap"|"goal_attempt"
+
+gain_to_touch(kick_params) → mark for lineout
+
+quick_tap_window() → allow/deny tap pre‑defense set
+
+AdvantageState (overlay timer/meters; can wrap OpenPlay)
+
+Functions:
+
+start_advantage(type: "knock_on"|"offside"|"penalty")
+
+is_advantage_realized(progress) → play on or call back
+
+end_advantage() → route back to scrum/penalty if no gain
+
+2) Global routing & clock
+route_by_flags(match) — single place (after ball.update()) that checks:
+
+pending_scrum, pending_lineout, pending_penalty, pending_restart, time_up
+
+match_clock_tick() — halves, stoppage time, halftime reset
+
+restart_controller(event) — converts score/into touch/goal‑line events into correct restart flags
+
+3) Decision engine split (no attributes needed yet)
+Replace the single _holder_action with a thin orchestrator that calls modular evaluators and returns (action, target).
+
+build_context(match) returns a read‑only snapshot:
+
+possession team code, attack_dir, ball location, last_touch, phase count, field zones (own 22/mid/opp 22), advantage status, time/score, simple defense map (nearest N defenders to holder with distances & angles)
+
+Offense:
+
+score_action_run(holder, ctx)
+
+score_action_pass(holder, ctx) → plus evaluate_pass_targets(...)
+
+score_action_kick(holder, ctx) → plus choose_kick_type(...)
+
+choose_offensive_action(...) picks max‑utility with tie‑breakers
+
+Defense:
+
+assign_primary_tackler(...)
+
+shape_defensive_line(...)
+
+place_backfield_cover(...)
+
+defensive_micro_decision(defender, ctx) → "tackle"|"hold"|"press"|"intercept_lane"
+
+Set‑pieces:
+
+seed_shape_after_setpiece(state, winner) to drop everyone into believable spots instantly, then return to OpenPlay.
+
+4) Law & restart hooks (lightweight now; full later)
+detect_knock_on(event) → set pending_scrum(put_in=other)
+
+detect_touch(ball_path, last_touch_team) → set pending_lineout(throw_to=opposite)
+
+detect_forward_pass(passer, receiver) (you have a baseline)
+
+advantage_controller (start/extend/realize/call back)
+
+offside_open_play() (very simple: ahead of last feet / ahead of kick line)
+
+5) Data/flags you already have (and a few to add)
+Use current fields and add minimal new ones to match:
+
+Existing: ball.location, ball.holder, last_touch_team, pending_scrum, pending_lineout
+
+Add:
+
+pending_penalty: {"mark":(x,y), "to":"a"|"b", "reason":"offside|high|obstruction"}
+
+pending_restart: {"type":"kickoff|22_do|goal_line_do|post_score","to":"a"|"b"}
+
+advantage: {"type":"knock_on|penalty", "to":"a"|"b", "start_time":t, "start_x":x}
+
+scoreboard: {a:{tries, conv, pens, dgs, points}, b:{...}}
+
