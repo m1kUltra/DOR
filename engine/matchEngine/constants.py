@@ -48,9 +48,12 @@ PASS_SUCCESS_RATE = 1.0    # Always successful for now
 # ------------------------------------------------------------------------------
 # Coordinate Reference System
 # ------------------------------------------------------------------------------
-
+EPS = 1e-6
 # Z-axis: vertical (for jumping/kicking height)
 # (x, y, z): where x = length, y = width, z = height
 
 ORIGIN = (0.0, 0.0, 0.0)  # Bottom-left corner of in-play area
  
+ # Role Groups
+FORWARDS = {1, 2, 3, 4, 5, 6, 7, 8}
+BACKS = {9, 10, 11, 12, 13, 14, 15}

@@ -22,7 +22,7 @@ def setup_match(db_path, team_a_id, team_b_id):
             sn=p["sn"],
             rn=p["rn"],
             team_code="a",
-            location=[0.0, 35.0, 0.0],
+            location=[50.0, 35.0, 0.0],
             attributes=p["attributes"],
             height=p["height"],
             weight=p["weight"]
@@ -44,8 +44,11 @@ def setup_match(db_path, team_a_id, team_b_id):
         players.append(player)
         team_b_players.append(player)
 
-    team_a = Team(name=team_a_name, squad=team_a_players)
-    team_b = Team(name=team_b_name, squad=team_b_players)
+# matchEngine/setup.py (only the bottom section changes)
+
+    team_a = Team(name=team_a_name, squad=team_a_players, tactics={"attack_dir": +1.0})
+    team_b = Team(name=team_b_name, squad=team_b_players, tactics={"attack_dir": -1.0})
+
 
     ball = Ball(location=(50.0, 35.0, 0.0), holder=None)
     pitch = Pitch()

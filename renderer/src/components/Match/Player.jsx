@@ -1,6 +1,6 @@
 // File: Match/Player.jsx
 export default function Player({ player, toPixels, pxPerMeter }) {
-  const radiusM = 0.75;
+  const radiusM = 1;
   const { left, top } = toPixels({ x: player.location[0], y: player.location[1] });
   const diameter = radiusM * 2 * pxPerMeter;
 
@@ -17,8 +17,9 @@ export default function Player({ player, toPixels, pxPerMeter }) {
         borderRadius: "50%",
         textAlign: "center",
         lineHeight: `${diameter}px`,
-        fontSize: "0.75rem",
+        fontSize: "0.5rem",
         color: "white",
+         zIndex: 1,
       }}
     >
       {player.sn}

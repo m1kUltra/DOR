@@ -1,37 +1,63 @@
 # matchEngine/states/ruck.py
-
 from states.base_state import BaseState
-from utils.decision_engine import process_decision
+from constants import FORWARDS
 
 class RuckState(BaseState):
     def __init__(self):
         super().__init__()
         self.name = "ruck"
-        self.ticks_in_state = 0
+        self._anchor = None  # where contact occurred
 
-    def update(self, match):
-        self.ticks_in_state += 1
+    def on_enter(self, match):  # optional if you call it on transition later
+        pass
 
-        # Let each player make a decision (positioning based on ruck logic)
-        for player in match.players:
-            action, target = process_decision(
-                player, self, match.ball,
-                match.team_a if player.team_code == 'a' else match.team_b,
-                match.team_b if player.team_code == 'a' else match.team_a,
-                pitch=match.pitch
+    def before_decisions(self, match):
+        # lock ball at last location as ruck anchor
+        if self._anchor is None:
+            self._anchor = match.ball.location
+        # make sure ball is loose at ruck
+        match.ball.release()
+        match.ball.location = self._anchor
+
+    def after_decisions(self, match):
+        # after some beats, recycle to one side based on support numbers
+        if self.ticks_in_state < 3:
+            return
+
+        ax, ay, _ = self._anchor
+        # count nearby supporters by team (forwards weighted a bit)
+        def nearby_score(team_code: str):
+            score = 0.0
+            for p in match.players:
+                if p.team_code != team_code: continue
+                px, py, _ = p.location
+                if (px - ax)**2 + (py - ay)**2 <= 9.0:  # within 3m
+                    score += 1.5 if p.rn in FORWARDS else 1.0
+            return score
+
+        a_score = nearby_score('a')
+        b_score = nearby_score('b')
+
+        winner = 'a' if a_score >= b_score else 'b'
+        team = match.team_a if winner == 'a' else match.team_b
+
+        # give to 9 if exists, else nearest teammate
+        nine = team.get_player_by_rn(9)
+        if nine:
+            match.ball.holder = f"{nine.sn}{winner}"
+            match.ball.location = nine.location
+        else:
+            # nearest teammate to anchor
+            cand = min(
+                (p for p in team.squad),
+                key=lambda p: (p.location[0]-ax)**2 + (p.location[1]-ay)**2
             )
-            player.current_action = action
-            player.update_location(target)
-
-        # Ball follows holder, if any
-        match.ball.update(match)
+            match.ball.holder = f"{cand.sn}{winner}"
+            match.ball.location = cand.location
 
     def check_transition(self, match):
-        """
-        Example: After 5 ticks, ball is recycled and we go to open play.
-        You can later make this depend on player actions or turnover chance.
-        """
-        if self.ticks_in_state >= 5:
-            from matchEngine.states.open_play import OpenPlayState
+        # when ball is picked up by someone, go back to open play
+        if match.ball.is_held() and self.ticks_in_state >= 3:
+            from states.open_play import OpenPlayState
             return OpenPlayState()
         return None

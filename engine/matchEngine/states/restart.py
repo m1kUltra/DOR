@@ -1,35 +1,40 @@
 # matchEngine/states/restart.py
 
 from states.base_state import BaseState
-from utils.decision_engine import process_decision
 
 class RestartState(BaseState):
     def __init__(self):
         super().__init__()
         self.name = "restart"
-        self.ticks_in_state = 0
+        self._initialized = False
 
-    def update(self, match):
-        self.ticks_in_state += 1
+    def before_decisions(self, match):
+        """
+        One-time kickoff setup:
+        - place ball at halfway
+        - give it to Team A's fly-half (RN=10) if present
+        """
+        if self._initialized:
+            return
 
-        # On first tick, place the ball at halfway and give it to 10a
-        if self.ticks_in_state == 1:
-            match.ball.location = (50.0, 35.0, 0.0)  # Midfield
-            match.ball.holder = "10a"
+        # Ball at midfield
+        match.ball.location = (50.0, 35.0, 0.0)
 
-        # Players position themselves according to restart logic
-        for player in match.players:
-            action, target = process_decision(
-                player, self, match.ball,
-                match.team_a if player.team_code == 'a' else match.team_b,
-                match.team_b if player.team_code == 'a' else match.team_a,
-                pitch=match.pitch
-            )
-            player.current_action = action
-            player.update_location(target)
+        # Prefer RN lookup so we don't assume SN==RN
+        p10a = match.team_a.get_player_by_rn(10)
+        if p10a:
+            match.ball.holder = f"{p10a.sn}a"
+        else:
+            # Fallback: try SN 10 on Team A; else loose ball at halfway
+            fallback = match.team_a.get_player_by_sn(10)
+            match.ball.holder = f"{fallback.sn}a" if fallback else None
+
+        self._initialized = True
+
+    # Movement/positioning is handled by BaseState.update() via decision engine.
 
     def check_transition(self, match):
-        # After 2 ticks, transition into open play
+        # After 2 ticks, go to open play
         if self.ticks_in_state >= 2:
             from states.open_play import OpenPlayState
             return OpenPlayState()
