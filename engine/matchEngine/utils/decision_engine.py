@@ -49,17 +49,14 @@ def compute_positions_for_teams(match, game_state) -> Dict[object, Tuple[Action,
         for p in team.squad:
             code = f"{p.sn}{p.team_code}"
 
-            # Non–open play: keep current action/position
-            if state_name != "open_play":
-                out[p] = (p.current_action or "idle", p.location, {})
-                continue
-
-            # Honor special chase/field targets set in OpenPlayState
+            # Non–open play: honor action_meta["to"] if present (for set-piece formations)
             if state_name != "open_play":
                 meta = getattr(p, "action_meta", {}) or {}
                 tgt = meta.get("to", p.location)
-                out[p] = (p.current_action or "idle", tgt, meta)   # ← keep 'to' and meta (incl. lock)
+                out[p] = (p.current_action or "idle", tgt, meta)
                 continue
+
+       
             meta = getattr(p, "action_meta", {}) or {}
             if p.current_action in {"chase", "field_kick"} and "to" in meta:
                 out[p] = (p.current_action, meta["to"], {"lock": True})
@@ -86,9 +83,13 @@ def compute_positions_for_teams(match, game_state) -> Dict[object, Tuple[Action,
 
     def propose_defense(team):
         out = {}
+        
+       
         if state_name != "open_play":
             for p in team.squad:
-                out[p] = (p.current_action or "idle", p.location, {})
+                meta = getattr(p, "action_meta", {}) or {}
+                tgt = meta.get("to", p.location)
+                out[p] = (p.current_action or "idle", tgt, meta)
             return out
 
         ball_xy = (ctx["ball"]["x"], ctx["ball"]["y"])
