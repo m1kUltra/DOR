@@ -55,6 +55,11 @@ def compute_positions_for_teams(match, game_state) -> Dict[object, Tuple[Action,
                 continue
 
             # Honor special chase/field targets set in OpenPlayState
+            if state_name != "open_play":
+                meta = getattr(p, "action_meta", {}) or {}
+                tgt = meta.get("to", p.location)
+                out[p] = (p.current_action or "idle", tgt, meta)   # ← keep 'to' and meta (incl. lock)
+                continue
             meta = getattr(p, "action_meta", {}) or {}
             if p.current_action in {"chase", "field_kick"} and "to" in meta:
                 out[p] = (p.current_action, meta["to"], {"lock": True})

@@ -42,10 +42,7 @@ class OpenPlayState(BaseState):
         evt = detect_tackle_event(match)
         if evt:
             resolve_tackle(match, evt["tackler"], evt["holder"], evt["anchor"])
-            # immediate transition to RuckState this tick
-            from states.ruck import RuckState
-            match.current_state = RuckState()
-            return
+            return 
     def after_decisions(self, match):
         # If a kick was chosen this tick, enter kick-chase sub-state
         kick_pickers = [
@@ -111,8 +108,8 @@ class OpenPlayState(BaseState):
             setattr(nearest, "action_meta", {"to": (bx, by, 0.0)})
 
     def check_transition(self, match):
-        # If ball released (tackle), enter ruck
-        if not match.ball.is_held():
+        # enter ruck only when a ruck was actually seeded
+        if match.ruck_meta:
             from states.ruck import RuckState
             return RuckState()
         return None
