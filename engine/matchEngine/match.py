@@ -48,7 +48,7 @@ class Match:
 
         self.current_state: BaseState = None
         self.set_initial_state()
-
+        self.ruck_meta = None  
     def set_initial_state(self):
         from states.restart import RestartState
         self.current_state = RestartState()
@@ -106,11 +106,15 @@ class Match:
 
     def update(self):
         if self.period["status"] == "fulltime":
-    # still tick wall‑clock so serializers keep advancing if you want
             self.match_time += self.tick_rate
             return
-        """Advance the game by one tick."""
+
+        # ---- start of tick ----
         self.tick_count += 1
+
+        # Reset per‑tick player flags BEFORE decisions
+        for p in self.players:
+            p.reset_state_flags()
 
         # 1) State handles per-tick decisions + movement
         self.current_state.update(self)
@@ -118,9 +122,9 @@ class Match:
         # 2) Ball follows holder / flight physics
         self.ball.update(self)
 
-        # 3) Centralized routing for set-piece flags created by actions/ball
+        # 3) Centralized routing for set-piece flags
         if self.route_by_flags():
-            return  # skip the rest to avoid double processing this tick
+            return
 
         # 4) Possession & scoring checks
         self._sync_possession()
@@ -136,7 +140,8 @@ class Match:
         next_state = self.current_state.check_transition(self)
         if next_state:
             self.current_state = next_state
-
+        for p in self.players:
+            p._prev_xy = (p.location[0], p.location[1])
         log_tick(self.tick_count, self)
 
     def run(self, ticks=1000, realtime=True, speed=1.0):

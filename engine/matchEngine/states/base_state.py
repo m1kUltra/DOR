@@ -54,6 +54,7 @@ class BaseState:
 
             player.update_location((nx, ny, 0.0))
 
+            
         self.after_decisions(match)
 
     def check_transition(self, match):

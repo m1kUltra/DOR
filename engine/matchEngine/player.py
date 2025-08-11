@@ -17,7 +17,13 @@ class Player:
         }
 
         self.current_action = None  # e.g., 'run', 'pass', etc.
-
+        # Phase 3: transient flags (reset each tick)
+        self.state_flags = {
+            "is_tackled": False,
+            "is_on_feet": True,
+            "in_ruck_radius": False,
+            "entered_from_gate": False,
+        }
     def update_location(self, new_location):
         """Update the 3D position of the player."""
         self.location = new_location
@@ -41,6 +47,13 @@ class Player:
         self.current_action = action
         # Action logic would be handled elsewhere
         pass
-
+    def reset_state_flags(self):
+        self.state_flags.update({
+            "is_tackled": False,
+            "is_on_feet": True if self.state_flags.get("is_on_feet") else self.state_flags["is_on_feet"],
+            "in_ruck_radius": False,
+            "entered_from_gate": False,
+        })
     def __repr__(self):
         return f"<Player {self.sn}{self.team_code} ({self.name}) at {self.location}>"
+    

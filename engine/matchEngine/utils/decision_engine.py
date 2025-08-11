@@ -48,14 +48,24 @@ def compute_positions_for_teams(match, game_state) -> Dict[object, Tuple[Action,
         bx, by, bz = match.ball.location
         for p in team.squad:
             code = f"{p.sn}{p.team_code}"
+
+            # Non–open play: keep current action/position
             if state_name != "open_play":
                 out[p] = (p.current_action or "idle", p.location, {})
                 continue
+
+            # Honor special chase/field targets set in OpenPlayState
+            meta = getattr(p, "action_meta", {}) or {}
+            if p.current_action in {"chase", "field_kick"} and "to" in meta:
+                out[p] = (p.current_action, meta["to"], {"lock": True})
+                continue
+
+            # Holder chooses offense
             if code == holder_code:
                 out[p] = choose_offensive_action(p, ctx)
                 continue
 
-            # propose shape target
+            # Shape targets for everyone else
             if p.rn in {1,2,3,4,5,6,7,8}:
                 f_sorted = sorted([q for q in team.squad if q.rn in {1,2,3,4,5,6,7,8}], key=lambda q:(q.rn,q.sn))
                 ordinal = f_sorted.index(p)
@@ -67,6 +77,7 @@ def compute_positions_for_teams(match, game_state) -> Dict[object, Tuple[Action,
 
             out[p] = ("shape", tgt, {})
         return out
+
 
     def propose_defense(team):
         out = {}

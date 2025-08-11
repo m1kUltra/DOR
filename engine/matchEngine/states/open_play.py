@@ -4,6 +4,10 @@ from constants import TACKLE_RANGE, TOUCHLINE_BOTTOM_Y, TOUCHLINE_TOP_Y, MAX_CHA
 from actions import dispatch
 from utils.logger import log_law
 
+from constants import MAX_CHASERS  # keep existing
+from actions import dispatch
+from utils.collision import detect_tackle_event, resolve_tackle
+
 class OpenPlayState(BaseState):
     def __init__(self):
         super().__init__()
@@ -35,7 +39,13 @@ class OpenPlayState(BaseState):
         if nearest and best_d2 is not None and best_d2 <= (TACKLE_RANGE * TACKLE_RANGE):
             nearest.current_action = "tackle"
             holder.current_action = "enter_contact"  # dispatcher will drop ball
-
+        evt = detect_tackle_event(match)
+        if evt:
+            resolve_tackle(match, evt["tackler"], evt["holder"], evt["anchor"])
+            # immediate transition to RuckState this tick
+            from states.ruck import RuckState
+            match.current_state = RuckState()
+            return
     def after_decisions(self, match):
         # If a kick was chosen this tick, enter kick-chase sub-state
         kick_pickers = [
