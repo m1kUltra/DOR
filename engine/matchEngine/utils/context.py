@@ -65,8 +65,8 @@ def build_context(match) -> Dict:
         }
 
         # simple 12m band ahead of ball from defense POV
-        dir_def = teams[defending]["dir"]
-        line_density = sum(1 for d in defs if 0 < (d["x"] - bx) * dir_def <= 12.0)
+        att_dir = teams[attacking]["dir"]
+        line_density = sum(1 for d in defs if 0 < (d["x"] - bx) * att_dir <= 12.0)
 
         return {
             "nearest_to_holder": nearest,
