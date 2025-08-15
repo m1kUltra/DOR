@@ -1,3 +1,5 @@
+from utils import scoring
+from utils import laws
 # matchEngine/Match.py
 import json
 import time
@@ -8,7 +10,7 @@ from utils.logger import log_tick, log_routing, log_law  # include law + routing
 from utils.rng import DeterministicRNG  # deterministic RNG
 from utils.restarts import map_event_to_flag
 from utils.advantage import start as adv_start, tick as adv_tick
-
+from utils import laws, scoring
 
 class Match:
     def __init__(self, db_path, team_a_id, team_b_id, seed: int | None = None, debug: dict | None = None):  # seed + debug
@@ -40,6 +42,9 @@ class Match:
         self.last_touch_team = None   # "a" or "b"
         self.last_restart_to = None   # who restarts next (kickoff/dropout)
         self.scoreboard = {"a": 0, "b": 0}
+
+        self.conversion_ctx = None
+        self.last_kick = None
 
         # build teams/players/ball/pitch
         self.team_a, self.team_b, self.players, self.ball, self.pitch = setup_match(
@@ -105,6 +110,7 @@ class Match:
         return False
 
     def update(self):
+        self._prev = {"ball_loc": self.ball.location, "ball_holder": self.ball.holder, "last_touch_team": self.last_touch_team}
         if self.period["status"] == "fulltime":
             self.match_time += self.tick_rate
             return
@@ -122,6 +128,7 @@ class Match:
         # 2) Ball follows holder / flight physics
         self.ball.update(self)
 
+        self.laws_tick()
         # 3) Centralized routing for set-piece flags
         if self.route_by_flags():
             return
@@ -172,7 +179,8 @@ class Match:
                     "rn": p.rn,
                     "team_code": p.team_code,
                     "action": p.current_action,
-                    "location": p.location
+                    "location": p.location,
+                    "orientation": p.orientation_deg
                 }
                 for p in self.players
             ],
@@ -202,7 +210,19 @@ class Match:
         self.team_b.set_possession(b)
 
     def _check_scoring(self):
-        if not self.ball.holder or self.period["status"] != "live":
+        if not self.ball.holder or self.period.get("status") != "live": return
+        holder = self.get_player_by_code(self.ball.holder)
+        if not holder: return
+        x, y, _ = holder.location
+        if holder.team_code == "a" and x >= 100.0:
+            ev = scoring.award_try(self, "a", (x,y))
+            self.pending_restart = {"type":"post_score", "to": ev["next_restart_to"]}
+            self.conversion_ctx = ev["conversion"]
+            return
+        if holder.team_code == "b" and x <= 0.0:
+            ev = scoring.award_try(self, "b", (x,y))
+            self.pending_restart = {"type":"post_score", "to": ev["next_restart_to"]}
+            self.conversion_ctx = ev["conversion"]
             return
         holder = self.get_player_by_code(self.ball.holder)
         if not holder:
@@ -289,7 +309,76 @@ class Match:
             start_t=float(self.match_time),
         )
 
-# python -m matchEngine.match  (if you ever run as module)
+
+
+
+    def get_attack_dir(self, team_code:str)->float:
+        t = self.team_a if team_code=="a" else self.team_b
+        return float(getattr(t, "tactics", {}).get("attack_dir", 1.0))
+
+    def players_for_team(self, team_code:str):
+        return [p for p in getattr(self, "players", []) if getattr(p, "team_code", None)==team_code]
+
+    def can_interfere(self, player):
+        # v1 placeholder: always True; your AI can refine
+        return True
+
+
+    def laws_tick(self):
+        events = []
+        # Knock-on
+        prev_dir = self.get_attack_dir(self._prev["last_touch_team"]) if self._prev["last_touch_team"] else 1.0
+        ev = laws.detect_knock_on(self, self._prev["last_touch_team"], self._prev["ball_loc"], self.ball.location, prev_dir)
+        if ev: events.append(ev)
+        # Touch (and possible 50:22)
+        ev_touch = laws.detect_touch(self, self._prev["ball_loc"], self.ball.location, self.last_touch_team)
+        if ev_touch:
+            ev_50 = laws.detect_fifty22(self, getattr(self, "last_kick", None), ev_touch)
+            events.append(ev_50 or ev_touch)
+        # Offside (kicks)
+        for ev in laws.detect_offside_open_play(self):
+            events.append(ev)
+        # Goal-line dropout
+        ev = laws.detect_goal_line_dropout(self)
+        if ev: events.append(ev)
+        if events:
+            self.restart_controller(events[0])
+
+    
+# --- Utility helpers added for open-play logic ---
+def dist(self, a_xy, b_xy):
+    """Euclidean distance in 2D between two (x,y[,z]) tuples."""
+    ax, ay = a_xy[0], a_xy[1]
+    bx, by = b_xy[0], b_xy[1]
+    dx, dy = ax - bx, ay - by
+    return (dx*dx + dy*dy) ** 0.5
+
+def players_sorted_by_distance(self, center_xy, team: str | None = None):
+    """Return players list sorted by planar distance to center_xy. Optionally filter by team code 'a' or 'b'."""
+    pool = self.players
+    if team in ('a','b'):
+        pool = [p for p in self.players if p.team_code == team]
+    return sorted(pool, key=lambda p: (p.location[0]-center_xy[0])**2 + (p.location[1]-center_xy[1])**2)
+
+
+    def run(self, ticks: int = 1000, realtime: bool = True, speed: float = 1.0):
+  
+        for _ in range(ticks):
+            t0 = time.time()
+            self.update()
+            # emit one tick snapshot (optional)
+            try:
+                print(json.dumps(self.serialize_tick()), flush=True)
+            except Exception:
+                pass
+            if realtime:
+                budget = self.tick_rate / max(speed, 1e-6)
+                delay = budget - (time.time() - t0)
+                if delay > 0:
+                    time.sleep(delay)
+
+
 if __name__ == "__main__":
-    match = Match("tmp/temp.db", team_a_id=2, team_b_id=1, seed=42, debug={"decisions": True, "routing": True, "laws": True})
+    match = Match("tmp/temp.db", team_a_id=2, team_b_id=1, seed=42,
+                  debug={"decisions": True, "routing": True, "laws": True})
     match.run(ticks=1000)

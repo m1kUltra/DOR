@@ -84,3 +84,52 @@ RECYCLE_FAST_TICKS = 2
 RECYCLE_SLOW_TICKS = 4
 
 OFFSIDE_PENALTY_ENFORCE = True
+
+# === Phase 5: Kicking polish & restarts ===
+# Base ball speed (scaled by attributes later)
+KICK_BASE_V0 = 18.0     # m/s typical open-play long kick
+
+# Preset scalars (multiply base)
+KICK_PRESETS = {
+  "clearance": {"v0": 1.15, "elev_deg": 30, "spin": 0.0,  "drift": 0.06, "hang_bonus": 0.1},
+  "box":       {"v0": 0.80, "elev_deg": 55, "spin": 0.2,  "drift": 0.02, "hang_bonus": 0.35},
+  "bomb":      {"v0": 0.95, "elev_deg": 60, "spin": 0.15, "drift": 0.03, "hang_bonus": 0.45},
+  "chip":      {"v0": 0.60, "elev_deg": 35, "spin": 0.05, "drift": 0.01, "hang_bonus": 0.05},
+  "crossfield":{"v0": 0.90, "elev_deg": 40, "spin": 0.10, "drift": 0.18, "hang_bonus": 0.10},
+  "grubber":   {"v0": 0.75, "elev_deg": 8,  "spin": 0.30, "drift": 0.00, "hang_bonus": 0.00},
+  "dropout":   {"v0": 0.90, "elev_deg": 30, "spin": 0.10, "drift": 0.03, "hang_bonus": 0.05},
+  "kickoff":   {"v0": 1.00, "elev_deg": 30, "spin": 0.05, "drift": 0.02, "hang_bonus": 0.10}
+}
+
+# Small physics polish
+AIR_DRAG_COEFF = 0.02       # mild vertical slow, applied to vz
+LATERAL_DRIFT_MAX = 0.20    # cap on vy/v0 fraction after all hints
+CATCH_RADIUS = 1.8          # m (hands reach + jump window later)
+CATCH_EARLY_S = 0.15        # can't catch before this after bounce/apex arrival
+CATCH_LAND_SLOP = 0.25      # still catchable near ground within this time
+BOUNCE_ENERGY_GRUBBER = 0.45 # vx damp when z<=0 for grubbers
+BOUNCE_ENERGY_DEFAULT = 0.60 # other types
+
+# Kickoff/dropout placements
+KICKOFF_SPREAD_GAP_Y = 4.0
+DROP_OUT_MIN = 10.0         # m (typical law realism, keep simple)
+DROP_OUT_MAX = 35.0
+
+
+# === Phase 6: Laws & Scoring v1 ===
+# Laws
+FORWARD_PASS_EPS = 0.05          # meters tolerance
+KNOCK_ON_FORWARD_METERS = 0.2    # minimum forward displacement on bobble
+OFFSIDE_OPENPLAY_BUFFER = 1.0     # meters behind last feet / last kick point
+
+# Scoring
+POINTS = {"try": 5, "conv": 2, "pen": 3, "dg": 3}
+
+CONVERSION_WINDOW_S = 45.0       # time allowed to attempt kick at goal
+CONVERSION_SPOT_OFFSET_X = 0.0   # x is try spot; ball placed on y of try
+CONVERSION_DEFAULT_DIST = 25.0   # meters back from try line (fallback if you want)
+CONV_SUCCESS_BASE = 0.75         # Phase 6 simple success (attributes later)
+
+# 50:22
+FIFTY22_MIN_ORIGIN = 50.0        # must kick from own half
+FIFTY22_TARGET_MINX = 78.0       # must go out past opponent 22 via bounce

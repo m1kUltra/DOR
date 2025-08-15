@@ -1,6 +1,6 @@
 Match-engine 
 darts //ability tyo throw the ball in at a lineout combined depending on situation with composure
-finishing// ability to score a try (find the line through a tackle or utilising an acrobatic dive - a supllemenmtal attribute)
+finishing// ability to score a try (find the line through a tackle or utilising an acrobatic diving - a supllemenmtal attribute)
 footwork //ability to use close footwork to negate collision impacxt of tackle whe. carrying effect likelihood of succesful tackle by opponent
 goal_kicking// accuracy off the tee for penalty kicks field goals and is supplemental for drop kicks and punts(free kicks and penalties)
 handling // ability to catch the ball

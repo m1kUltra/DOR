@@ -22,10 +22,8 @@ class MaulState(BaseState):
 
         # Attack binders around ellipse; defense counter-front
         atk = get_maul_ring(self.anchor_xy, self.attack_team, {"count": 6, "bias": "tight"}, match)
-        def_team = 'b' if self.attack_team == 'a' else 'a'
-        # reuse defensive helper to place a counter-arc/backline
-        deff = place_defensive_setpiece(def_team, {"type": "maul", "anchor": self.anchor_xy}, match)
-
+        def_team_obj = match.team_b if self.attack_team == 'a' else match.team_a
+        deff = place_defensive_setpiece(def_team_obj, {"type": "maul", "anchor": self.anchor_xy}, match)
         for p, tgt in {**atk, **deff}.items():
             p.current_action = p.current_action or "bind_maul"
             setattr(p, "action_meta", {"to": tgt, "lock": True})

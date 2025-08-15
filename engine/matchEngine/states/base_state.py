@@ -1,6 +1,8 @@
 from typing import Tuple
 from utils.decision_engine import compute_positions_for_teams
 from constants import DEFAULT_PLAYER_SPEED
+from utils.orientation import compute_orientation   # NEW — your new helper file
+
 class BaseState:
     def __init__(self):
         self.name = "base"
@@ -20,7 +22,6 @@ class BaseState:
 
         # Apply actions + meta
         for player, bundle in decisions.items():
-            # bundle is (action, target, meta?) where target can be None (e.g., kick)
             action = bundle[0]
             target = bundle[1] if len(bundle) > 1 else None
             meta   = bundle[2] if len(bundle) > 2 else {}
@@ -33,10 +34,8 @@ class BaseState:
 
             px, py, _ = player.location
             if target is None:
-                # No movement target (e.g., kick) -> stay put this tick
                 tx, ty = px, py
             else:
-                # target is (x, y, z) or (x, y)
                 tx = target[0]
                 ty = target[1]
 
@@ -52,9 +51,21 @@ class BaseState:
             else:
                 nx, ny = tx, ty
 
+            # --- NEW: update orientation before committing new location ---
+            team_dir = None
+            if hasattr(match, "attacking_dir"):
+                team_dir = match.attacking_dir.get(player.team_code)
+
+            player.orientation_deg = compute_orientation(
+                pos_xy=(px, py),
+                target_xy=(tx, ty) if (tx, ty) != (px, py) else None,
+                attacking_dir=team_dir,
+                current_deg=player.orientation_deg,
+                max_turn_deg_per_tick=None,  # or e.g. 25.0 for gradual turning
+            )
+
             player.update_location((nx, ny, 0.0))
 
-            
         self.after_decisions(match)
 
     def check_transition(self, match):

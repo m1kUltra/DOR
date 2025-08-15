@@ -32,8 +32,8 @@ class ScrumState(BaseState):
 
         scr_targets = get_scrum_formation(mark_xy, attack_team, match)  # {Player: (x,y,0)}
         backs_targets = place_backs_exit_shape(self.exit_call, attack_team, mark_xy, match)  # {Player: (x,y,0)}
-        def_targets = place_defensive_setpiece(defend_team, {"type": "scrum", "mark": mark_xy, "put_in": attack_team}, match)
-
+        def_team_obj = match.team_b if attack_team == 'a' else match.team_a
+        def_targets = place_defensive_setpiece(def_team_obj, {"type": "scrum", "mark": mark_xy, "put_in": attack_team}, match)
         # Merge and assign meta targets (lock for a couple of ticks)
         for p, tgt in {**scr_targets, **backs_targets, **def_targets}.items():
             p.current_action = p.current_action or "shape"

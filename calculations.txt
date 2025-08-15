@@ -1,0 +1,267 @@
+this is the breakdown of the start of my attribute additions How each activity is calculated 
+
+running
+acceleration attr determines is acceleration (accel_mps2 = 2.0 + (6.0 - 2.0) * ((accel_attr - 1) / 19) ** 0.8)
+pace detemrines the max speed a player can reach (5 + 5*((Pace-1)/19)^0.8)
+work_rate detrmines the proportion of actual pace used by players (when they do not have the ball or the locked defender) //later
+this is a sliding scale that impacts diffrent areas based on formulas 
+        genral play - nothing important getting into positioon etc 
+        support - involved in the surrounding play
+        acytive - has the ball or their locked tackler 
+turning - introduce orientation to a player in degress 90
+agil_norm = (agility_attr - 1) / 19.0
+
+    # --- Step 2: Map to lateral acceleration capability (m/s²) ---
+    #   Low agility = 3 m/s²; high agility = 8 m/s²
+    a_lat_max = 3.0 + (8.0 - 3.0) * agil_norm
+
+    # --- Step 3: Convert lateral acceleration to max turn rate ---
+    #   Formula: omega = a_lat / v   (v floored to avoid infinite spin)
+    v_eff = max(speed_mps, 1.5)  # 1.5 m/s floor for low-speed turning
+    omega_max = a_lat_max / v_eff
+
+    # --- Step 4: Cap at a max "pivot spin" when almost stopped ---
+    omega_snap_cap = 6.0  # rad/s (~343°/s)
+    omega_max = min(omega_max, omega_snap_cap)
+need to implment orientation
+
+jumping reach is attribute + height (anything above height/.375 is in catch zone difficulty of catch zone. )
+catch zone laterally is done the same but 1m + height/.375 is there catch radius
+this is the max catch zone and the further away a ball is from body the harder the catch (not normalised to factor in that shorter players are generally more co-ordinated and used to catching further away balls)
+standing_jump_m = 0.20 + 0.40 * norm(jumping_reach)
+running_jump_m = (0.20 + 0.40 * norm(jumping_reach)) + 0.12 * norm(acceleration)
+liftedjump=back_(lifter.height/2)+(jumper.height*1.375)
+
+passing_action 
+distance = player.y - target.y
+desicion engine detremines target(x, y, 1) # z is fixed for passes y is used for range 
+technique+passing/2 detrmines range
+  rannge = 10+ 45( norm(passing_attr) * norm(technique_attr)  ) # combined skill 0..1
+success is just passing - skill.modifiers
+prob_success =  0.1 + 0.9 * ((1.0 - distance/range)*( 1.0 + 1.0 * norm(passing_attr))
+if prob_success>=random
+    continue
+   
+else 
+    error = random-prob_success
+    if error % 2 =0 
+        error = -error
+    misplaced= (error*distance)/3
+    target.x = misplaced+x
+ ball.pass(location, target)
+scope- possible passes scope 
+
+    """
+    Returns total passing scope in radians based on technique.
+    1   -> pi   (180 degrees)
+    20  -> 2pi  (360 degrees)
+    """
+    return math.pi + (2 * math.pi - math.pi) * norm(technique_attr)
+pass types 
+flat, max range = 10m , flat_speed = pass_speed/2.5 , success = + 50% 
+ spin,  standdard uses normal speed and range
+ league max range = 25m  success =+ 25% pass_speed*.75
+
+ pass_speed= 10.0 + 7.0 * norm(passing)*norm(technique)
+
+ handling
+ if a pass travels along  inside and your catch-zone a player may attempt to catch 
+ to be elgible the pass must be directed at them. on carrier.desicion_making they pick them as the receiver
+ or if a defender chooses to defenderai.intercept
+ a player knows the the specs of ball.pass and will attempt to be there in time to catch
+ a player will turn and catch ball facing it (not passes will be aimed slighlty ahead so a good pass will not make them slow down) (within .75pi of them)
+
+there ability to catch is determiend by 
+
+space = |ball.x - player.x|
+if space < .5
+    catch_success = 0. 5 + norm(handling)-skill.modifiers
+else catch_success =  0.3 + 0.9 (norm(handling)*norm(technique)
+ 
+ if catch_success > random
+    return catch
+
+catch_error = random - catch_success
+
+if catch_error < .2
+    ball_juggle(player)
+
+else knock-on state
+
+
+ball juggle is a non-chosen game action state for the player
+
+kicking logic
+1. in-play kicking
+2. punting penalties/ free kicks
+3. goal kicking
+4. drop goals
+1. in play kicking
+kicking range = = 28.0 + 44.0 * norm(kicking_power)
+kick_success =  0.1 + 0.9 * ((1.0 - (distance/range)**2)*( 1.0 + 1.0 * kicking-skill.modifiers))
+
+2. 
+
+distance = hypoetenuse (player,target)
+kicking range = = 28.0 + 44.0 * norm(kicking_power)
+kick_success =  0.1 + 0.9 * ((1.0 - (distance/range)*( 1.0 + 1.0 * kicking-skill.modifiers))
+
+3. kicking range = = 25.0 + 50.0 * norm(kicking_power)
+kick_success =  0.1 + 0.9 * ((1.0 - (distance/range)*( 1.0 + 1.0 *(goalkicking-skill.modifiers))
+
+4. kicking range = = 15.0 + 45.0 * norm(kicking_power)
+
+kick_success =  0.1 + 0.9 * ((1.0 - (distance/range)*( 1.0 + 1.0 *(goalkicking*kicking_power)-skill.modifiers))
+
+ok to note about kicking variance also effects bot x and y axis of kicks- tehy will always have the right trajectory so z is taken care of by arcs
+
+if kick_success >= random
+    return kickball(location,target)
+
+else 
+    kick_error = random - kick_success
+ if error % 2 =0 
+        error = -error
+    misplaced= (error*distance)
+
+    if |error| < .2 
+    target(x,y,z) = target(x,y+misplaced,z) # z is always 0 as it is wehre the ball will land 
+    retrun kickball(target)
+
+if .2 <= |error| <= .75 
+    target(x,y,z) = target(x+misplaced,y+misplaced,z) # z is always 0 as it is wehre the ball will land 
+    retrun kickball(target)
+
+if error > .75
+    slice(location) # slice is a functio and kcik type where x,y co-ordinate is randomised in range/3 and arc type is  >85 degrees 
+
+kick profiles (new)
+    spiral max range (+20%) , speed = +15% , (skill.modifiers)x2 has a midrange arc of about 45 degrees
+    grubber arc of -1 degrees - this will effect everything else as bounce logic takes over
+    bomb max range -50 % speed -30% , arc is about 70 degrees
+    normal / small one is chip so smae. logic 60 degree arc rest normal
+
+    kick_speed  = 20.0 + 18.0 * norm(kicking_power)   #used for all then changed based on type
+
+Set Piece 
+assume all attributes are normed
+Scrum - stage based 1. Crouch - 2. Bind, 3. Set,4. feed,  5.drive, 6. stable 
+its a battle to get the other team to get to greater than |1|
+Feeding_team are + and opposing tive team are - 
+if score > 1 feeding_team get a pen & <-1 the opposite 
+ALL number vars here are rns etc rn-2 = hooker 
+assume all stages involves score = a-b but a and b are computed the same for bit teams unless specified
+1.   score = (rn-2(leadership)**2)*(rn-1(scrum)+rn-3(scrum))/3
+2. score =+  rn-1(scrum*strength)*rn-3(scrum*strength)
+3 score =+ (pack_weight/1000)*(rn-1(scrum)+rn-3(scrum))random #random is for the look of the draw at scrum0time
+# in addition to making a score a lock_out can occur on set and the ball wil go right to the back and the scrum will end 
+#This is reduce a spamming of pens for a dominant Scrum
+if random > 0.5
+    lock_out
+#team tactics  ai will know if it wanst to scrum or not
+    if to go channel 1, mixed or leave in until told to use from tactics
+4 if tactic = channel 1 will receive own ball out as long as score  > -.75 else they wilkl have to scrum
+    if tactic = mixed if score > 0.5 they will scrum if <-.75 they will have to scrum else they will take it out 
+ if leave in will only take out if less score -.25>score>-.75 else will scrum
+
+ # 5 drive this is where second rows come in 
+ score =+ ((rn-3(scrum*strength*aggression)+rn-1(scrum*strength*aggression)+rn-2(scrum*strength*aggression)/2 + rn-4(determination*strength)+ (rn-5(determination*strength)*1.5)) /5
+ after every drive insatnce the checker from feed will run.Note only teh attacking team can end a scrum
+
+ once the feeding team is satisfied about the scrum it becomes stable waiting for the 9 tp pass or 8 to pick 
+
+while scrum is in stable (once per scrum)
+    opposing team can counter_shuv 
+        this is opposing props who will try to force  into scruming
+feeding_scrum= rn-1(strength*weight/150)* rn-3(strength*weight/150)
+opposing_scrum= rn-3(aggression*scrum/150)* rn-3(aggression*scrum/150)
+score =+ score = feeding_scrum*(random**1/3)- opposing_scrum(random**1/3)
+
+lineout 
+# 3 components the throw, the linout and the lift, the catch/contest
+#assume norm
+x for loaction thorw is back_ (lifter.height/2)+(jumper.height*1.375)-.1 
+# assumed all hookers can hit all areas but harder to hit back 
+distance is where the catcher will be whether lifted or not  
+throw_success = (distance/25)*dart
+if success > random
+    return throw(location)
+
+
+else 
+    throw_error = random - throw_success
+ if error % 2 =0 
+        error = -error
+    misplaced= ((1+error)**2-1)
+
+    if |error| < .2 
+    target(x,y,z) = target(x,y,z+misplaced) # z is always 0 as it is wehre the ball will land 
+    retrun throw(target)
+
+if .2 <= |error| <= .75 
+    target(x,y,z) = target(x+misplaced,y ,z+misplaced) # z is always 0 as it is wehre the ball will land 
+    retrun thorw(target)
+    #risk of crroked throw if others contest
+
+linout itselft 
+#competition between attacker and defender to find space
+desicions and leadership of caller determine call - done later
+# phase 0 simple in and out
+score # same as scrum
+attacking_lineout = back-lifter(teamwork)*frontlifter(teamwork)*jumper(lineout)**2
+defending_lineout = back-lifter(teamwork*concentration)*frontlifter(teamwork*concentartion)*jumper(lineout)**2 
+score = attacking_lineout(random**1/3)-defending_lineout(random**1/3)
+
+fpr adavance beyond that loop is done at the above score loop is done at the end of 
+for phases of linout 
+    attacking_lineout= lineout(teamwork*concentration)**1/3
+    defending_lineout= lineout(teamwork*concentration)**1/3
+    score = attacking_lineout(random**1/3)-defending_lineout(random**1/3)
+attacking_lineout = back-lifter(teamwork)*frontlifter(teamwork)*jumper(lineout)**2
+defending_lineout = back-lifter(teamwork*concentration)*frontlifter(teamwork*concentartion)*jumper(lineout)**2 
+score = attacking_lineout(random**1/3)-defending_lineout(random**1/3)
+
+edge = score **2
+if (score > 0) 
+defending team lifting_pod, loctaion (x,y,z-edge)
+else 
+attacking team lifing_pod loaction(x,y,z-edge)
+
+lifting_pod uses simple formula - liftedjump=back_(lifter.height/2)+(jumper.height*1.375)
+#however they can sometimes miss their lift and jumper
+#before this called linout_timings is called
+attacking_timings= backlifterlifter(strength) * jumper(lineouts) 
+defending_timings= backlifter(strength*concentration)* jumper(lineouts*anticpation)
+if attacking_timings > random **1/3
+    continue
+if defebding_timings > random**1/3
+    continue
+
+# linout calls _ a good caller can read what the oppsooition are bout to do and beat them
+# as well as picking the actual call that suits the match_up there call pick can stump the opposition
+call_pick = anticipation*leadership*(lineouts**2)
+if call_pick > random
+    no contest
+    #as long as the throw is in the catch zone they will win the ball
+
+
+maul
+
+ruck
+
+evasion
+
+tackle
+
+scoring
+
+offloading
+
+skill-modifiers
+
+scramble
+
+phase-play attack
+
+phase-play defend
+

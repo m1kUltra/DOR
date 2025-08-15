@@ -36,8 +36,10 @@ class LineoutState(BaseState):
         self._lo_meta = lo.get("meta", {})
 
         # Defense mirrors / 10m rule etc.
-        def_team = 'b' if self.throw_to == 'a' else 'a'
-        def_targets = place_defensive_setpiece(def_team, {"type": "lineout", "mark": mark_xy, **self.call}, match)
+       
+        # after
+        def_team_obj = match.team_b if self.throw_to == 'a' else match.team_a
+        def_targets = place_defensive_setpiece(def_team_obj, {"type": "lineout", "mark": mark_xy, **self.call}, match)
 
         for p, tgt in {**atk_targets, **def_targets}.items():
             p.current_action = p.current_action or "shape"

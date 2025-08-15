@@ -59,3 +59,10 @@ def log_law(tick, event: str, meta: dict, match=None):
         "event": event,
         "meta": meta or {}
     }}))
+
+
+def log_kick(info: dict):
+    try:
+        print("[KICK]", info)
+    except Exception:
+        pass

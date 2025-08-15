@@ -24,6 +24,7 @@ class Player:
             "in_ruck_radius": False,
             "entered_from_gate": False,
         }
+        self.orientation_deg = None
     def update_location(self, new_location):
         """Update the 3D position of the player."""
         self.location = new_location

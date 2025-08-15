@@ -1,3 +1,6 @@
+from utils.scoring import attempt_conversion
+from constants import KICKOFF_SPREAD_GAP_Y
+from utils.kick_profiles import compute_kick_velocity
 # matchEngine/states/restart.py
 
 from states.base_state import BaseState
@@ -39,3 +42,9 @@ class RestartState(BaseState):
             from states.open_play import OpenPlayState
             return OpenPlayState()
         return None
+
+    def on_enter(self, match):
+        self._phase6_ticks = 0
+        kind = getattr(match, "pending_restart", None)
+        self._phase5_ticks = 0
+        self._phase5_kind = kind
