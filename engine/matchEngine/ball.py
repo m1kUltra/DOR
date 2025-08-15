@@ -131,3 +131,14 @@ def _phase6_mark_bounce(match):
     lk = getattr(match, "last_kick", None)
     if lk and not lk.get("bounced", False):
         lk["bounced"] = True
+
+"""I think this needs a change
+first it needs to be in contact with a new state contoller. 
+Big picture (thinks is the only think it is concerned with) in play, in touch, touch in goal
+additionally it would be sensible to track the balls location for scoring and have drop_kicked kicked_conversion kicked_drop_goal kicked_penalty
+and punted_penalty kicked_normal 
+I think tracking the ball is sensible for all states considering we use it count holders 
+the ball should be the main interactor with scoring and states  as everything else is player relative
+at gaps before a state change (aside from rucks and mauls ball is idle)
+
+"""

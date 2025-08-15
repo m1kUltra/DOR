@@ -6,7 +6,7 @@ def log_tick(tick_count, match):
         dir_b = match.team_b.tactics.get("attack_dir")
         print(f"   dirs A/B: {dir_a}/{dir_b} | holder {holder.sn}{holder.team_code} at {holder.location}")
     for player in match.players:
-        print(f"  - {player.sn}{player.team_code} ({player.name}): {player.current_action or 'idle'} at {player.location}")
+        print(f"  - {player.sn}{player.team_code} ({player.name}): {player.current_action or 'idle'} at {player.location},")
 
 
 # ---- NEW: focused loggers ----
@@ -66,3 +66,29 @@ def log_kick(info: dict):
         print("[KICK]", info)
     except Exception:
         pass
+
+def serialize_tick(match):
+    return {
+        "tick": match.tick_count,
+        "time": match.match_time,
+        "scoreboard": match.scoreboard,
+        "ball": {
+            "location": match.ball.location,
+            "holder": match.ball.holder
+        },
+        "players": [
+            {
+                "name": p.name,
+                "sn": p.sn,
+                "rn": p.rn,
+                "team_code": p.team_code,
+                "action": p.current_action,
+                "location": p.location,
+                "orientation": p.orientation_deg
+            }
+            for p in match.players
+        ],
+        "state": match.current_state.name,
+        "period": match.period,
+        "advantage": match.advantage
+    }

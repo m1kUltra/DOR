@@ -40,12 +40,3 @@ def compute_catch_window(ball, t_now, dt):
         "valid_from": valid_from,
         "valid_to": valid_to
     }
-
-"""
-jumping reach is attribute + height (anything above height/.375 is in catch zone difficulty of catch zone. )
-catch zone laterally is done the same but 1m + height/.375 is there catch radius
-this is the max catch zone and the further away a ball is from body the harder the catch (not normalised to factor in that shorter players are generally more co-ordinated and used to catching further away balls)
-standing_jump_m = 0.20 + 0.40 * norm(jumping_reach)
-running_jump_m = (0.20 + 0.40 * norm(jumping_reach)) + 0.12 * norm(acceleration)
-liftedjump=back_(lifter.height/2)+(jumper.height*1.375)
-"""

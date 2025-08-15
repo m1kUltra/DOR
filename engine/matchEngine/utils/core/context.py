@@ -92,3 +92,6 @@ def build_context(match) -> Dict:
         "_tick": match.tick_count,
         "_match": match,
     }
+def update_prev_player_positions(match):
+    for p in match.players:
+        p._prev_xy = (p.location[0], p.location[1])

@@ -1,0 +1,58 @@
+Ideal Flow
+
+setup  - initilises everything belives works as inetnded
+Directory structure:
+└── matchEngine/
+    ├── __init__.py
+    ├── ball.py
+    ├── constants.py
+    ├── match.py
+    ├── pitch.py
+    ├── player.py
+    ├── setup.py #initilises everything belives works as inetnded
+    ├── team.py
+    ├── actions/
+    │   ├── __init__.py
+    │   ├── catch.py
+    │   ├── enter_contact.py
+    │   ├── kick.py
+    │   ├── pass_action.py
+    │   └── run.py
+    ├── states/
+    │   ├── __init__.py
+    │   ├── base_state.py
+    │   ├── lineout.py
+    │   ├── maul.py
+    │   ├── open_play.py
+    │   ├── restart.py
+    │   ├── ruck.py
+    │   └── scrum.py
+    └── utils/
+        ├── __init__.py
+        ├── advantage.py
+        ├── catch_windows.py
+        ├── collision.py
+        ├── context.py
+        ├── db_loader.py
+        ├── decision_engine.py
+        ├── formations.py
+        ├── kick_profiles.py
+        ├── laws.py
+        ├── logger.py
+        ├── mods.py
+        ├── orientation.py
+        ├── position_utils.py
+        ├── restarts.py
+        ├── rng.py
+        ├── ruck_utils.py
+        ├── scale.py
+        ├── scoring.py
+        ├── spacing.py
+        ├── attackAI/
+        │   ├── __init__.py
+        │   ├── helpers.py
+        │   └── offense.py
+        └── defenceAI/
+            ├── __init__.py
+            ├── defence.py
+            └── helpers.py

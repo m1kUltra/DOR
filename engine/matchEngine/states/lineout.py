@@ -2,7 +2,7 @@
 
 from states.base_state import BaseState
 from constants import TOUCHLINE_BOTTOM_Y, TOUCHLINE_TOP_Y
-from utils.formations import (
+from utils.positioning.mental.formations import (
     get_lineout_formation,
     place_defensive_setpiece,
     get_maul_ring,
@@ -91,3 +91,7 @@ class LineoutState(BaseState):
             from states.open_play import OpenPlayState
             return OpenPlayState()
         return None
+ 
+
+
+     """cant lie just going to have 5man and 6man for now will expand later"""
