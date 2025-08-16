@@ -48,3 +48,9 @@ class RestartState(BaseState):
         kind = getattr(match, "pending_restart", None)
         self._phase5_ticks = 0
         self._phase5_kind = kind
+
+
+"""
+restart has 3 subsatuses they all avct the same functionally but take place at different loactions
+kick_off , 22, goal_line
+"""

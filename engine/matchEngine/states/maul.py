@@ -53,3 +53,6 @@ class MaulState(BaseState):
             from states.open_play import OpenPlayState
             return OpenPlayState()
         return None
+
+
+"""2 types choke_tackle, rolling_maul"""

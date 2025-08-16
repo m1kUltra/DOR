@@ -70,3 +70,24 @@ class BaseState:
 
     def check_transition(self, match):
         return None
+"""will just house the desicion tree loop I am guessing now run by the states 
+Basically we will just take last 2 status' from controller 
+check the matrix for a match 
+extract the modifiers from that substate 
+run the decision trees from there 
+execute the actions
+update location targets 
+trigger_movement
+end of loop
+redo 60 times a second for smoothness
+"""
+
+"""status is determined by the ball mainly// could be its own py file for completeness
+each action or event(new) has its own status tag and the player and the location of event
+thus comparing it will allow us to determine what should happen next"""
+
+"""events are concept in order to remove the blackhole caused by using a ball based fsm. essentially reducing the need for states to 
+need to trigger each other or ever interact with each other as that is messy
+try event penalty_given scrum-called etc
+these are essentially anything done by a referee blowing there whistle and saves the ball having to worry 
+about adavantage etc as that is handled by other modules"""

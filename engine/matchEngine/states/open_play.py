@@ -105,3 +105,14 @@ class OpenPlayState(BaseState):
             from states.ruck import RuckState
             return RuckState()
         return None
+
+
+"""open play has a few subsections that transition between eachother freely
+1. launch_play occurs after scrum_linout and rolling_maul
+2. phase_play occurs after a ruck- most common type
+3. kick_return occurs after ball_last status was caught and the other team kicked it (need to store who kicked it, location_of_kick)
+4. turnover- occurs after interception,non-ruck or scamble 
+5. line break- occurs when the ball is held and ahead of min (11) of the opposing team
+
+all of these overwrite eachotrher and can be overwritten by other states
+"""
