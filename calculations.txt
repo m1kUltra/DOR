@@ -317,7 +317,10 @@ successful_evasion()
     ball_holder_target_position (x, y+evasion_direction),0
     locked_tackler_target_position((x, y-evasion_direction),0)
         #as well as putting the attacker portntianlyy out of tackle range it puts the defender in the "stepped" state and less likely to make a succesful tackle
+enter_contact action
 
+called by ball_holder_descions
+    safe option disbales ability to pass or offload until a tackled is over player taget location is the opposing tryline and if Target_loaction -2  is reached they will try to score
 tackle
 if ball.holder in tackle_radius of defender.locker trigger tackle()
 #simple here but we will expand to different tackl types after. a point
@@ -481,6 +484,7 @@ if defender is withing <5m
 evasion v carry desision tree 
 
 aside from carry all enter a vulnerable state for one second before and one second after completion of action
+
 
 
 

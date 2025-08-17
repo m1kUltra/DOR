@@ -1,3 +1,9 @@
+# utils/core/logger.py
+import json
+
+def _pcode(player) -> str:
+    return f"{player.sn}{player.team_code}"
+
 def log_tick(tick_count, match):
     print(f"[TICK {tick_count}] Ball: {match.ball.location} held by {match.ball.holder or 'None'}")
     if match.ball.holder:
@@ -8,64 +14,28 @@ def log_tick(tick_count, match):
     for player in match.players:
         print(f"  - {player.sn}{player.team_code} ({player.name}): {player.current_action or 'idle'} at {player.location},")
 
-
-# ---- NEW: focused loggers ----
-
-import json
-
-def _pcode(player) -> str:
-    return f"{player.sn}{player.team_code}"
-
-def log_decision(tick, player, choice: str, scores: dict | None = None, state_name: str | None = None):
-    """
-    Minimal, cheap decision log. Only pass `scores` if the caller’s DEBUG flag says so.
-    """
-    payload = {
-        "t": tick,
-        "p": _pcode(player),
-        "state": state_name or "",
-        "choice": choice,
-    }
-    if scores is not None:
-        payload["scores"] = scores
-    print(json.dumps({"decision": payload}))
-
-
 def log_routing(tick, match, consumed_flag: str, meta: dict):
-    """
-    E.g., consumed_flag="pending_scrum", meta={"x":..,"y":..,"put_in":"a"}
-    """
-    # cheap guard
     dbg = getattr(match, "debug", {})
     if not dbg.get("routing", False):
         return
-    print(json.dumps({"routing": {
-        "t": tick,
-        "flag": consumed_flag,
-        "meta": meta or {}
-    }}))
+    print(json.dumps({"routing": {"t": tick, "flag": consumed_flag, "meta": meta or {}}}))
 
-
-def log_law(tick, event: str, meta: dict, match=None):
-    """
-    E.g., event="forward_pass", meta={"passer":"9a","receiver":"12a","mark":[x,y]}
-    """
-    # cheap guard
-    dbg = getattr(match, "debug", {}) if match is not None else {}
-    if match is not None and not dbg.get("laws", False):
-        return
-    print(json.dumps({"law": {
-        "t": tick,
-        "event": event,
-        "meta": meta or {}
-    }}))
-
-
-def log_kick(info: dict):
+# ---- NEW: state tag resolver that works with BaseState(controller) or legacy ----
+def _state_tag(match):
+    # Prefer BaseState-style engines: match.engine or match.state with .controller.status
     try:
-        print("[KICK]", info)
+        eng = getattr(match, "engine", None) or getattr(match, "state", None)
+        ctrl = getattr(eng, "controller", None)
+        status = getattr(ctrl, "status", None)
+        if isinstance(status, (list, tuple)) and len(status) >= 1:
+            return status[0]
     except Exception:
         pass
+    # Fallback to legacy current_state.name if present
+    cs = getattr(match, "current_state", None)
+    if cs is not None and hasattr(cs, "name"):
+        return cs.name
+    return None
 
 def serialize_tick(match):
     return {
@@ -74,7 +44,7 @@ def serialize_tick(match):
         "scoreboard": match.scoreboard,
         "ball": {
             "location": match.ball.location,
-            "holder": match.ball.holder
+            "holder": match.ball.holder,
         },
         "players": [
             {
@@ -84,11 +54,18 @@ def serialize_tick(match):
                 "team_code": p.team_code,
                 "action": p.current_action,
                 "location": p.location,
-                "orientation": p.orientation_deg
+                "orientation": p.orientation_deg,
             }
             for p in match.players
         ],
-        "state": match.current_state.name,
+        "state": _state_tag(match),
         "period": match.period,
-        "advantage": match.advantage
+        # keep if you still populate it elsewhere; harmless if None
+        "advantage": getattr(match, "advantage", None),
     }
+
+# ---- NEW: one-liner to print JSON without duplicating logic in Match ----
+def dump_tick_json(match, *, flush: bool = True):
+    blob = serialize_tick(match)
+    print(json.dumps(blob), flush=flush)
+    return blob

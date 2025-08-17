@@ -5,7 +5,7 @@ from team import Team
 from ball import Ball
 from pitch import Pitch
 
-from utils.db_loader import load_team_from_db  # Move load_team_from_db to utils/db_loader.py
+from utils.db.db_loader import load_team_from_db  # Move load_team_from_db to utils/db_loader.py
 
 def setup_match(db_path, team_a_id, team_b_id):
     # Load raw player dicts (sn, rn, attributes, etc.) from DB

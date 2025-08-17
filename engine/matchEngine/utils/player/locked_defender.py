@@ -1,55 +1,64 @@
-# matchEngine/utils/locked_defender.py
+# matchEngine/utils/player/locked_defender.py
 
-def set_locked_defender(match):
+from typing import Optional
+from states.open_play import OPEN_PLAY_TAGS
+
+def _dist2(a_xy, b_xy) -> float:
+    ax, ay = a_xy[0], a_xy[1]
+    bx, by = b_xy[0], b_xy[1]
+    dx, dy = ax - bx, ay - by
+    return dx*dx + dy*dy
+
+def _set_flag_all(match, flag: str, value: bool) -> None:
+    for p in match.players:
+        p.state_flags[flag] = value
+
+def update(match, state_tag: Optional[str]) -> Optional[str]:
     """
-    Find the nearest opponent to ball.holder and mark them as the locked defender.
-    - Sets state_flags["locked_defender"] = True on that defender (False for others on that team)
-    - Stores match.locked_defender = "<sn><team_code>" for quick reference
-    - Returns the Player object, or None if no holder / no opponent found
+    During open play, tag the nearest opposing player to the holder as 'locked_defender'.
+    Clears the flag elsewhere.
+
+    Returns the player_id (e.g., '7b') of the locked defender, or None.
     """
-    holder_id = getattr(match.ball, "holder", None)  # e.g. "10a"
-    if not holder_id or len(holder_id) < 2:
+    # ensure the flag exists on all players
+    for p in match.players:
+        if "locked_defender" not in p.state_flags:
+            p.state_flags["locked_defender"] = False
+
+    # only active in open play
+    if not (isinstance(state_tag, str) and state_tag in OPEN_PLAY_TAGS):
+        _set_flag_all(match, "locked_defender", False)
         return None
 
-    holder_sn = str(holder_id[:-1])
-    holder_team_code = holder_id[-1]
+    holder_id = getattr(match.ball, "holder", None)
+    if not holder_id:
+        _set_flag_all(match, "locked_defender", False)
+        return None
 
-    # teams
-    atk_team = match.team_a if holder_team_code == "a" else match.team_b
-    def_team = match.team_b if holder_team_code == "a" else match.team_a
-
-    # holder player
-    holder = atk_team.get_player_by_sn(holder_sn)
+    holder = match.get_player_by_code(holder_id)
     if holder is None:
-        # last-gasp scan if sn types differ
-        for p in atk_team.squad:
-            if str(p.sn) == holder_sn:
-                holder = p
-                break
-    if holder is None or not def_team.squad:
+        _set_flag_all(match, "locked_defender", False)
         return None
 
-    hx, hy, _ = holder.location
+    holder_xy = (holder.location[0], holder.location[1])
+    opp_code = "b" if holder.team_code == "a" else "a"
 
-    # clear existing flags on defenders
-    for d in def_team.squad:
-        if hasattr(d, "state_flags"):
-            d.state_flags["locked_defender"] = False
+    # find nearest opponent
+    nearest = None
+    best_d2 = float("inf")
+    for p in match.players:
+        if p.team_code != opp_code:
+            continue
+        d2 = _dist2(holder_xy, (p.location[0], p.location[1]))
+        if d2 < best_d2:
+            best_d2 = d2
+            nearest = p
 
-    # nearest by 2D distance
-    def _d2(p):
-        x, y, _ = p.location
-        dx, dy = x - hx, y - hy
-        return dx*dx + dy*dy
+    # clear all, then set the one
+    _set_flag_all(match, "locked_defender", False)
 
-    nearest = min(def_team.squad, key=_d2)
-    if hasattr(nearest, "state_flags"):
-        nearest.state_flags["locked_defender"] = True
+    if nearest is None:
+        return None
 
-    try:
-        match.locked_defender = f"{nearest.sn}{nearest.team_code}"
-    except Exception:
-        pass
-
-    return nearest
- 
+    nearest.state_flags["locked_defender"] = True
+    return f"{nearest.sn}{nearest.team_code}"

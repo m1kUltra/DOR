@@ -7,8 +7,8 @@ Action = Tuple[str, Optional[str]]         # ("pass","flat"), ("kick","bomb"), (
 DoCall = Tuple[str, Action, XYZ, XYZ]      # (player_id, action, location, target)
 
 # these modules do the real work (kept separate on purpose)
-from .roles import resolve_actor            # resolve_actor(match, state_tuple) -> str (player_id like "10a")
-from .choices import choose_for_state       # choose_for_state(match, player_id, state_tuple) -> (Action, XYZ)
+      # resolve_actor(match, state_tuple) -> str (player_id like "10a")
+     # choose_for_state(match, player_id, state_tuple) -> (Action, XYZ)
 
 def choose(match, state_tuple) -> Optional[DoCall]:
     """

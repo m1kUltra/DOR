@@ -1,6 +1,6 @@
 import sqlite3
 import json
-
+from utils.player.normalise_player import normalise_attrs
 def load_team_from_db(db_path, nation_team_id):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -70,7 +70,7 @@ def load_team_from_db(db_path, nation_team_id):
             "current_ability": pdata["current_ability"],
             "height": pdata["height"],
             "weight": pdata["weight"],
-            "attributes": pdata["attributes"]
+            "attributes": normalise_attrs(pdata["attributes"])
         })
 
     return team_name, players
