@@ -1,7 +1,7 @@
 # states/controller.py
 from typing import Dict, Tuple, Optional
-from matchEngine import events
-from ActionMatrix import ACTION_MATRIX  # keep your import as-is
+import event 
+from states.ActionMatrix import ACTION_MATRIX  # keep your import as-is
 
 WILDCARD = "_"            # <- underscore means "any last_action"
 
@@ -20,11 +20,11 @@ class StateController:
         self._status_check()
 
     def _event_check(self) -> bool:
-        evt = events.get_event()
+        evt = event.get_event()
         if not evt:
             return False
         self.status = evt
-        events.clear_event()
+        event.clear_event()
         return True
 
     def _status_check(self) -> None:

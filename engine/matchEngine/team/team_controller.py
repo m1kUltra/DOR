@@ -1,6 +1,6 @@
 # matchEngine/team_controller.py
 from typing import Callable, Iterable
-from team.tactics import build_default
+from tactics import build_default
 
 def iterate_both(match) -> Iterable:
     """Yield both teams in a stable order: A then B."""

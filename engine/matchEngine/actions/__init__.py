@@ -1,17 +1,18 @@
 # matchEngine/actions/__init__.py
 
-from actions.pass_action import perform as do_pass
-from actions.kick import perform as do_kick
-from actions.enter_contact import perform as do_enter_contact
-from actions.catch import perform as do_catch
-
+from actions.pass_action import do_action as do_pass
+from actions.kick import do_action as do_kick
+#from actions.enter_contact import do_action as do_enter_contact
+from actions.catch import do_action as do_catch
+from actions.movement import do_action as do_move
 # We intentionally DO NOT auto-call "run" here — movement is handled by BaseState
 
 DISPATCHABLE = {
     "pass": do_pass,
     "kick": do_kick,
-    "enter_contact": do_enter_contact,
+    #"enter_contact": do_enter_contact,
     "catch": do_catch,
+    "move": do_move
 }
 
 def dispatch(player, match):

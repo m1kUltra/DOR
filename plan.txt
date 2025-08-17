@@ -1,0 +1,108 @@
+matchEngine/
+└── matchEngine/
+    ├── __init__.py               # Package init, expose top-level engine
+    ├── ball.py                   # Ball object, holder/location/status, drives FSM phase when in_play throuygh status
+    ├── constants.py              # Global constants (EPS, pitch size, enums)
+    ├── event.py                  # Event detector only used for non_insatnt flags. to call back for scrums and penalties. very limited
+    ├── match.py                  # Main controller: generally pulls everything togethor match state is passed off to base_state needs overhaul to link correctly woth changes
+    ├── pitch.py                  # Pitch geometry, boundaries, in/out  
+    ├── player.py                 # Player model: attributes, location, orientation, needs status added e.g in0ruck off_feet etc
+    ├── setup.py                  # Bootstrap / initial game setup
+    │
+    ├── actions/
+    │   ├── __init__.py           # Export action API
+    │   ├── action_controller.py  # Dispatch FSM decisions to action modules takes input from choices and follows like a good boy
+    │   ├── catch.py              # Execute a catch, set ball.holder/status to caught available to all but ball_holder and locked_defender 
+    │   ├── enter_contact.py      # desicon made when within 5m of defender_locked add benefits later when attributes added currenlty should lock all other actions but run until tackle attempted 
+    │   ├── kick.py               # Execute kick, set trajectory via kick_profiles
+    │   ├── pass_action.py        # Execute pass, start linear transit to receiver
+    │   └── run.py                  #moved player at deafualt speed (for now to target position)
+        └── tackle_action.py      # only available to locked_defender  if ball_holder within tackle_radius trigger tackle_state 
+    │
+    ├── choice/
+    │   ├── choice_controller.py  # Central guard/selector logic for FSM transitions
+    │   ├── individual/
+    │   │   ├── ball_holder_choices.py   # picks next action for current ball carrier
+    │   │   └── locked_defender_choices.py # picked next action for current locked_defender 
+            └── general_choices.py # see if you can catch_the ball then enact catch else  move to target_loaction
+    │   └── team/
+    │       ├── attack_choices.py # Team-level attacking options & priorities these determine player target loactions and nothing more 
+    │       └── defender_choices.py # Team-level defensive decisions these determine player target loactions and nothing more  
+    │
+    ├── images/
+    │   └── Rugby-union-pitch.png # Pitch reference image
+    │
+    ├── states/
+    │   ├── __init__.py           # State machine package init
+    │   ├── ActionMatrix.py       # Transition lookup table for FSM
+    │   ├── base_state.py         # base class for states the daddy of evrything but still ball and events little bitch
+    │   ├── controller.py         # FSM controller: applies ActionMatrix determines next state generally
+    │   ├── lineout.py            # Lineout state logic all other states but open_play are just flags buitw will require exapansion and their own choice trees later
+    │   ├── maul.py               # Maul state logic
+    │   ├── nudge.py              # Nudge/penalty options handling
+    │   ├── open_play.py          # Open-play state logic a flag_sate and will staay a flag state 
+    │   ├── restart.py            # Restart (kick-off/22-drop) state logic
+    │   ├── ruck.py               # Ruck state logic
+    │   ├── scoring.py            # Try/goal scoring state logic when ball.is grounded we check by who and where to see if its a try or a 22 or 5m scrum
+    │   ├── scrum.py              # Scrum state logic 
+    │   └── tackle.py             # Tackle state logic 
+    │
+    ├── team/
+    │   ├── __init__.py           # Team subpackage init
+    │   ├── instructions.py       # individual instructions for players instructions interface
+    │   ├── roles.py              # Define/resolve roles for set piece kicker and captain
+    │   ├── tactics.py            # Team-level tactics definitions 
+    │   ├── team.py               # Team class wrapper
+    │   └── team_controller.py    # High-level team AI controller 
+    │
+matchEngine/utils/
+├── __init__.py                         # Utility package init
+
+├── core/
+│   ├── __init__.py                     # Core helpers init
+│   ├── clock.py                        # Time/clock helper (counts in-game clock)
+│   ├── context.py                      # Per-tick snapshot context for decision layers #honestly no clue if this is necessary anymore 
+│   ├── logger.py                       # Minimal decision logger (debug-friendly) preps the json for frontend 
+│   ├── rng.py                          # Deterministic RNG seeded by inputs # useful for test but not for live
+│   └── scoreboard.py                   #  scoreboard updates just counts scores
+
+├── laws/
+│   ├── __init__.py                     # Laws helpers init
+│   ├── advantage.py                    # Start/manage advantage overlay when conditions met
+│   └── laws.py                         # Law checks incl. 50:22 based on last kick + touch works with picth and can be referenced by states and actions for infirngements. could be modularised later 
+
+├── positioning/
+│   ├── mental/
+│   │   ├── __init__.py                 # Mental positioning init
+│   │   ├── formations.py               # Compress/shape formations near touchlines safely
+│   │   ├── position_utils.py           # Clamp Y inside touchlines; margins/limits helpers
+│   │   └── spacing.py                  # Spacing utilities (delegates to utils/spacing logic)
+│   └── movement/
+│       └── orientation.py              # Normalize/wrap angles to [0,360)
+
+├── ai/
+│   ├── defenceAI/
+│   │   ├── __init__.py                 # Defence AI init
+│   │   └── defence.py                  # Defensive AI logic (keeper for structure; minimal header)
+│   └── attackAI/
+│       ├── __init__.py                 # Attack AI init
+│       ├── helpers.py                  # Offense helpers (unit forward ray, attack dir handling)
+│       └── offense.py                  # Attacking AI logic (module-level runner)
+
+├── actions/
+│   ├── __init__.py                     # Action utils init these actions utils do the heavy lifting maths for the actions folder iin main
+│   ├── catch_windows.py                # Compute catch/intercept timing windows if ball in air 
+│   ├── kick_profiles.py                # Kick subtype → flight parameter profiles for each kick action
+│   ├── ruck_utils.py                   # Ruck/maul helper routines (contest mechanics) 
+│   └── scoring.py                  
+└                  
+├── db/
+│   ├── __init__.py                     # DB helpers init
+│   └── db_loader.py                    # Load team metadata and squad JSON blobs
+
+└── player/
+    └── locked_defender.py              # Find nearest opponent to holder as locked 
+
+    ├── __init__.py      # Probabilities helpers init
+├── mods.py          # helper to normalise attributes -1,1
+└── scale.py            #normalises the outcome of an attributes sum back to -1,1 after computations of an action

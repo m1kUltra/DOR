@@ -1,7 +1,7 @@
 # matchEngine/team.py
 # matchEngine/team.py
 from typing import List, Optional
-from matchEngine.team import build_default, DEFAULT_ROLES
+from team import build_default, DEFAULT_ROLES
 
 class Team:
     def __init__(self, name: str, squad: Optional[List] = None,

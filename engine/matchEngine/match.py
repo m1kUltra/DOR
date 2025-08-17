@@ -5,14 +5,14 @@ from setup import setup_match
 from states.base_state import BaseState
 
 # utils (per your tree)
-from utils.core.logger import log_tick, log_routing, log_law
+from utils.core.logger import log_tick , dump_tick_json
 
 
       # detect_* live here
       # award_try etc.
 
 # whistle layer (non-instant flags → next state)
-from . import event as events
+
 
 
 class Match:
@@ -63,19 +63,27 @@ class Match:
 
         # 
 
+    # matchEngine/match.py
     def run(self, ticks=1000, realtime=True, speed=1.0):
         for _ in range(ticks):
             t0 = time.time()
-            self.state.tick()  
-            try:
-                dump_tick_json(self)
-            except Exception:
-                pass
+
+            # advance clocks here (don’t rely on BaseState to do it)
+            self.tick_count += 1
+            self.match_time += self.tick_rate
+            self.period["time"] += self.tick_rate
+
+            self.state.tick()
+            print(self.state)
+            # emit JSON to STDOUT — no bare except swallowing errors
+            dump_tick_json(self)
+
             if realtime:
                 budget = self.tick_rate / max(speed, 1e-6)
                 delay = budget - (time.time() - t0)
                 if delay > 0:
                     time.sleep(delay)
+
 
 
 

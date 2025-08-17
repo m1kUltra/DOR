@@ -27,7 +27,7 @@ def _to_float(v: Any) -> float:
     except Exception:
         return 0.0
 
-def normalize_attrs(raw: Dict[str, Any] | None,
+def normalise_attrs(raw: Dict[str, Any] | None,
                     clamp_1_20: bool = True,
                     defaults: Dict[str, float] = DEFAULT_ATTRS) -> Dict[str, float]:
     """

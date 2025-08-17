@@ -2,7 +2,7 @@
 from typing import Any, Optional, Tuple
 from . import pass_action
 from . import kick
-from . import run as run_mod
+from . import movement
 from . import catch
 from . import enter_contact
 
@@ -12,12 +12,12 @@ Action = Tuple[str, Optional[str]]  # ("section","subtype"), e.g. ("pass","flat"
 _SECTION_TO_MODULE = {
     "pass":    pass_action,
     "kick":    kick,
-    "run":     run_mod,
+    "run":     movement,
     "catch":   catch,
     "contact": enter_contact,
 }
 
-def do_action(match, player_id: str, action: Action, location: XYZ, target: XYZ) -> Any:
+def do_action(match, player_id, action, location, target):
     """
     Minimal router. Modules do the work.
     location: (x, y, z)

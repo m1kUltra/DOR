@@ -1,0 +1,72 @@
+Directory structure:
+└── matchEngine/
+    ├── __init__.py
+
+   
+    ├── player.py
+   
+    ├── actions/
+    │   ├── __init__.py
+    │   ├── action_controller.py
+    │   ├── catch.py
+    │   ├── enter_contact.py
+    │   ├── kick.py
+    │   ├── pass_action.py
+    │   └── run.py
+    ├── choice/
+    │   ├── choice_controller.py
+    │   ├── individual/
+    │   │   ├── ball_holder_choices.py
+    │   │   └── locked_defender_choices.py
+    │   └── team/
+    │       ├── attack_choices.py
+    │       └── defender_choices.py
+    ├── states/
+    │   ├── __init__.py
+    
+    │
+
+    │   ├── lineout.py #implement stages
+    │   ├── maul.py #implement stage
+    │   ├── nudge.py #implement stage inmplement init of running penealty_choices and then pick nudge lese exit to one of the other states
+    │   ├── open_play.py # justr flags for now will implement logic for changing between them based on ball.loaction
+    │  
+    │   ├── ruck.py # implementv stages 
+    │   ├── scoring.py #takes in grounded and sees if it s a try or soemthing else 
+    │   ├── scrum.py #implement stages 
+    │   └── tackle.py #preetty simple dont knwo if it needs anything else 
+ 
+└── utils/
+    ├── __init__.py
+    ├── actions/ # on bench for now
+    │   ├── __init__.py
+    │   ├── catch_windows.py 
+    │   ├── kick_profiles.py
+    │   ├── ruck_utils.py
+    │   └── scoring.py
+    ├── ai/ #probably axed 
+    │   ├── __init__.py
+    │   ├── attackAI/
+    │   │   ├── __init__.py
+    │   │   ├── helpers.py
+    │   │   └── offense.py
+    │   └── defenceAI/
+    │       ├── __init__.py
+    │       ├── defence.py
+    │       └── helpers.py
+    ├── core/ # not high priority
+    │   ├── __init__.py
+    │   ├── clock.py
+    │   ├── context.py
+    │   ├── logger.py
+    │   ├── rng.py
+    │   └── scoreboard.py
+    
+    ├── laws/
+    │   ├── __init__.py #no clue atm 
+    │   ├── advantage.py
+    │   └── laws.py 
+    ├── player/
+    │   └── locked_defender.py #if open_play needs to work very simply find ball carrier and take the opposing player nearest and lock them 
+    
+ 

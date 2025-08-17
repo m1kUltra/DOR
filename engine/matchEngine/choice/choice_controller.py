@@ -1,60 +1,82 @@
-# matchEngine/choice_controller.py
-from typing import List, Tuple, Optional, Any, Dict
+# matchEngine/choice/choice_controller.py
+from typing import List, Tuple, Optional
 
+# tuple types we pass around
 XYZ    = Tuple[float, float, float]
 Action = Tuple[str, Optional[str]]      # ("section","subtype")
 DoCall = Tuple[str, Action, XYZ, XYZ]   # (player_id, action, location, target)
 
-# All real logic lives elsewhere:
-from .tactics  import for_state
-from .roles    import resolve_role, team_candidates
-from .availability import is_up, replace_if_down
-from .choices  import choose_for_role, choose_team_instruction
+# state gate (we only act in open play + sub-tags)
+from states.open_play import OPEN_PLAY_TAGS
 
-def plan(match, state_tuple, tactics) -> List[DoCall]:
+# individual choices
+from .individual import ball_holder_choices as bh_choices
+from .individual import locked_defender_choices as ld_choices
+
+# team choices
+from .team.attack_choices import plan as attack_plan
+from .team.defender_choices import plan as defend_plan
+
+
+def _xyz(p) -> XYZ:
+    if p is None: return (0.0, 0.0, 0.0)
+    if isinstance(p, (list, tuple)):
+        if len(p) == 2: return (float(p[0]), float(p[1]), 0.0)
+        if len(p) >= 3: return (float(p[0]), float(p[1]), float(p[2]))
+    return (0.0, 0.0, 0.0)
+
+def _locked_defender_id(match) -> Optional[str]:
+    for p in match.players:
+        if p.state_flags.get("locked_defender", False):
+            return f"{p.sn}{p.team_code}"
+    return None
+
+def _holder_id(match) -> Optional[str]:
+    hid = getattr(match.ball, "holder", None)
+    return hid if isinstance(hid, str) and len(hid) >= 2 else None
+
+
+def select(match, state_tuple) -> List[DoCall]:
     """
-    Coordinating loop:
-      - read state+tactics
-      - run individual choices first (with availability + replacement)
-      - run team instructions for everyone else
-      - return [(player_id, action, location_xyz, target_xyz), ...]
-    Works for ANY state tag (events included). For non-in_play tags, the
-    role/choice modules decide who acts and what to do; we don't rely on holder.
+    Master choice router.
+      - If ball held: use ball-holder choices for that player (single DoCall)
+      - Else if a locked defender exists: use locked-defender choices (single DoCall)
+      - Else: combine team attack + defence plans (List[DoCall])
+
+    Returns: List[DoCall] compatible with action_controller.do_actions(...)
     """
-    tag, location, ctx = state_tuple
+    tag, loc, ctx = state_tuple
+    loc_xyz = _xyz(loc)
 
-    stx: Dict[str, Any]      = for_state(tactics, state_tuple) or {}
-    individuals: Dict[str, Any] = stx.get("individual", {})
-    team_cfg: Dict[str, Any]    = stx.get("team", {})
-    critical_roles               = stx.get("critical_roles", [])
+    # Only operate in open play tags; return empty list otherwise.
+    if not (isinstance(tag, str) and tag in OPEN_PLAY_TAGS):
+        return []
 
-    used: set[str] = set()
     calls: List[DoCall] = []
 
-    # 1) Individual roles (e.g., rn_9, rn_10)
-    for role_key, role_cfg in individuals.items():
-        pid = resolve_role(match, state_tuple, role_key)
-        pid = replace_if_down(match, state_tuple, pid, role_key, critical_roles, used)
-        if not pid or not is_up(match, pid, state_tuple):
-            continue
+    # 1) Ball-holder path
+    holder = _holder_id(match)
+    if holder:
+        action, target = bh_choices.choose(match, holder, state_tuple)
+        if action and target is not None:
+            ploc = match.get_player_by_code(holder).location
+            calls.append((holder, action, _xyz(ploc), _xyz(target)))
+        return calls
 
-        action, target = choose_for_role(match, pid, state_tuple, role_cfg)
-        if not action or target is None:
-            continue
+    # 2) Locked-defender path
+    ld = _locked_defender_id(match)
+    if ld:
+        action, target = ld_choices.choose(match, ld, state_tuple)
+        if action and target is not None:
+            ploc = match.get_player_by_code(ld).location
+            calls.append((ld, action, _xyz(ploc), _xyz(target)))
+        return calls
 
-        calls.append((pid, action, location, target))
-        used.add(pid)
+    # 3) Team plans (attack + defence) for everyone else
+    normalized = []
+    for pid, action, _l, t in [*(attack_plan(match, state_tuple) or []),
+                            *(defend_plan(match, state_tuple) or [])]:
+        ploc = match.get_player_by_code(pid).location
+        normalized.append((pid, action, _xyz(ploc), _xyz(t)))
+    return normalized
 
-    # 2) Team instructions (everyone else, subject to team_cfg)
-    for pid in team_candidates(match, state_tuple, exclude=list(used), cfg=team_cfg):
-        if not is_up(match, pid, state_tuple):
-            continue
-
-        action, target = choose_team_instruction(match, pid, state_tuple, team_cfg)
-        if not action or target is None:
-            continue
-
-        calls.append((pid, action, location, target))
-        used.add(pid)
-
-    return calls
