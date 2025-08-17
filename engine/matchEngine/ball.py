@@ -239,3 +239,10 @@ note status is only run if action != prev.action
 status wrap (action, holder, location)
 last_status (save previous action before overwrite)
 """
+"""add in idle status, does not tell controller.status but held locally"""
+"""
+the following are things that the ball.status can be
+caught , kicked , in_a_tackle, offloaded, dead, idle, in_touch, grounded, dropped
+
+
+"""

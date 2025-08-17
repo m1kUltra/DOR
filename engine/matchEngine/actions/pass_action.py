@@ -18,90 +18,34 @@ def _is_backward_pass(pass_dir: float, dx: float) -> bool:
         return dx <= EPS
     else:
         return dx >= -EPS
+# matchEngine/actions/pass_action.py
+from typing import Optional, Tuple
 
-def perform(player, match):
+XYZ = Tuple[float, float, float]
+
+def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, target: XYZ) -> bool:
     """
-    Choose a recipient on same team; ensure pass is not forward relative to team attack direction.
-    Deterministic outcome via match.rng. On errors, start advantage to opposition and log the law.
+    Pass does NOT change ball.status.
+    It only releases and starts a linear transit to target, with a subtype-specific speed.
     """
-    # Only the holder can pass
-    holder_code = f"{player.sn}{player.team_code}"
-    if match.ball.holder != holder_code:
-        return
+    ball = match.ball
+    if not ball.is_held():
+        return False
 
-    team = match.team_a if player.team_code == 'a' else match.team_b
-    mates = [p for p in match.players if p.team_code == player.team_code and p is not player]
+    speed = _speed_for(subtype)  # keep tiny; you can swap in attribute-based calc later
 
-    px, py, _ = player.location
-    attack_dir = _team_attack_dir(match, player.team_code)
+    # Do NOT call ball.set_action(...) for passes.
+    ball.release()
+    ball.start_linear_to(target, speed=speed)
+    return True
 
-    # pick nearest *eligible* recipient (lateral/back only), within 12m
-    best = None
-    best_d2 = None
-    for m in mates:
-        mx, my, _ = m.location
-        dx = mx - px
-        if not _is_backward_pass(attack_dir, dx):
-            continue  # forward: illegal
-        d2 = (mx - px) ** 2 + (my - py) ** 2
-        if d2 <= (12.0 ** 2):
-            if best is None or d2 < best_d2:
-                best, best_d2 = m, d2
 
-    if not best:
-        # No legal target: treat as handling error; release slightly behind and start advantage to opposition
-        behind = -0.5 if attack_dir > 0 else +0.5
-        match.ball.release()
-        match.ball.location = (px + behind, py, 0.0)
-        match.last_touch_team = player.team_code
-        to = 'b' if player.team_code == 'a' else 'a'
-        match.start_advantage("knock_on", to=to, start_x=px, start_y=py)
-        log_law(match.tick_count, "handling_error", {"passer": holder_code, "mark": [px, py]}, match=match)
-        return
-
-    # Pass success probability from attributes (deterministic roll via match.rng)
-    passer_skill = player.attributes.get('technical', {}).get('passing', 60)
-    catcher_skill = best.attributes.get('technical', {}).get('catching', 60)
-    pressure = 0  # hook up later from nearby defenders
-    base_success = 0.85 + (0.001 * (passer_skill + catcher_skill)) - (0.02 * pressure)
-    # clamp to [0.1, 0.98] so it’s never impossible/always certain
-    base_success = max(0.1, min(0.98, base_success))
-
-    # deterministic RNG key (stable across call order)
-    pkey = player.sn * 100 + best.sn
-    prob = match.rng.randf("pass_success", match.tick_count, key=pkey)
-
-    if prob < base_success:
-        match.ball.holder = f"{best.sn}{best.team_code}"
-        match.ball.location = best.location
-        match.last_touch_team = player.team_code
-        return
-
-    # Drop / knock-on path
-    mx, my, _ = best.location
-    dx = mx - px
-    forward = not _is_backward_pass(attack_dir, dx)  # intended forward = forward-pass offence
-
-    match.ball.release()
-    # simulate slight bobble forward if forward, otherwise behind
-    bobble = (+0.5 if attack_dir > 0 else -0.5) if forward else (-0.5 if attack_dir > 0 else +0.5)
-    match.ball.location = (px + bobble, py, 0.0)
-    match.last_touch_team = player.team_code
-
-    to = 'b' if player.team_code == 'a' else 'a'
-    match.start_advantage("knock_on", to=to, start_x=px, start_y=py)
-
-    if forward:
-        log_law(
-            match.tick_count,
-            "forward_pass",
-            {"passer": holder_code, "receiver": f"{best.sn}{best.team_code}", "mark": [px, py]},
-            match=match
-        )
-    else:
-        log_law(
-            match.tick_count,
-            "knock_on",
-            {"passer": holder_code, "receiver": f"{best.sn}{best.team_code}", "mark": [px, py]},
-            match=match
-        )
+def _speed_for(subtype: Optional[str]) -> float:
+    # super light placeholder; tweak later or replace with attr-based calc
+    if subtype == "flat":
+        return 16.0
+    if subtype == "skip":
+        return 18.0
+    if subtype == "tip":
+        return 14.0
+    return 15.0

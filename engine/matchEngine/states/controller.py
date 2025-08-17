@@ -1,56 +1,79 @@
 # states/controller.py
-STATUS_TO_STATE = {
-    "restart.kick_off:waiting": ("restart", {"kind": "kick_off", "phase": "waiting"}),
-    "restart.kick_off:in_flight": ("restart", {"kind": "kick_off", "phase": "in_flight"}),
+from typing import Dict, Tuple, Optional
+from matchEngine import events
+from ActionMatrix import ACTION_MATRIX  # keep your import as-is
 
-    "open_play:in_hand": ("open_play", {"mode": "in_hand"}),
-    "open_play:in_flight": ("open_play", {"mode": "kick_return"}),
-    "open_play:loose": ("open_play", {"mode": "loose"}),
+WILDCARD = "_"            # <- underscore means "any last_action"
 
-    "setpiece:scrum:forming": ("scrum", {"phase": "forming"}),
-    "setpiece:scrum:active": ("scrum", {"phase": "active"}),
-    "setpiece:lineout:forming": ("lineout", {"phase": "forming"}),
-    "setpiece:lineout:active": ("lineout", {"phase": "active"}),
-    "setpiece:lineout:in_flight": ("lineout", {"phase": "throw"}),
+DEFAULT_FALLBACK = "in_play.turnover"  # your safe default
 
-    "contact:tackle:active": ("tackle", {}),
-    "contact:ruck:forming": ("ruck", {"phase": "forming"}),
-    "contact:ruck:active": ("ruck", {"phase": "active"}),
+class StateController:
+    def __init__(self, match):
+        self.match = match
+        self.status = ("in_play.idle",
+                       getattr(match.ball, "location", (0.0, 0.0, 0.0)),
+                       getattr(match.ball, "holder", None))
 
-    "dead:touch": ("restart", {"kind": "lineout", "phase": "award"}),
-    "dead:in_goal": ("restart", {"kind": "goal_line_dropout", "phase": "award"}),
+    def tick(self) -> None:
+        if self._event_check():
+            return
+        self._status_check()
 
-    "score:try_awarded": ("restart", {"kind": "post_score", "phase": "waiting"}),
-}
+    def _event_check(self) -> bool:
+        evt = events.get_event()
+        if not evt:
+            return False
+        self.status = evt
+        events.clear_event()
+        return True
 
-def route(match) -> bool:
-    s = match.ball.status
-    tup = STATUS_TO_STATE.get(s)
-    if not tup: 
-        return False
-    state_name, kwargs = tup
-    current_name = getattr(match.current_state, "name", None)
-    if current_name == state_name:
-        # allow subphase updates inside the same state
-        if hasattr(match.current_state, "apply_subphase"):
-            match.current_state.apply_subphase(**kwargs)
-        return False
+    def _status_check(self) -> None:
+        ball = self.match.ball
+        curr = getattr(ball, "status", None)       # {"action","holder","location"}
+        last = getattr(ball, "last_status", None)
+        if not curr or not last or _same_snapshot(curr, last):
+            return
 
-    # swap state instance
-    if state_name == "open_play":
-        from .open_play import OpenPlayState as S
-    elif state_name == "restart":
-        from .restart import RestartState as S
-    elif state_name == "scrum":
-        from .scrum import ScrumState as S
-    elif state_name == "lineout":
-        from .lineout import LineoutState as S
-    elif state_name == "ruck":
-        from .ruck import RuckState as S
-    elif state_name == "tackle":
-        from .tackle import TackleState as S
-    else:
-        return False
+        last_action = last.get("action")
+        curr_action = curr.get("action")
 
-    match.current_state = S(**kwargs)
-    return True
+        state_tag = _resolve_state_tag(last_action, curr_action)
+
+        loc = curr.get("location", getattr(ball, "location", (0.0, 0.0)))
+        holder = curr.get("holder", getattr(ball, "holder", None))
+        self.status = (state_tag, loc, holder)
+
+        # optional: advance snapshot here if you don't do it in ball.update()
+        # ball.last_status = curr
+
+
+def _resolve_state_tag(last_action: Optional[str], curr_action: Optional[str]) -> str:
+
+    
+    """
+    Priority:
+      1) exact   : (last, curr)
+      2) wildcard: ("_", curr)
+      3) default : DEFAULT_FALLBACK
+    """
+    # exact match first
+    tag = ACTION_MATRIX.get((last_action, curr_action))
+    if tag:
+        return tag
+
+    # wildcard on last
+    tag = ACTION_MATRIX.get((WILDCARD, curr_action))
+    if tag:
+        return tag
+
+    # nothing matched -> safe default
+    return DEFAULT_FALLBACK
+
+
+def _same_snapshot(a: dict, b: dict) -> bool:
+    # compare only promised fields; if you hit jitter later add an epsilon here
+    return (
+        a.get("action")   == b.get("action") and
+        a.get("holder")   == b.get("holder") and
+        a.get("location") == b.get("location")
+    )

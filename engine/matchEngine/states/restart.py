@@ -1,56 +1,10 @@
-from utils.scoring import attempt_conversion
-from constants import KICKOFF_SPREAD_GAP_Y
-from utils.kick_profiles import compute_kick_velocity
-# matchEngine/states/restart.py
+# states/restart.py — flags only
 
-from states.base_state import BaseState
-
-class RestartState(BaseState):
-    def __init__(self):
-        super().__init__()
-        self.name = "restart"
-        self._initialized = False
-
-    def before_decisions(self, match):
-        """
-        One-time kickoff setup:
-        - place ball at halfway
-        - give it to Team A's fly-half (RN=10) if present
-        """
-        if self._initialized:
-            return
-
-        # Ball at midfield
-        match.ball.location = (50.0, 35.0, 0.0)
-
-        # Prefer RN lookup so we don't assume SN==RN
-        p10a = match.team_a.get_player_by_rn(10)
-        if p10a:
-            match.ball.holder = f"{p10a.sn}a"
-        else:
-            # Fallback: try SN 10 on Team A; else loose ball at halfway
-            fallback = match.team_a.get_player_by_sn(10)
-            match.ball.holder = f"{fallback.sn}a" if fallback else None
-
-        self._initialized = True
-
-    # Movement/positioning is handled by BaseState.update() via decision engine.
-
-    def check_transition(self, match):
-        # After 2 ticks, go to open play
-        if self.ticks_in_state >= 2:
-            from states.open_play import OpenPlayState
-            return OpenPlayState()
-        return None
-
-    def on_enter(self, match):
-        self._phase6_ticks = 0
-        kind = getattr(match, "pending_restart", None)
-        self._phase5_ticks = 0
-        self._phase5_kind = kind
-
-
-"""
-restart has 3 subsatuses they all avct the same functionally but take place at different loactions
-kick_off , 22, goal_line
-"""
+KICK_OFF      = "reastart.kick_off"   # NOTE: kept your exact tag (typo included) because ACTION_MATRIX is god
+DROP_22       = "restart.22Drop"
+GOAL_LINE      = "Goal_line"
+RESTART_TAGS = {
+    KICK_OFF,
+    DROP_22,
+    GOAL_LINE 
+}

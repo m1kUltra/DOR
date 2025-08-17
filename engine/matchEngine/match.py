@@ -6,8 +6,8 @@ import time
 
 from setup import setup_match
 from states.base_state import BaseState
-from utils.logger import log_tick, log_routing, log_law  # include law + routing logs
-from utils.rng import DeterministicRNG  # deterministic RNG
+from .utils.logger import log_tick, log_routing, log_law  # include law + routing logs
+from .utils.rng import DeterministicRNG  # deterministic RNG
 from utils.restarts import map_event_to_flag
 from utils.advantage import start as adv_start, tick as adv_tick
 from utils import laws, scoring

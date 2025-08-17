@@ -101,3 +101,7 @@ def detect_fifty22(match, kick_ctx, out_event) -> Optional[Dict]:
     if not (in_own_half and kick_ctx.get("bounced", False) and past_22):
         return None
     return {"type":"into_touch_50_22","x": out_event["x"], "y": out_event["y"], "to": team}
+
+"""
+no clue how to actually implement this after the implementing new state functionality
+"""
