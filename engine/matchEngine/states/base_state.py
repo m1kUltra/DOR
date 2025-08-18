@@ -16,13 +16,15 @@ class BaseState:
         # 1) decide current state/event
         self.controller.tick()
         tag, loc, ctx = self.controller.status  # (tag_or_event, location, context)
-
+        
         # --- NEW: handle restarts inline, then get out of the way ---
         if isinstance(tag, str) and tag in RESTART_TAGS:
             if tag == KICK_OFF:
+                
                 # ctx (event.team) is the receiving side if provided; fallback to last_restart_to or 'b'
                 to = ctx if isinstance(ctx, str) else (getattr(self.match, "last_restart_to", None) or "b")
                 kickoff_now(self.match, to=to)
+                
             # optional: advance ball physics a hair this tick
             self.match.ball.update(self.match)
             return (tag, loc, ctx)

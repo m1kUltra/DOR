@@ -1,6 +1,6 @@
 # matchEngine/choice/team/kick_chase.py
 from typing import List, Tuple, Optional
-
+from utils.actions.catch_windows import can_catch, best_catcher
 XYZ    = Tuple[float, float, float]
 Action = Tuple[str, Optional[str]]
 DoCall = Tuple[str, Action, XYZ, XYZ]   # (player_id, action, location, target)
@@ -46,27 +46,21 @@ def _infer_receiving_team(match):
 CATCH_RADIUS = 1.0  # meters
 def plan(match, state_tuple) -> List[DoCall]:
     tag, _loc, _ctx = state_tuple
-    if not (isinstance(tag, str) and (tag == "open_play.kick_return" or tag.startswith("open_play.kick_return."))):
+    if not (isinstance(tag, str) and (tag == "open_play.kick_chase" or tag.startswith("open_play.kick_chase."))):
         return []
 
     # --- NEW: early catch if ball is within 1m of any player ---
-    if getattr(match.ball, "holder", None) is None:
-        lx, ly, lz = _xyz(getattr(match.ball, "location", None))
-        best = None
-        best_d2 = CATCH_RADIUS * CATCH_RADIUS
-        for p in getattr(match, "players", []):
-            px, py, _ = _xyz(p.location)
-            d2 = (px - lx) ** 2 + (py - ly) ** 2
-            if d2 <= best_d2:
-                # (optional) prefer receiving team; uncomment if desired:
-                # if best and p.team_code != recv_code and best[1].team_code == recv_code:
-                #     pass
-                best = (d2, p)
-        if best:
-            _, catcher = best
-            # single catch action; target = live ball point on ground
-            return [(f"{catcher.sn}{catcher.team_code}", ("catch", None), _xyz(catcher.location), (lx, ly, 0.0))]
+    # live, actual ball position (includes height for catch)
+    ball_loc = _xyz(getattr(match.ball, "location", None))
 
+    # quick single-player catch (fast path)
+    catcher = best_catcher(match.players, ball_loc, radius=1.0, max_height=1.6)
+    if catcher and getattr(match.ball, "holder", None) is None:
+        return [(f"{catcher.sn}{catcher.team_code}", ("catch", None),
+                _xyz(catcher.location), (ball_loc[0], ball_loc[1], 0.0))]
+
+            # single catch action; target = live ball point on ground
+            
     # --- existing kick-return formation logic follows ---
 
     # use live pointer: drop zone while airborne; live location after bounce/skid

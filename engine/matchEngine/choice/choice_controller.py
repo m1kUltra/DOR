@@ -46,10 +46,10 @@ def select(match, state_tuple) -> List[DoCall]:
     Returns: List[DoCall] compatible with action_controller.do_actions(...)
     """
 
-    import sys; print(f"[choice] tag={state_tuple[0]!r}", file=sys.stderr, flush=True)
+    
     tag, loc, ctx = state_tuple
     loc_xyz = _xyz(loc)
-
+    print(tag)
     # Only operate in open play tags; return empty list otherwise.
     if not (isinstance(tag, str) and tag in OPEN_PLAY_TAGS):
         return []
@@ -58,14 +58,14 @@ def select(match, state_tuple) -> List[DoCall]:
 
 
     # derive "open_play.kick_return" from OPEN_PLAY_TAGS (fallback literal)
-    KICK_RETURN_PREFIX = next(
+    KICK_CHASE_PREFIX = next(
         (t for t in OPEN_PLAY_TAGS if t.endswith(".kick_chase")),
         "open_play.kick_chase"
     )
 
     # 0) Kick return special-case
-    if _is(tag, KICK_RETURN_PREFIX):
-        return kick_return_plan(match, state_tuple)
+    if _is(tag, KICK_CHASE_PREFIX):
+        return kick_chase_plan(match, state_tuple)
 
     # 1) Ball-holder path
     holder = _holder_id(match)
@@ -74,6 +74,7 @@ def select(match, state_tuple) -> List[DoCall]:
         if action and target is not None:
             ploc = match.get_player_by_code(holder).location
             calls.append((holder, action, _xyz(ploc), _xyz(target)))
+            
         return calls
 
     # 2) Locked-defender path

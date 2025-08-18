@@ -40,7 +40,7 @@ def kickoff(match, to: str = "b") -> bool:
       - Place kickers behind halfway; receivers scattered ahead of halfway
       - Give ball to team's 'kicker' (roles) and immediately kick with subtype 'kickoff'
     """
-    print("kickoff")
+    
     to = (to or "b").lower()
     recv_team = match.team_a if to == "a" else match.team_b
     kick_team = match.team_b if recv_team is match.team_a else match.team_a

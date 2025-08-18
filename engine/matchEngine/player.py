@@ -37,6 +37,7 @@ class Player:
     
 }
 
+
         self.orientation_deg = None
     def set_target(self, xyz): self.target = tuple(xyz) if xyz else None
     def clear_target(self):     self.target = None

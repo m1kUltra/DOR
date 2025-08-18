@@ -1,6 +1,6 @@
 # states/restart.py — flags + helpers
 
-KICK_OFF      = "reastart.kick_off"   # keep the exact tag used in ActionMatrix
+KICK_OFF      = "restart.kick_off"   # keep the exact tag used in ActionMatrix
 DROP_22       = "restart.22Drop"
 GOAL_LINE     = "Goal_line"
 
@@ -23,9 +23,9 @@ def kickoff_now(match, to: str = "b") -> None:
     """
     # 1) Do the actual placement + kick
     do_kickoff(match, to=to)
-    print("kickoff called")
+    
 
     # 2) Prime FSM for next tick: tag as open play (kick return phase)
     x, y, _ = match.ball.location
     # Team 'to' is the receiving team; pass it through as the event 'team' field
-    event.set_event("open_play.kick_return", (float(x), float(y)), to)
+    event.set_event("open_play.kick_chase", (float(x), float(y)), to)

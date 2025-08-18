@@ -6,7 +6,8 @@ PHASE_PLAY  = "open_play.phase_play"
 KICK_RETURN = "open_play.kick_return"
 TURNOVER    = "open_play.turnover"
 LINE_BREAK  = "open_play.line_break"
-SCRAMBLE = "open_play.scarmble"
+SCRAMBLE = "open_play.scramble"
+KICK_CHASE ="open_play.kick_chase"
 
 # handy set if you ever want to check membership
 OPEN_PLAY_TAGS = {
@@ -15,7 +16,8 @@ OPEN_PLAY_TAGS = {
     KICK_RETURN,
     TURNOVER,
     LINE_BREAK,
-    SCRAMBLE
+    SCRAMBLE,
+    KICK_CHASE
 }
 
 
