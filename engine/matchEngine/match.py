@@ -59,8 +59,15 @@ class Match:
     # ----------------------------
     # main loop
     # ----------------------------
-
-
+    #TODO move this to anywhere but match
+    def get_player_by_code(self, code: str):
+        """e.g. '10a' -> Player or None"""
+        if not code:
+            return None
+        sn = int(code[:-1])
+        team_code = code[-1]
+        team = self.team_a if team_code == 'a' else self.team_b
+        return team.get_player_by_sn(sn)
         # 
 
     # matchEngine/match.py
@@ -74,10 +81,11 @@ class Match:
             self.period["time"] += self.tick_rate
 
             self.state.tick()
-            print(self.state)
+           
             # emit JSON to STDOUT — no bare except swallowing errors
             dump_tick_json(self)
-
+            #import sys, math; tr=self.ball.transit or {}; pace=(tr.get("speed") if tr.get("type")=="linear" else ((math.hypot(tr["target"][0]-tr["start"][0], tr["target"][1]-tr["start"][1]) / tr["T"]) if tr.get("type")=="parabola" and tr.get("T") else None)); print(f"DBG target={self.ball.target} loc={self.ball.location} pace={pace}", file=sys.stderr, flush=True)
+          
             if realtime:
                 budget = self.tick_rate / max(speed, 1e-6)
                 delay = budget - (time.time() - t0)
@@ -103,3 +111,14 @@ if __name__ == "__main__":
     calls from the logger the method that sends the info to the front
     
     """
+    """  import sys, math
+            code = "10a"
+            p = next((pl for pl in self.players if f"{pl.sn}{pl.team_code}" == code), None)
+            bx, by, bz = self.ball.location
+            if p:
+                px, py, pz = p.location
+                d = math.hypot(bx - px, by - py)
+                print(f"DBG {code} loc={p.location} act={getattr(p,'current_action',None)} dist_to_ball={d:.2f} ball_z={bz:.2f}", file=sys.stderr, flush=True)
+            else:
+                print(f"DBG {code} not found", file=sys.stderr, flush=True)
+"""

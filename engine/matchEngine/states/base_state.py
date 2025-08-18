@@ -37,5 +37,5 @@ class BaseState:
                 loc = self.match.get_player_by_code(pid).location
                 do_action(self.match, pid, action, loc, target)
 
-            self.match.ball.update(self.match)
+        self.match.ball.update(self.match)
         return (tag, loc, ctx)

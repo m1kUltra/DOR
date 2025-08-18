@@ -10,8 +10,8 @@ DEFAULT_FALLBACK = "in_play.turnover"  # your safe default
 class StateController:
     def __init__(self, match):
         self.match = match
-        self.status = ("in_play.idle",
-                       getattr(match.ball, "location", (0.0, 0.0, 0.0)),
+        self.status = ("restart.kick_off",
+                       getattr(match.ball, "location", (50.0, 35.0, 0.0)),
                        getattr(match.ball, "holder", None))
 
     def tick(self) -> None:

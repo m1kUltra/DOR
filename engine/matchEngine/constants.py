@@ -90,16 +90,7 @@ OFFSIDE_PENALTY_ENFORCE = True
 KICK_BASE_V0 = 18.0     # m/s typical open-play long kick
 
 # Preset scalars (multiply base)
-KICK_PRESETS = {
-  "clearance": {"v0": 1.15, "elev_deg": 30, "spin": 0.0,  "drift": 0.06, "hang_bonus": 0.1},
-  "box":       {"v0": 0.80, "elev_deg": 55, "spin": 0.2,  "drift": 0.02, "hang_bonus": 0.35},
-  "bomb":      {"v0": 0.95, "elev_deg": 60, "spin": 0.15, "drift": 0.03, "hang_bonus": 0.45},
-  "chip":      {"v0": 0.60, "elev_deg": 35, "spin": 0.05, "drift": 0.01, "hang_bonus": 0.05},
-  "crossfield":{"v0": 0.90, "elev_deg": 40, "spin": 0.10, "drift": 0.18, "hang_bonus": 0.10},
-  "grubber":   {"v0": 0.75, "elev_deg": 8,  "spin": 0.30, "drift": 0.00, "hang_bonus": 0.00},
-  "dropout":   {"v0": 0.90, "elev_deg": 30, "spin": 0.10, "drift": 0.03, "hang_bonus": 0.05},
-  "kickoff":   {"v0": 1.00, "elev_deg": 30, "spin": 0.05, "drift": 0.02, "hang_bonus": 0.10}
-}
+
 
 # Small physics polish
 AIR_DRAG_COEFF = 0.02       # mild vertical slow, applied to vz

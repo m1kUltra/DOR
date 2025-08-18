@@ -6,10 +6,16 @@ class Player:
         self.sn = sn  # Squad Number
         self.rn = rn  # Role Number (actual field role)
         self.team_code = team_code  # 'a' or 'b'
-        self.location = location  # (x, y, z) in meters
         self.height = height
         self.weight = weight
-        
+        self.location = tuple(location)
+        self.target   = None              # (x, y, z) or None
+        self.speed_mps = (attributes or {}).get("pace", 5.5)  # fallback pace
+        self.arrive_radius = 0.5          # meters; tweak per role
+
+        self.current_action = None
+       
+        self.orientation_deg = None
 
         self.attributes = attributes or {
             
@@ -32,20 +38,16 @@ class Player:
 }
 
         self.orientation_deg = None
+    def set_target(self, xyz): self.target = tuple(xyz) if xyz else None
+    def clear_target(self):     self.target = None
+    def has_arrived(self):
+        if not self.target: return True
+        x,y,_ = self.location; xt,yt,_ = self.target
+        dx,dy = xt-x, yt-y
+        return (dx*dx + dy*dy) ** 0.5 <= self.arrive_radius
+
     def update_location(self, new_location):
-        """Update the 3D position of the player."""
-        self.location = new_location
-
-  
-
-    def update_action(self, action):
-        """
-        Executes an action (like pass, kick, run).
-        Each action can live in its own module in /actions.
-        """
-        self.current_action = action
-        # Action logic would be handled elsewhere
-        pass
+        self.location = tuple(new_location)
     
     def __repr__(self):
         return f"<Player {self.sn}{self.team_code} ({self.name}) at {self.location}>"

@@ -12,7 +12,7 @@ Action = Tuple[str, Optional[str]]  # ("section","subtype"), e.g. ("pass","flat"
 _SECTION_TO_MODULE = {
     "pass":    pass_action,
     "kick":    kick,
-    "run":     movement,
+    "move":     movement,
     "catch":   catch,
     "contact": enter_contact,
 }

@@ -2,7 +2,7 @@
 
 from typing import List, Tuple
 from constants import PITCH_WIDTH, PITCH_LENGTH
-from actions import kick as kick_mod
+from actions import kick 
 
 XYZ = Tuple[float, float, float]
 
@@ -40,6 +40,7 @@ def kickoff(match, to: str = "b") -> bool:
       - Place kickers behind halfway; receivers scattered ahead of halfway
       - Give ball to team's 'kicker' (roles) and immediately kick with subtype 'kickoff'
     """
+    print("kickoff")
     to = (to or "b").lower()
     recv_team = match.team_a if to == "a" else match.team_b
     kick_team = match.team_b if recv_team is match.team_a else match.team_a
@@ -94,6 +95,6 @@ def kickoff(match, to: str = "b") -> bool:
     target: XYZ = (target_x, target_y, 0.0)
 
     # Use the existing kick action; subtype 'kickoff' so your profiles can special-case if needed
-    kick_mod.do_action(match, kicker_id, "kickoff", match.ball.location, target)
+    kick.do_action(match, kicker_id, "kickoff", match.ball.location, target)
 
     return True
