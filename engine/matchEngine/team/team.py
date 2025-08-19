@@ -11,6 +11,7 @@ class Team:
         self.tactics = build_default(tactics) # dict of flags/shapes
         self.roles = dict(roles or DEFAULT_ROLES)  # {"kicker":"sn.10", ...}
         self.in_possession = False
+        self.score= 0;
 
     def get_player_by_sn(self, sn: int):
         return next((p for p in self.squad if getattr(p, "sn", None) == sn), None)

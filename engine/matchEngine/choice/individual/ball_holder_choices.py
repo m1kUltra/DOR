@@ -1,50 +1,70 @@
 # matchEngine/choice/individual/ball_holder_choices.py
 from typing import Optional, Tuple, List
 import math, random
-from constants import PASS_MAX_RANGE, RUN_PROBE_LEN, EPS
+from constants import PASS_MAX_RANGE, RUN_PROBE_LEN, EPS, TRYLINE_A_X, TRYLINE_B_X
 
 XYZ    = Tuple[float, float, float]
-Action = Tuple[str, Optional[str]]   # ("pass","flat"), ("kick","exit"/"chip"/"bomb"/"grubber"), ("move", None)
+Action = Tuple[str, Optional[str]]
+
+OFFLOAD_MAX_RANGE = 10.0  # m
 
 def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Optional[XYZ]]:
     holder = match.get_player_by_code(holder_id)
     if not holder:
         return (None, None)
 
-    attack_dir = _attack_dir_for(holder, match)
+    attack_dir = _attack_dir_for(holder, match)  # +1 or -1
     x, y, _ = holder.location
 
-    # --- close pressure gate: pure random evasion vs carry if defender < 5m ---
+    # --- 0) Tryline check → ground immediately ---
+    try_x = TRYLINE_B_X if attack_dir > 0 else TRYLINE_A_X
+    crossed = (attack_dir > 0 and x >= try_x) or (attack_dir < 0 and x <= try_x)
+    if crossed:
+        return (("ground", None), match.pitch.clamp_position((x, y, 0.0)))
+
+    # --- 1) If being tackled, attempt a short offload (<=10m, not forward) ---
+    if holder.state_flags.get("being_tackled", False):
+        recv = _nearest_legal_receiver_within(match, holder, attack_dir, OFFLOAD_MAX_RANGE)
+        if recv is not None:
+            rx, ry, _ = recv.location
+            return (("offload", None), match.pitch.clamp_position((rx, ry, 0.0)))
+        # if no legal offload, fall through to run logic
+
+    # --- 2) Under pressure → evade or short probe ---
     if _nearest_defender_distance(holder, match) < 5.0:
         if random.random() < 0.5:
-            return (("move", None), _evade_target(holder, attack_dir, match))  # sidestep + 2m forward
+            return (("move", None), _evade_target(holder, attack_dir, match))
         else:
-            return (("move", None), match.pitch.clamp_position((x + RUN_PROBE_LEN * attack_dir, y, 0.0)))
+            return (("move", None), match.pitch.clamp_position(
+                (x + RUN_PROBE_LEN * attack_dir, y, 0.0)
+            ))
 
-    # --- build uniformly random options (legal where needed) ---
-    options: List[Tuple[Action, XYZ]] = []
-
-    # RUN: always legal
+    # --- 3) Default (passes/kicks currently disabled) → simple run probe ---
     run_target = match.pitch.clamp_position((x + RUN_PROBE_LEN * attack_dir, y, 0.0))
-    options.append((("move", None), run_target))
+    return (("move", None), run_target)
 
-    # PASS: only if a legal receiver exists (not forward, within range)
-    recvs = _legal_receivers(match, holder, attack_dir)
-    if recvs:
-        r = random.choice(recvs)  # random teammate among legal receivers
-        rx, ry, _ = r.location
-        options.append((("pass", "flat"), (rx, ry, 0.0)))
+    # --------------------------
+    # (COMMENTED OUT FOR TESTING)
+    # To re-enable later, remove the triple-quotes around each block.
+    # --------------------------
 
-    # KICK: always allowed; pick subtype uniformly
-    kick_subtype = random.choice(["exit", "bomb", "chip", "grubber"])
-    k_target = _kick_target_for(holder, match, kick_subtype, attack_dir)
-    options.append((("kick", kick_subtype), k_target))
+    # """
+    # # PASS option (legal, not-forward, within PASS_MAX_RANGE)
+    # recvs = _legal_receivers(match, holder, attack_dir)
+    # if recvs:
+    #     r = random.choice(recvs)
+    #     rx, ry, _ = r.location
+    #     return (("pass", "flat"), match.pitch.clamp_position((rx, ry, 0.0)))
+    # """
 
-    # pick a random option from what’s available
-    action, target = random.choice(options)
-    return (action, target)
+    # """
+    # # KICK option (choose subtype + target)
+    # kick_subtype = random.choice(["exit", "bomb", "chip", "grubber"])
+    # k_target = _kick_target_for(holder, match, kick_subtype, attack_dir)
+    # return (("kick", kick_subtype), k_target)
+    # """
 
-# ---------------- helpers (kept simple) ----------------
+# ---------------- helpers ----------------
 
 def _attack_dir_for(player, match) -> float:
     return float(match.team_a.tactics["attack_dir"] if player.team_code == "a"
@@ -60,12 +80,36 @@ def _nearest_defender_distance(holder, match) -> float:
         if d < best: best = d
     return best
 
+def _nearest_legal_receiver_within(match, holder, attack_dir: float, max_range: float):
+    hx, hy, _ = holder.location
+    best = None
+    best_d2 = (max_range * max_range) + 1.0
+    for p in match.players:
+        if p is holder or p.team_code != holder.team_code:
+            continue
+        # avoid compromised receivers
+        sf = p.state_flags
+        if sf.get("being_tackled", False) or sf.get("off_feet", False):
+            continue
+        px, py, _ = p.location
+        dx, dy = px - hx, py - hy
+        d2 = dx*dx + dy*dy
+        if d2 > max_range * max_range:
+            continue
+        # not forward relative to attack_dir
+        if (attack_dir > 0 and dx > EPS) or (attack_dir < 0 and dx < -EPS):
+            continue
+        if d2 < best_d2:
+            best_d2 = d2
+            best = p
+    return best
+
 def _legal_not_forward(attack_dir: float, dx: float) -> bool:
-    # not forward relative to attack_dir
     if attack_dir > 0:  return dx <= EPS
     else:               return dx >= -EPS
 
 def _legal_receivers(match, holder, attack_dir: float):
+    # full implementation (used by the commented PASS block)
     hx, hy, _ = holder.location
     out = []
     max_d2 = PASS_MAX_RANGE * PASS_MAX_RANGE
@@ -76,6 +120,10 @@ def _legal_receivers(match, holder, attack_dir: float):
         if d2 > max_d2: continue
         dx = px - hx
         if not _legal_not_forward(attack_dir, dx): continue
+        # avoid compromised receivers
+        sf = p.state_flags
+        if sf.get("being_tackled", False) or sf.get("off_feet", False):
+            continue
         out.append(p)
     return out
 

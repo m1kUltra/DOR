@@ -8,7 +8,8 @@ TURNOVER    = "open_play.turnover"
 LINE_BREAK  = "open_play.line_break"
 SCRAMBLE = "open_play.scramble"
 KICK_CHASE ="open_play.kick_chase"
-
+TACKLE = "open_play.tackle"
+JOUE = "open_play.joue"
 # handy set if you ever want to check membership
 OPEN_PLAY_TAGS = {
     LAUNCH_PLAY,
@@ -17,7 +18,9 @@ OPEN_PLAY_TAGS = {
     TURNOVER,
     LINE_BREAK,
     SCRAMBLE,
-    KICK_CHASE
+    KICK_CHASE,
+    TACKLE,
+    JOUE,
 }
 
 

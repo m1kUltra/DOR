@@ -1,11 +1,11 @@
 # states/controller.py
 from typing import Dict, Tuple, Optional
 import event 
-from states.ActionMatrix import ACTION_MATRIX  # keep your import as-is
+from states.ActionMatrix import ACTION_MATRIX ,SAME # keep your import as-is
 
 WILDCARD = "_"            # <- underscore means "any last_action"
 
-DEFAULT_FALLBACK = "in_play.turnover"  # your safe default
+DEFAULT_FALLBACK = SAME  # your safe default
 
 class StateController:
     def __init__(self, match):
@@ -38,6 +38,9 @@ class StateController:
         curr_action = curr.get("action")
 
         state_tag = _resolve_state_tag(last_action, curr_action)
+
+        if state_tag == SAME:
+            state_tag = self.status[0] if isinstance(self.status, tuple) else DEFAULT_FALLBACK
 
         loc = curr.get("location", getattr(ball, "location", (0.0, 0.0)))
         holder = curr.get("holder", getattr(ball, "holder", None))

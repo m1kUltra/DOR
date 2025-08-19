@@ -15,34 +15,33 @@ def _xyz(p) -> XYZ:
     return (0.0, 0.0, 0.0)
 
 def plan(match, state_tuple) -> List[DoCall]:
-    """
-    Very light attacking shape:
-      - choose team in possession
-      - exclude ball holder + locked defender + anyone in a tackle
-      - backs: line behind ball with lateral gaps
-      - forwards: two pods near ball, left/right
-    """
     tag, _loc, _ctx = state_tuple
-    if not (isinstance(tag, str) and tag in OPEN_PLAY_TAGS):
-        return []
 
     # who’s attacking?
-    team = match.team_a if match.team_a.in_possession else (match.team_b if match.team_b.in_possession else None)
+    team = match.team_a if getattr(match.team_a, "in_possession", False) \
+        else (match.team_b if getattr(match.team_b, "in_possession", False) else None)
+
+    # ⬇️ Fallback: infer from ball.holder
+    if team is None:
+        hid = getattr(match.ball, "holder", None)
+        if isinstance(hid, str) and len(hid) >= 1:
+            team = match.team_a if hid[-1] == "a" else match.team_b
+
     if team is None:
         return []
 
     team_code = "a" if team is match.team_a else "b"
     holder_id = getattr(match.ball, "holder", None)
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
-    # tactics (already set in setup.py)
-    t = team.tactics
+
     t = (getattr(team, "tactics", None) or {})
     attack_dir   = float(t.get("attack_dir", +1.0))
-    depth10      = float(t.get("attack_depth_10", 7.0))            # deeper pivot
-    min_behind   = float(t.get("backline_min_behind", 3.0))        # others behind ball
-    gap          = float(t.get("backline_lateral_gap", 7.0))       # lateral spacing
-    pod_gap      = float(t.get("pod_gap", 6.0))                    # pods left/right
-    pod_depth    = float(t.get("pod_depth", 2.0))                  # pods just behind ball
+    depth10      = float(t.get("attack_depth_10", 7.0))
+    min_behind   = float(t.get("backline_min_behind", 3.0))
+    gap          = float(t.get("backline_lateral_gap", 7.0))
+    pod_gap      = float(t.get("pod_gap", 6.0))
+    pod_depth    = float(t.get("pod_depth", 2.0))
+
     def _eligible(p) -> bool:
         if p.team_code != team_code: return False
         if holder_id and f"{p.sn}{p.team_code}" == holder_id: return False

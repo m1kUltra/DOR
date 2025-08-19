@@ -2,6 +2,7 @@
 from typing import Optional, Tuple
 import math
 from constants import DEFAULT_PLAYER_SPEED
+from utils.positioning.movement.orientation import compute_orientation  # ⬅️ NEW
 
 XYZ = Tuple[float, float, float]
 
@@ -9,28 +10,23 @@ def _get_player(match, player_id: str):
     return match.get_player_by_code(player_id)
 
 def _resolve_speed(subtype: Optional[str], player) -> float:
-    """If subtype is a number, use it as m/s; else fallback to defaults."""
     if subtype:
         try:
             return max(0.0, float(subtype))
         except ValueError:
             pass
-    # simple fallback; you can later derive from player.attributes['pace']
     return float(DEFAULT_PLAYER_SPEED)
 
-    # matchEngine/actions/movement.py
 def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, target: Optional[XYZ]) -> bool:
     p = _get_player(match, player_id)
     if not p:
         return False
 
-    # if caller didn't pass a target, use the player's currently set intention
     if target is None:
         target = p.target
         if target is None:
-            return False  # nowhere to go
+            return False
 
-    # remember intention so future ticks can keep moving without re-sending target
     p.target = tuple(target)
 
     dt = float(getattr(match, "tick_rate", 0.05))
@@ -50,10 +46,30 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
         new_pos = (x + dx * k, y + dy * k, z + dz * k)
         p.current_action = "run"
 
-    if dx or dy:
-        p.orientation_deg = (math.degrees(math.atan2(dy, dx)) + 360.0) % 360.0
+    # ⬇️ FACE WHERE WE'RE ACTUALLY MOVING THIS TICK
+    vx, vy = (new_pos[0] - x), (new_pos[1] - y)
+    if vx or vy:
+        # use the immediate next point as the "target" for orientation
+        p.orientation_deg = compute_orientation(
+            (x, y),
+            (x + vx, y + vy),
+            attacking_dir=None,                  # not needed when we have a movement vector
+            current_deg=p.orientation_deg,
+            max_turn_deg_per_tick=None,          # snap; set to e.g. 30.0 for smooth turning
+        )
+    elif p.orientation_deg is None:
+        # initialize idle facing once based on team attack direction
+        team = match.team_a if p.team_code == "a" else match.team_b
+        atk = float((getattr(team, "tactics", {}) or {}).get("attack_dir", +1.0))
+        attacking_dir = "right" if atk > 0 else "left"
+        p.orientation_deg = compute_orientation(
+            (x, y),
+            None,
+            attacking_dir=attacking_dir,
+            current_deg=None,
+            max_turn_deg_per_tick=None,
+        )
 
     new_pos = match.pitch.clamp_position(new_pos)
     p.update_location(new_pos)
     return True
-

@@ -69,6 +69,7 @@ def serialize_tick(match):
                 "team_code": p.team_code,
                 "action": p.action,
                 "location": p.location,
+                "orientation" : p.orientation_deg
             }
             for p in match.players
         ],
