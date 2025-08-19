@@ -113,6 +113,7 @@ def conversion(
     target_x = (try_x + 1.0) if attack_dir > 0 else (try_x - 1.0)
     target: XYZ = (float(target_x), 35, 15)
     subtype = "conversion"
+    event = None
     kick.do_action(match, kicker_id, subtype, match.ball.location, target)
 
     # stage next restart, but DON'T move the conversion kicker
@@ -132,7 +133,7 @@ def conversion_transit(match,success)->bool:
     if False:
         conversion_checker(match)
     print(z)
-    if z>0.1:
+    if z<0.1:
         match.ball.set_action= ("idle")
         #add scoring logic later
     return success

@@ -16,9 +16,13 @@ success= False
 def conversion_now(match, to: Optional[str] = None) -> None:
     do_conversion(match, team_code=to)
     x, y, _ = match.ball.location
-    event.set_event("open_play.kick_chase", (float(x), float(y)), to)
+   
 
 def maybe_handle(match, tag, loc, ctx) -> bool:
+    if tag == AFTER_CONVERSION:
+        conversion_transit(match, success)
+        match.ball.update(match) 
+        return True
     if tag == CONVERSION:
         
         to = (ctx[-1].lower() if isinstance(ctx, str) and ctx and ctx[-1].lower() in ("a","b") else None)
@@ -27,9 +31,7 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
     
         match.ball.update(match)   # same as restart.maybe_handle
         return True
-    if tag == AFTER_CONVERSION:
-        conversion_transit(match, success)
-        return True
+   
         
         
     

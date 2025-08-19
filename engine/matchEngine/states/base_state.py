@@ -18,7 +18,7 @@ class BaseState:
         # 1) decide current state/event
         self.controller.tick()
         tag, loc, ctx = self.controller.status  # (tag_or_event, location, context)
-        
+        print(tag)
         # keep team/holder flags in sync BEFORE any handler uses them
         sync_flags(self.match)
 
