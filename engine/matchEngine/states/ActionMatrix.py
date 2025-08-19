@@ -8,7 +8,7 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     (None,     "idle"):         "restart.kick_off",
     ("dead",   "idle"):         "restart.22Drop",
     ("idle",   "kicked"):       "open_play.kick_chase",   # e.g., 22 drop-out / restart kick
-
+    ("conversion", "idle") :     "restart.kick_off",
     # --- Global wildcards ---
     ("_", "kicked"):            "open_play.kick_chase",   # ⬅️ any -> kicked
     ("_", "passed"):            SAME,                     # ⬅️ any -> passed (no state change)
@@ -36,4 +36,8 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
 
     # --- Grounding ---
     ("_",  "grounded"):          "score.check_try",
+    ("grounded", "try"):        "nudge.conversion",
+    ("_", "conversion"):         "nudge.after_conversion"
+
+   
 }

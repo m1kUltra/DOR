@@ -124,3 +124,6 @@ CONV_SUCCESS_BASE = 0.75         # Phase 6 simple success (attributes later)
 # 50:22
 FIFTY22_MIN_ORIGIN = 50.0        # must kick from own half
 FIFTY22_TARGET_MINX = 78.0       # must go out past opponent 22 via bounce
+
+POST_GAP = 2.5
+CROSSBAR = 3.0

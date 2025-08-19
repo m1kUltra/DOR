@@ -31,23 +31,30 @@ class StateController:
         ball = self.match.ball
         curr = getattr(ball, "status", None)       # {"action","holder","location"}
         last = getattr(ball, "last_status", None)
-        if not curr or not last or _same_snapshot(curr, last):
+
+        # Only bail if there's no current snapshot at all
+        if not curr:
             return
 
-        last_action = last.get("action")
+        # If we DO have a last snapshot and it's identical, skip
+        if last and _same_snapshot(curr, last):
+            return
+
+        # Allow last_action to be None on first transition
+        last_action = last.get("action") if last else None
         curr_action = curr.get("action")
 
         state_tag = _resolve_state_tag(last_action, curr_action)
-
         if state_tag == SAME:
             state_tag = self.status[0] if isinstance(self.status, tuple) else DEFAULT_FALLBACK
 
-        loc = curr.get("location", getattr(ball, "location", (0.0, 0.0)))
-        holder = curr.get("holder", getattr(ball, "holder", None))
+        loc    = curr.get("location", getattr(ball, "location", (0.0, 0.0)))
+        holder = curr.get("holder",   getattr(ball, "holder", None))
         self.status = (state_tag, loc, holder)
 
-        # optional: advance snapshot here if you don't do it in ball.update()
-        # ball.last_status = curr
+        # Advance snapshot window here to avoid aliasing issues
+        ball.last_status = dict(curr)   # make a COPY
+
 
 
 def _resolve_state_tag(last_action: Optional[str], curr_action: Optional[str]) -> str:
@@ -80,3 +87,5 @@ def _same_snapshot(a: dict, b: dict) -> bool:
         a.get("holder")   == b.get("holder") and
         a.get("location") == b.get("location")
     )
+
+

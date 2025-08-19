@@ -28,7 +28,7 @@ class Ball:
         self.location: tuple[float,float,float] = tuple(map(float, location))
         self.holder: str | None = holder
         self.target: tuple[float,float,float] | None = None
-
+       
         self.has_bounced: bool = False
 
         # transit is a dict:
@@ -221,7 +221,7 @@ class Ball:
         else:
             # unknown transit -> stop
             self.transit = None
-
+      
         # keep status wrapper consistent (but only changes when action changed externally)
         self._commit_status_if_action_changed()
 

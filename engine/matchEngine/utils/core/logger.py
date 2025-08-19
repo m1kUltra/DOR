@@ -57,6 +57,7 @@ def serialize_tick(match):
     return {
         "tick": match.tick_count,
         "time": match.match_time,
+        "score": match.scoreboard,
         "ball": {
             "location": match.ball.location,
             "holder": match.ball.holder,

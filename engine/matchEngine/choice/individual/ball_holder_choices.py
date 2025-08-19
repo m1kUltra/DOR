@@ -18,7 +18,10 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
 
     # --- 0) Tryline check → ground immediately ---
     try_x = TRYLINE_B_X if attack_dir > 0 else TRYLINE_A_X
-    crossed = (attack_dir > 0 and x >= try_x) or (attack_dir < 0 and x <= try_x)
+    crossed = (
+        (attack_dir > 0 and x >= try_x - EPS) or
+        (attack_dir < 0 and x <= try_x + EPS)
+   )
     if crossed:
         return (("ground", None), match.pitch.clamp_position((x, y, 0.0)))
 

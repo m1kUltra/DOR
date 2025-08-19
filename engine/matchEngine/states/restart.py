@@ -16,16 +16,18 @@ from typing import Optional, Tuple
 from set_pieces.restart import kickoff as do_kickoff
 import event # same module used by StateController
 
-def kickoff_now(match, to: str = "b") -> None:
-    """
-    Hard-setup + execute kickoff, then set a one-frame event so the next tick
-    starts in 'open_play.kick_return'. After that, normal status transitions take over.
-    """
-    # 1) Do the actual placement + kick
-    do_kickoff(match, to=to)
-    
 
-    # 2) Prime FSM for next tick: tag as open play (kick return phase)
+
+def kickoff_now(match, to: str = "b") -> None:
+    do_kickoff(match, to=to)
     x, y, _ = match.ball.location
-    # Team 'to' is the receiving team; pass it through as the event 'team' field
     event.set_event("open_play.kick_chase", (float(x), float(y)), to)
+
+def maybe_handle(match, tag, loc, ctx) -> bool:
+    if tag in RESTART_TAGS:
+        if tag == KICK_OFF:
+            to = ctx if isinstance(ctx, str) else (getattr(match, "last_restart_to", None) or "b")
+            kickoff_now(match, to=to)
+        match.ball.update(match)
+        return True
+    return False

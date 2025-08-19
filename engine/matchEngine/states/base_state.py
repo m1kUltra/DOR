@@ -3,11 +3,11 @@ from typing import Tuple, Any
 from states.controller import StateController
 from choice.choice_controller import select as choose_select
 from actions.action_controller import do_action
-from states.scoring import SCORING_TAGS, CHECK_TRY, try_now
-from states.nudge import CONVERSION, NUDGE_TAGS
+from states import restart, scoring, nudge
+from team.team_controller import sync_flags
 #from set_pieces.place_kick import do_conversion
 # NEW imports
-from states.restart import RESTART_TAGS, KICK_OFF, kickoff_now
+
 
 class BaseState:
     def __init__(self, match):
@@ -19,41 +19,34 @@ class BaseState:
         self.controller.tick()
         tag, loc, ctx = self.controller.status  # (tag_or_event, location, context)
         
-        # --- NEW: handle restarts inline, then get out of the way ---
-        if isinstance(tag, str) and tag in RESTART_TAGS:
-            if tag == KICK_OFF:
-                
-                # ctx (event.team) is the receiving side if provided; fallback to last_restart_to or 'b'
-                to = ctx if isinstance(ctx, str) else (getattr(self.match, "last_restart_to", None) or "b")
-                kickoff_now(self.match, to=to)
-                
-            # optional: advance ball physics a hair this tick
-            self.match.ball.update(self.match)
-            return (tag, loc, ctx)
-        if isinstance(tag, str) and tag in SCORING_TAGS:
-            if tag == CHECK_TRY:
-                to = ctx  
-                try_now(self.match, to=to)  
-            self.match.ball.update(self.match)
+        # keep team/holder flags in sync BEFORE any handler uses them
+        sync_flags(self.match)
 
-            return (tag, loc, ctx)
-        if isinstance(tag, str) and tag ==NUDGE_TAGS:
-                if tag==CONVERSION:
-                    #do_conversion(self.match)
-                    self.match.ball.update(self.match)
-                    return (tag, loc, ctx)
+        # 2) state-specific handlers
+        for mod in (restart, scoring, nudge):
+            handler = getattr(mod, "maybe_handle", None)
+            if handler and handler(self.match, tag, loc, ctx):
+                # CRITICAL: push ball state forward so controller can see changes next frame
+                self.match.ball.update(self.match)
+                sync_flags(self.match)
+                return (tag, loc, ctx)
 
-
-        # 2) open-play (default) flow
-        calls = choose_select(self.match, self.controller.status )
+        # 3) open-play (default) flow
+        calls = choose_select(self.match, (tag, loc, ctx))
         if calls:
             if isinstance(calls, tuple):
                 calls = [calls]
             for pid, action, _loc_ignored, target in calls:
                 # use the actor's current position, not the state/ball location
-                loc = self.match.get_player_by_code(pid).location
-                do_action(self.match, pid, action, loc, target)
-              
+                loc_p = self.match.get_player_by_code(pid).location
+                do_action(self.match, pid, action, loc_p, target)
 
+        # 4) advance physics every tick + resync flags
         self.match.ball.update(self.match)
+        sync_flags(self.match)
+     
         return (tag, loc, ctx)
+
+
+
+
