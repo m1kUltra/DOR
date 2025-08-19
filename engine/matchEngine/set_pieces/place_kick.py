@@ -127,3 +127,12 @@ def conversion(
     return True
 
 from utils.actions.scoring_check import conversion_checker
+def conversion_transit(match,success)->bool:
+    x, y, z = match.ball.location
+    if False:
+        conversion_checker(match)
+    print(z)
+    if z>0.1:
+        match.ball.set_action= ("idle")
+        #add scoring logic later
+    return success

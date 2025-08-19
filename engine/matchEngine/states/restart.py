@@ -21,7 +21,7 @@ import event # same module used by StateController
 def kickoff_now(match, to: str = "b") -> None:
     do_kickoff(match, to=to)
     x, y, _ = match.ball.location
-    event.set_event("open_play.kick_chase", (float(x), float(y)), to)
+    #event.set_event("open_play.kick_chase", (float(x), float(y)), to)
 
 def maybe_handle(match, tag, loc, ctx) -> bool:
     if tag in RESTART_TAGS:

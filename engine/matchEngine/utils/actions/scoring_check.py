@@ -15,12 +15,12 @@ def check_try(match) -> bool:
     atk_sign = possessor.attack_sign   # <- property on Team
     return _is_over_correct_tryline(ball_x, atk_sign)
 
-def conversion_checker(match) -> bool:
+def conversion_checker(match, tol_x: float = 0.75) -> bool:
+    from constants import TRYLINE_A_X, TRYLINE_B_X, POST_GAP, CROSSBAR
     x, y, z = match.ball.location
-    if ((1 < x < TRYLINE_B_X | 1 < x < TRYLINE_A_X) &
-        (35 - POST_GAP) < y < (35+POST_GAP) &
-        (z > CROSSBAR)):
-        return True
+    on_plane = abs(x - TRYLINE_A_X) <= tol_x or abs(x - TRYLINE_B_X) <= tol_x
+    between  = (35.0 - POST_GAP) <= y <= (35.0 + POST_GAP)
+    return bool(on_plane and between and z >= CROSSBAR)
         
    
 
