@@ -70,7 +70,7 @@ class Match:
         return team.get_player_by_sn(sn)
     
      # 
-
+   
     # matchEngine/match.py
     def run(self, ticks=1000, realtime=True, speed=1.0):
         for _ in range(ticks):

@@ -37,7 +37,8 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     # --- Grounding ---
     ("_",  "grounded"):          "score.check_try",
     ("grounded", "try"):        "nudge.conversion",
-    ("_", "conversion"):         "nudge.after_conversion"
+    ("_", "conversion"):         "nudge.after_conversion",
 
-   
+   #tackle 
+   ("_", "tackled"):   "ruck.start"
 }

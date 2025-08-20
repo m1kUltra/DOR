@@ -125,15 +125,26 @@ def conversion(
 
     # prime the restart event (scoring team receives next)
  
-    return True
+    return conv_team
 
 from utils.actions.scoring_check import conversion_checker
-def conversion_transit(match,success)->bool:
-    x, y, z = match.ball.location
-    if False:
-        conversion_checker(match)
-    print(z)
-    if z<0.1:
-        match.ball.set_action= ("idle")
-        #add scoring logic later
-    return success
+
+def conversion_transit(match, side, success: bool | None = None) -> bool:
+    b = match.ball
+    z = float(b.location[2])
+   
+
+    # Only when LANDED:
+    if z <= 0.10 and not b.is_held():
+        if success is None:
+            success = conversion_checker(match)
+        setattr(match, "last_conversion_success", bool(success))
+        b.set_action("idle") 
+        from utils.core.scoreboard import score_update
+        score_update(match,side, "conversion")
+        match.last_restart_to = side
+      
+          # IMPORTANT: call, don't assign
+        return True
+
+    return False

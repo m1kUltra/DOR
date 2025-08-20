@@ -18,7 +18,7 @@ import event # same module used by StateController
 
 
 
-def kickoff_now(match, to: str = "b") -> None:
+def kickoff_now(match, to: str = "a") -> None:
     do_kickoff(match, to=to)
     x, y, _ = match.ball.location
     #event.set_event("open_play.kick_chase", (float(x), float(y)), to)
@@ -26,7 +26,7 @@ def kickoff_now(match, to: str = "b") -> None:
 def maybe_handle(match, tag, loc, ctx) -> bool:
     if tag in RESTART_TAGS:
         if tag == KICK_OFF:
-            to = ctx if isinstance(ctx, str) else (getattr(match, "last_restart_to", None) or "b")
+            to = ctx if isinstance(ctx, str) else (getattr(match, "last_restart_to", None) or "a")
             kickoff_now(match, to=to)
         match.ball.update(match)
         return True

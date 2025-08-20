@@ -18,6 +18,9 @@ export default function MatchSim() {
       setPlayers(data.players || []);
       setBall(data.ball || null);
       setMatchLog((prev) => `[TICK ${data.tick}] ${data.state}\n${prev}`);
+      if (data.score && typeof data.score.a === "number" && typeof data.score.b === "number") {
+      setScore(data.score);
+    }
     });
   }, []);
 

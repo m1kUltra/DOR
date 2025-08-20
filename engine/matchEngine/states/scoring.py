@@ -3,6 +3,7 @@ from typing import Tuple
 import event
 from states.nudge import CONVERSION
 from utils.actions.scoring_check import check_try
+from utils.core.scoreboard import score_update
 
 CHECK_TRY = "score.check_try"
 SCORING_TAGS = { CHECK_TRY }
@@ -18,6 +19,8 @@ def try_now(match, to: str = "b") -> bool:
     loc = tuple(getattr(b, "location", (0.0, 0.0, 0.0)))
         # set current action to "try" (controller will pick it up next tick)
     b.status = {"action": "try", "holder": holder, "location": loc}
+    # Prefer the explicit side if provided; otherwise fall back to holder
+    score_update(match, to if isinstance(to, str) and to in ("a", "b") else holder, "try")
     return True
     
 
