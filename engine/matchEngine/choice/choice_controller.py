@@ -47,6 +47,7 @@ def select(match, state_tuple) -> List[DoCall]:
     KICK_CHASE_PREFIX = next((t for t in OPEN_PLAY_TAGS if t.endswith(".kick_chase")), "open_play.kick_chase")
     if _is(tag, KICK_CHASE_PREFIX):
         return kick_chase_plan(match, state_tuple)
+    
 
     calls: List[DoCall] = []
 

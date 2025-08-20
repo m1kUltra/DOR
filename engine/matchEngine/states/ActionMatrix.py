@@ -40,5 +40,10 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("_", "conversion"):         "nudge.after_conversion",
 
    #tackle 
-   ("_", "tackled"):   "ruck.start"
+   
+    ("_", "tackled"):       "ruck.start",         # a
+    ("_", "ruck_forming"):  "ruck.forming",
+    ("_", "ruck_over"):     "ruck.over",          #
+
+
 }

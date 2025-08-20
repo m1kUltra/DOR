@@ -13,7 +13,6 @@ class Player:
         self.speed_mps = (attributes or {}).get("pace", 5.5)  # fallback pace
         self.arrive_radius = 0.5          # meters; tweak per role
 
-        self.current_action = None
        
         self.orientation_deg = None
 

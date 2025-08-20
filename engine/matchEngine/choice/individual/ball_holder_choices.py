@@ -28,9 +28,15 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
     # --- 1) If being tackled, attempt a short offload (<=10m, not forward) ---
     if holder.state_flags.get("being_tackled", False):
         recv = _nearest_legal_receiver_within(match, holder, attack_dir, OFFLOAD_MAX_RANGE)
+        """
         if recv is not None:
             rx, ry, _ = recv.location
             return (("offload", None), match.pitch.clamp_position((rx, ry, 0.0)))
+        else:
+        """
+        hx, hy, _ = holder.location
+        return (("tackled", None), match.pitch.clamp_position((hx, hy, 0.0)))
+            
         # if no legal offload, fall through to run logic
 
     # --- 2) Under pressure → evade or short probe ---

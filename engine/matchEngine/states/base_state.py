@@ -3,7 +3,7 @@ from typing import Tuple, Any
 from states.controller import StateController
 from choice.choice_controller import select as choose_select
 from actions.action_controller import do_action
-from states import restart, scoring, nudge
+from states import restart, scoring, nudge, ruck
 from team.team_controller import sync_flags
 #from set_pieces.place_kick import do_conversion
 # NEW imports
@@ -23,7 +23,7 @@ class BaseState:
         sync_flags(self.match)
 
         # 2) state-specific handlers
-        for mod in (restart, scoring, nudge):
+        for mod in (restart, scoring, nudge, ruck):
             handler = getattr(mod, "maybe_handle", None)
             if handler and handler(self.match, tag, loc, ctx):
                 # CRITICAL: push ball state forward so controller can see changes next frame

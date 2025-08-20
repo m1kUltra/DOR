@@ -1,5 +1,5 @@
 from typing import Optional, Tuple
-from . import pass_action, kick, movement, catch, ground, tackle , offload # make sure these files exist
+from . import pass_action, kick, movement, catch, ground, tackle , offload,tackled,clearout, jackal # make sure these files exist
 
 XYZ    = Tuple[float, float, float]
 Action = Tuple[str, Optional[str]]  # ("section","subtype"), e.g. ("pass","flat")
@@ -12,6 +12,9 @@ _SECTION_TO_MODULE = {
     "ground": ground,
     "tackle": tackle,  
     "offload": offload,
+    "tackled": tackled,
+    "clearout": clearout,
+    "jackal":   jackal,
 }
 
 def do_action(match, player_id, action, location, target):

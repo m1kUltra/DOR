@@ -48,7 +48,7 @@ def choose(match, locked_id: str, state_tuple) -> Tuple[Optional[Action], Option
     if dist <= radius:
         # Tackle at the holder’s current spot (z=0); action_controller routes "contact" -> enter_contact
         hx, hy, _ = _xyz(holder.location)
-        return (("move",None), (hx, hy, 0.0))
+        return (("tackle",None), (hx, hy, 0.0))
 
     # Otherwise, close the distance
     hx, hy, _ = _xyz(holder.location)

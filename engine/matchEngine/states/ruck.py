@@ -1,27 +1,35 @@
-# states/ruck.py — flags only
 # states/ruck.py
+from typing import Optional
+import random, event
 
-# Entry / setup
-START                  = "ruck.start"
-FORMING                = "ruck.forming"
-TACKLER_ROLL_REQUIRED  = "ruck.tackler_roll_required"
-CONTEST_LIVE           = "ruck.contest_live"
+START   = "ruck.start"
+FORMING = "ruck.forming"
+OVER    = "ruck.over"
 
-# Contest modes
-JACKAL                 = "ruck.jackal"
-COUNTER_RUCK           = "ruck.counter_ruck"
+RUCK_TAGS = {START, FORMING, OVER}
 
-# Attacking responses
-CLEAROUT               = "ruck.clearout"
-SHUT_DOWN              = "ruck.shut_down"     # early see-off succeeds
 
-# Outcomes
-WON_ATTACK             = "ruck.won_attack"    # retain possession -> phase play
-TURNOVER               = "ruck.turnover"      # possession flips
-PENALTY                = "ruck.penalty"       # ctx should include the awarded team
 
-RUCK_TAGS = {
-    START, FORMING, TACKLER_ROLL_REQUIRED, CONTEST_LIVE,
-    JACKAL, COUNTER_RUCK, CLEAROUT, SHUT_DOWN,
-    WON_ATTACK, TURNOVER, PENALTY,
-}
+
+# states/ruck.py
+from set_pieces.ruck import handle_start, handle_forming, handle_over
+
+
+
+def maybe_handle(match, tag, loc, ctx) -> bool:
+    if not isinstance(tag, str) or not (tag == START or tag.startswith("ruck.")):
+        return False
+
+    if tag == START:
+        handle_start(match, (tag, loc, ctx))
+        return True
+
+    if tag == FORMING:
+        handle_forming(match, (tag, loc, ctx))
+        return True
+
+    if tag == OVER:
+        handle_over(match, (tag, loc, ctx))
+        return True
+
+    return False
