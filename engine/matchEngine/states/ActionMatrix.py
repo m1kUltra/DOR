@@ -44,7 +44,8 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("_", "tackled"):       "ruck.start",         # a
     ("_", "ruck_forming"):  "ruck.forming",
     ("_", "ruck_over"):     "ruck.over",  
-    ("ruck_over", "caught"): "open_play.phase_play",       #
+    ("_", "picked"): "ruck.out",
+    ("picked", "_"): "open_play.phase_play",       #
 
 
 }

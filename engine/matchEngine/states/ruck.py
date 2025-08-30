@@ -5,14 +5,14 @@ import random, event
 START   = "ruck.start"
 FORMING = "ruck.forming"
 OVER    = "ruck.over"
-
-RUCK_TAGS = {START, FORMING, OVER}
+OUT = "ruck.out"
+RUCK_TAGS = {START, FORMING, OVER, OUT}
 
 
 
 
 # states/ruck.py
-from set_pieces.ruck import handle_start, handle_forming, handle_over
+from set_pieces.ruck import handle_start, handle_forming, handle_over, handle_out
 
 
 
@@ -31,5 +31,9 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
     if tag == OVER:
         handle_over(match, (tag, loc, ctx))
         return True
+    if tag == OUT:
+        handle_out(match, (tag, loc, ctx))
+        return True
+
 
     return False

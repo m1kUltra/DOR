@@ -33,6 +33,7 @@ class Player:
     "in_maul": False,
     "backfield":False,
     "has_ball":False,
+    "offside":False,
     
 }
 

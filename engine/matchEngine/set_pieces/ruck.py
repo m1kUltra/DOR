@@ -4,6 +4,7 @@ from actions.action_controller import do_action
 from choice.ruck.start import plan as start_plan
 from choice.ruck.forming import plan as forming_plan
 from choice.ruck.over import plan as over_plan
+from choice.ruck.out import plan as out_plan
 
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
 
@@ -77,4 +78,11 @@ def handle_over(match, state_tuple) -> None:
     calls = over_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
+    
     # leave ball action/tag alone; open play will resume once someone picks it up
+
+def handle_out(match, state_tuple) -> None:
+    """Ball is out + playable; give phase‑specific choices (e.g., 9 pickup)."""
+    calls = out_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)

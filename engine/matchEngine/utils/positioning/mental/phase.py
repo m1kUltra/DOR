@@ -4,40 +4,66 @@ from utils.positioning.mental.formations import fan_along_y, local_to_world, nea
 
 Vec3 = Tuple[float,float,float]
 Vec2 = Tuple[float,float]
+# engine/matchEngine/utils/positioning/mental/phase.py
+from typing import Dict, Tuple
+from utils.positioning.mental.position_utils import (
+    forwards_shape_positions,
+    backline_shape_positions,
+)
 
-def phase_attack_targets(match, side: str, ruck_xy: Vec2,
-                         *, pod_depth=2.0, pod_gap=4.0, backs_gap=7.0, min_behind=3.0) -> Dict[object, Vec3]:
+def phase_attack_targets(
+    match,
+    side: str,
+    ruck_xy: Vec2,
+) -> Dict[object, Vec3]:
     rx, ry = ruck_xy
-    team = match.team_a if side=="a" else match.team_b
-    dir_ = float((team.tactics or {}).get("attack_dir", +1.0))
+    team = match.team_a if side == "a" else match.team_b
+    ball_loc: Vec3 = (rx, ry, 0.0)
 
     targets: Dict[object, Vec3] = {}
 
-    # Forwards pod: use two nearest forwards (prefer 1–8 via nearest_role)
-    f1 = nearest_role(team, 3, fallback=[1,4,5,6,7,8])
-    f2 = nearest_role(team, 1, fallback=[3,4,5,6,7,8])
-    for i, p in enumerate([x for x in [f1, f2] if x]):
-        lx = -pod_depth
-        ly = (-pod_gap if i==0 else +pod_gap)
-        wx, wy = local_to_world(lx, ly, (rx, ry), dir_)
-        targets[p] = (wx, wy, 0.0)
+    # --- Forwards: create a lane/pod layout for ALL 1..8 ---
+    forwards = sorted(
+        [p for p in team.squad if p.rn in {1,2,3,4,5,6,7,8}],
+        key=lambda pl: (pl.rn, pl.sn),
+    )
+    for i, p in enumerate(forwards):
+        targets[p] = forwards_shape_positions(team, ball_loc, p.rn, i)
 
-    # Backs (excluding 9 if used as DH): 10/12/13 + wings/15 fan around ruck.y
-    backs = [nearest_role(team, rn) for rn in [10,12,13,11,14,15]]
-    backs = [p for p in backs if p]
-    ys = fan_along_y(ry, len(backs), backs_gap)
-    for p, py in zip(backs, ys):
-        wx, wy = local_to_world(-min_behind, py - ry, (rx, ry), dir_)
-        targets[p] = (wx, wy, 0.0)
+    # --- Backs: 9 handled as DH upstream; place the rest relative to ball ---
+    backs = sorted(
+        [p for p in team.squad if p.rn in {10,11,12,13,14,15}],
+        key=lambda pl: (pl.rn, pl.sn),
+    )
+    squad_n = len(team.squad) or 15
+    for p in backs:
+        targets[p] = backline_shape_positions(team, ball_loc, p.rn, squad_n)
 
     return targets
 
-def phase_defence_targets(match, side_def: str, ruck_xy: Vec2, *, line_depth=1.5, gap=3.0) -> Dict[object, Vec3]:
+
+def phase_defence_targets(
+    match,
+    side_def: str,
+    ruck_xy: Vec2,
+    *,
+    line_depth: float = 1.5,
+    gap: float = 3.0,
+) -> Dict[object, Vec3]:
     rx, ry = ruck_xy
-    team = match.team_a if side_def=="a" else match.team_b
+    team = match.team_a if side_def == "a" else match.team_b
     dir_ = float((team.tactics or {}).get("attack_dir", +1.0))
-    # Defence line sits *in front* of the ball toward attackers → +line_depth along their own attack_dir
-    line_x, line_y = local_to_world(+line_depth, 0.0, (rx, ry), dir_)
-    defs = sorted([p for p in team.squad if p.rn in {9,10,11,12,13,14,15,6,7,8}], key=lambda u:(u.rn,u.sn))
+
+    # Flat line in front of the ball (toward attackers) along defender's own attack_dir
+    line_x, _ = local_to_world(+line_depth, 0.0, (rx, ry), dir_)
+
+    # Everyone on this team who isn't in the ruck
+    defs = [
+        p for p in sorted(team.squad, key=lambda u: (u.rn, u.sn))
+        if not getattr(p, "state_flags", {}).get("in_ruck", False)
+    ]
+
+    # Evenly fan along Y around ball.y
     ys = fan_along_y(ry, len(defs), gap)
-    return { p:(line_x, y, 0.0) for p, y in zip(defs, ys) }
+
+    return {p: (line_x, y, 0.0) for p, y in zip(defs, ys)}
