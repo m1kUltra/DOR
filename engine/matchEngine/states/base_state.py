@@ -5,6 +5,7 @@ from choice.choice_controller import select as choose_select
 from actions.action_controller import do_action
 from states import restart, scoring, nudge, ruck
 from team.team_controller import sync_flags
+from states import offside
 #from set_pieces.place_kick import do_conversion
 # NEW imports
 
@@ -21,6 +22,9 @@ class BaseState:
     
         # keep team/holder flags in sync BEFORE any handler uses them
         sync_flags(self.match)
+        
+        offside.update_flags(self.match, tag, loc, ctx)
+
 
         # 2) state-specific handlers
         for mod in (restart, scoring, nudge, ruck):

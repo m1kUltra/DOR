@@ -75,6 +75,9 @@ def _resolve_state_tag(last_action: Optional[str], curr_action: Optional[str]) -
     tag = ACTION_MATRIX.get((WILDCARD, curr_action))
     if tag:
         return tag
+    tag = ACTION_MATRIX.get((last_action, WILDCARD))
+    if tag:
+     return tag
 
     # nothing matched -> safe default
     return DEFAULT_FALLBACK

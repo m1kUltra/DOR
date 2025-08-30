@@ -70,10 +70,13 @@ def select(match, state_tuple) -> List[DoCall]:
     # 3) Team plans (merge; avoid duplicates)
     already = {pid for (pid, *_rest) in calls}
     for pid, action, _l, t in [*(attack_plan(match, state_tuple) or []),
-                               *(defend_plan(match, state_tuple) or [])]:
-        if pid in already:
-            continue
+                            *(defend_plan(match, state_tuple) or [])]:
+        if pid in already: continue
         ploc = match.get_player_by_code(pid).location
+        # ↓ LINE 2: compute retreat if defender & offside
+        if match.get_player_by_code(pid).flags.get("offside", False) and (not _holder_id(match) or match.get_player_by_code(pid).team is not match.get_player_by_code(_holder_id(match)).team):
+            action, t = ("move", None), (match.ball.location[0] - match.get_player_by_code(pid).team.direction*0.8, ploc[1], 0.0)  # ← LINE 3
         calls.append((pid, action, _xyz(ploc), _xyz(t)))
+
 
     return calls

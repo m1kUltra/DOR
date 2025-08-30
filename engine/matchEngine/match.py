@@ -45,6 +45,7 @@ class Match:
         self.last_kick = None
         self.conversion_ctx = None
         self.scoreboard = {"a": 0, "b": 0}
+        self.offside = 0 #x point in whhcih the offside line is set 
 
         # optional ruck meta placeholder
         

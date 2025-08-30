@@ -17,9 +17,10 @@ from set_pieces.ruck import handle_start, handle_forming, handle_over, handle_ou
 
 
 def maybe_handle(match, tag, loc, ctx) -> bool:
+    
     if not isinstance(tag, str) or not (tag == START or tag.startswith("ruck.")):
         return False
-
+    
     if tag == START:
         handle_start(match, (tag, loc, ctx))
         return True
