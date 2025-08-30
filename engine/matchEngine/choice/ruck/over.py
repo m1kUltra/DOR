@@ -3,6 +3,7 @@ from typing import List, Tuple, Optional
 from utils.player.dh_assign import assign_dummy_half
 from utils.positioning.mental.phase import phase_attack_targets, phase_defence_targets
 
+
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
 def _xyz(p): return tuple(p) if isinstance(p,(list,tuple)) else (0.0,0.0,0.0)
 
@@ -14,8 +15,7 @@ def plan(match, state_tuple) -> List[DoCall]:
     # 1) mark in-ruck (<=2.5m) & clear old flags
     for p in match.players:
         sf = p.state_flags
-        sf["dummy_half"] = False
-        sf["first_receiver"] = False
+        
         # keep any existing tackling flags as your pipeline sets them
         dx, dy = p.location[0]-bx, p.location[1]-by
         sf["in_ruck"] = (dx*dx + dy*dy) <= (2.5*2.5)
@@ -23,7 +23,13 @@ def plan(match, state_tuple) -> List[DoCall]:
     calls: List[DoCall] = []
 
     # 2) assign DH (9 or fallback)
-    dh_id = assign_dummy_half(match, atk, near_xy=(bx, by))
+    
+        # 2) assign DH (9 or fallback) only if no dummy_half already assigned
+    if not any(p.state_flags.get("dummy_half") for p in match.players):
+        dh_id = assign_dummy_half(match, atk, near_xy=(bx, by))
+    
+
+  
 
     # 3) DH: pick up if close, else move to base
     if dh_id:
@@ -31,6 +37,7 @@ def plan(match, state_tuple) -> List[DoCall]:
         px, py, _ = _xyz(p.location)
         if (px-bx)**2 + (py-by)**2 <= (1.5*1.5):
             calls.append((dh_id, ("catch", None), (px, py, 0.0), (bx, by, 0.0)))
+            ball.holder=dh_id
         else:
             calls.append((dh_id, ("move", None), (px, py, 0.0), match.pitch.clamp_position((bx, by, 0.0))))
 
