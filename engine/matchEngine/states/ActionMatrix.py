@@ -45,7 +45,14 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("_", "ruck_forming"):  "ruck.forming",
     ("_", "ruck_over"):     "ruck.over",  
     ("_", "picked"): "ruck.out",
-    ("picked", "_"): "open_play.phase_play",       #
+    ("picked", "_"): "open_play.phase_play", 
+    # Remove or narrow: ("_", "passed"): SAME
+    ("picked", "passed"): "open_play.phase_play",
+    ("passed", "pass_error"):  "open_play.scramble",
+    ("_",      "pass_error"):  "open_play.scramble",
+
+
+      #
 
 
 }

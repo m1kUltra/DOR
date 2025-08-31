@@ -6,31 +6,117 @@ PHASE_PLAY  = "open_play.phase_play"
 KICK_RETURN = "open_play.kick_return"
 TURNOVER    = "open_play.turnover"
 LINE_BREAK  = "open_play.line_break"
-SCRAMBLE = "open_play.scramble"
-KICK_CHASE ="open_play.kick_chase"
-TACKLE = "open_play.tackle"
-JOUE = "open_play.joue"
-# handy set if you ever want to check membership
+SCRAMBLE    = "open_play.scramble"
+KICK_CHASE  = "open_play.kick_chase"
+TACKLE      = "open_play.tackle"
+JOUE        = "open_play.joue"
+
 OPEN_PLAY_TAGS = {
-    LAUNCH_PLAY,
-    PHASE_PLAY,
-    KICK_RETURN,
-    TURNOVER,
-    LINE_BREAK,
-    SCRAMBLE,
-    KICK_CHASE,
-    TACKLE,
-    JOUE,
+    LAUNCH_PLAY, PHASE_PLAY, KICK_RETURN, TURNOVER, LINE_BREAK,
+    SCRAMBLE, KICK_CHASE, TACKLE, JOUE,
 }
 
+from typing import Any, Tuple, Optional
+import event
 
+# --- tunables (fast to tweak) ---
+PASS_ERROR_Z   = 0.0     # if pass hits ground at/below this height
+READY_LINE_N   = 11      # line-break threshold: defenders behind holder >= this many
+STATIC_LOOSE_D2 = 0.09   # ~0.3m^2 → “ball is basically idle on ground”
+TURNOVER_GRACE_TICKS = 6 # frames to ignore “possession flip” right after ruck/out
+LINEBREAK_BUFFER_X = 0.7 # allow small tolerance on X when counting “behind”
 
-"""open play has a few subsections that transition between eachother freely
-1. launch_play occurs after scrum_linout and rolling_maul
-2. phase_play occurs after a ruck- most common type
-3. kick_return occurs after ball_last status was caught and the other team kicked it (need to store who kicked it, location_of_kick)
-4. turnover- occurs after interception,non-ruck or scamble 
-5. line break- occurs when the ball is held and ahead of min (11) of the opposing team
+def _xyz(v, default=(0.0,0.0,0.0)):
+    if isinstance(v, (list, tuple)):
+        if len(v) >= 3: return (float(v[0]), float(v[1]), float(v[2]))
+        if len(v) == 2: return (float(v[0]), float(v[1]), 0.0)
+    return default
 
-all of these overwrite eachotrher and can be overwritten by other states
-"""
+def _z(loc) -> float:
+    return float(loc[2]) if isinstance(loc,(list,tuple)) and len(loc)>=3 else 0.0
+
+def _d2(a, b) -> float:
+    dx, dy = a[0]-b[0], a[1]-b[1]
+    return dx*dx + dy*dy
+
+def _attack_dir_of_holder(match, holder_id: Optional[str]) -> float:
+    if not holder_id: return +1.0
+    team = match.team_a if holder_id.endswith("a") else match.team_b
+    return float((team.tactics or {}).get("attack_dir", +1.0))
+
+def _count_defenders_behind_holder(match, holder_id: str) -> int:
+    holder = match.get_player_by_code(holder_id)
+    if not holder: return 0
+    hx, hy, _ = holder.location
+    dirn = _attack_dir_of_holder(match, holder_id)
+    # “behind” means toward ball carrier’s own tryline (opposite attack dir)
+    def is_behind(px):
+        if dirn > 0:  # attacking +x → behind == px <= hx + buffer
+            return px <= (hx + LINEBREAK_BUFFER_X)
+        else:         # attacking -x → behind == px >= hx - buffer
+            return px >= (hx - LINEBREAK_BUFFER_X)
+    cnt = 0
+    for p in match.players:
+        if p.team_code == holder.team_code: continue
+        if is_behind(p.location[0]):
+            cnt += 1
+    return cnt
+
+def _possession_code_from_holder(holder_id: Optional[str]) -> Optional[str]:
+    if not holder_id or not isinstance(holder_id, str) or len(holder_id) < 1:
+        return None
+    return holder_id[-1]  # 'a' or 'b'
+
+def _recently_left_ruck(match) -> bool:
+    # optional soft guard: during transition frames after ruck.out, ignore turnover heuristics
+    return getattr(match, "_frames_since_ruck", 0) < TURNOVER_GRACE_TICKS
+
+def maybe_handle(match, tag: str, loc: Tuple[float,float,float], ctx: Any) -> bool:
+    """
+    Open-play smart glue. We do only 3 things here:
+      A) Pass → hits ground with no holder → set 'pass_error' (so matrix can route to SCRAMBLE)
+      B) Heuristics → emit 'line_break' or 'turnover' events
+      C) Keep a small ruck→open_play grace counter (optional)
+    Return True only when we *change* the ball action (A) or emit an event (B).
+    """
+    b = match.ball
+    last = getattr(b, "last_status", {}) or {}
+    curr = getattr(b, "status", {}) or {}
+
+    # --- A) PASS → ground, no holder  -> pass_error (single-fire) ---
+    holder = getattr(b, "holder", None)
+    if holder is None:
+        # only fire on the frame right after a pass; don’t spam
+        if last.get("action") == "passed" and curr.get("action") != "pass_error":
+            if _z(getattr(b, "location", loc)) <= PASS_ERROR_Z:
+                b.set_action("pass_error")
+                return True
+
+    # --- B1) LINE BREAK detection (only when we have a holder) ---
+    hid = getattr(b, "holder", None)
+    if isinstance(hid, str) and len(hid) >= 2:
+        defenders_behind = _count_defenders_behind_holder(match, hid)
+        if defenders_behind >= READY_LINE_N:
+            # raise a tag event; controller will adopt immediately
+            
+            return True
+
+    # --- B2) TURNOVER detection (no ruck; plain carry/interception/loose regather) ---
+    # Trigger if: previous holder’s team != current (or None→some) AND we’re not in grace window
+    prev_holder = (last or {}).get("holder")
+    curr_holder = (curr or {}).get("holder") or getattr(b, "holder", None)
+    prev_side = _possession_code_from_holder(prev_holder)
+    curr_side = _possession_code_from_holder(curr_holder)
+
+    if curr_holder and prev_side and curr_side and (prev_side != curr_side) and not _recently_left_ruck(match):
+        
+        return True
+
+    # --- C) tiny book-keeping for ruck→open_play transitions (optional) ---
+    # You can increment this in ruck handlers; here we just decay it.
+    if hasattr(match, "_frames_since_ruck"):
+        match._frames_since_ruck += 1
+    else:
+        match._frames_since_ruck = TURNOVER_GRACE_TICKS  # default: already “not recent”
+
+    return False

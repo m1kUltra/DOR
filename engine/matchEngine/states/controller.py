@@ -67,20 +67,22 @@ def _resolve_state_tag(last_action: Optional[str], curr_action: Optional[str]) -
       3) default : DEFAULT_FALLBACK
     """
     # exact match first
+   # states/controller.py
+def _resolve_state_tag(last_action, curr_action) -> str:
     tag = ACTION_MATRIX.get((last_action, curr_action))
     if tag:
         return tag
-
-    # wildcard on last
+    # check (last, "_") BEFORE ("_", curr)
+    tag = ACTION_MATRIX.get((last_action, WILDCARD))
+    if tag:
+        return tag
     tag = ACTION_MATRIX.get((WILDCARD, curr_action))
     if tag:
         return tag
-    tag = ACTION_MATRIX.get((last_action, WILDCARD))
-    if tag:
-     return tag
-
-    # nothing matched -> safe default
     return DEFAULT_FALLBACK
+
+
+ 
 
 
 def _same_snapshot(a: dict, b: dict) -> bool:

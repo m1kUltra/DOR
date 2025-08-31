@@ -1,113 +1,113 @@
-# choice/ruck/over.py
+# choice/ruck/out.py
+"""all this is the state wher the 9 picks the ball but before they pass it 
+allows the nine to pass without getti ng insta hit or effected by open_play logiuc """
+# engine/matchEngine/choice/ruck/out.py
 from typing import List, Tuple, Optional
-from utils.player.dh_assign import assign_dummy_half
 from utils.positioning.mental.phase import phase_attack_targets, phase_defence_targets
 
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
+READY_DIST = 5.0
+READY_D2   = READY_DIST * READY_DIST
+
 def _xyz(p): return tuple(p) if isinstance(p,(list,tuple)) else (0.0,0.0,0.0)
+def _d2(a,b): dx,dy=a[0]-b[0],a[1]-b[1]; return dx*dx+dy*dy
+def _wait_limit_ticks(match) -> int:
+    tps = getattr(match, "ticks_per_second", 20)
+    return int(5 * max(1, tps))
+
+def _team_ready(match, atk: str, base_xy, dh_id: Optional[str]) -> bool:
+    bx, by = base_xy
+    targets = phase_attack_targets(match, atk, (bx, by))
+    ready = total = 0
+    for p in match.players:
+        if p.team_code != atk or p.state_flags.get("in_ruck", False):
+            continue
+        pid = f"{p.sn}{p.team_code}"
+        if dh_id and pid == dh_id:
+            continue
+        tgt = targets.get(p)
+        if not tgt:
+            continue
+        total += 1
+        if _d2((p.location[0],p.location[1]), (tgt[0],tgt[1])) <= READY_D2:
+            ready += 1
+    return (ready >= 10) or (total and ready/total >= 0.66)
 
 def _current_dh_id(match) -> Optional[str]:
     for p in match.players:
-        if p.state_flags.get("dummy_half"):
+        if p.state_flags.get("dummy_half"): 
             return f"{p.sn}{p.team_code}"
     return None
 
 def _choose_receiver(match, atk: str, dh_id: str):
-    """Prefer a flagged first-receiver; else nearest eligible attacker."""
-    # Try flagged 1st receiver
+    # prefer flagged first_receiver, else nearest eligible attacker
+    dh = match.get_player_by_code(dh_id)
+    dx, dy, _ = _xyz(dh.location)
+    best = None
+    best_d2 = 1e9
     for p in match.players:
-        if p.team_code != atk: 
+        if p.team_code != atk or p.state_flags.get("in_ruck", False):
             continue
-        if p.state_flags.get("in_ruck", False):
-            continue
-        if f"{p.sn}{p.team_code}" == dh_id:
+        pid = f"{p.sn}{p.team_code}"
+        if pid == dh_id:
             continue
         if p.state_flags.get("first_receiver"):
             return p
-
-    # Fallback: nearest attacker not in ruck and not DH
-    dh = match.get_player_by_code(dh_id)
-    dx, dy, _ = _xyz(dh.location)
-    candidates = []
-    for p in match.players:
-        if p.team_code != atk: 
-            continue
-        if p.state_flags.get("in_ruck", False):
-            continue
-        if f"{p.sn}{p.team_code}" == dh_id:
-            continue
-        x, y, _ = _xyz(p.location)
-        d2 = (x - dx) ** 2 + (y - dy) ** 2
-        candidates.append((d2, p))
-    candidates.sort(key=lambda t: t[0])
-    return candidates[0][1] if candidates else None
+        d2 = (p.location[0]-dx)**2 + (p.location[1]-dy)**2
+        if d2 < best_d2:
+            best_d2, best = d2, p
+    return best
 
 def plan(match, state_tuple) -> List[DoCall]:
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     atk = getattr(match, "possession", "a")
     deff = "b" if atk == "a" else "a"
+    dh_id = _current_dh_id(match)
 
-    # 1) mark in-ruck (<=2.5m)
-    for p in match.players:
-        dx, dy = p.location[0]-bx, p.location[1]-by
-        p.state_flags["in_ruck"] = (dx*dx + dy*dy) <= (2.5*2.5)
+    # safety counter
+    if not hasattr(match, "_ruck_out_wait"):
+        match._ruck_out_wait = 0
 
     calls: List[DoCall] = []
 
-    # 2) assign DH (9 or fallback) only if not already set
-    dh_id: Optional[str] = _current_dh_id(match)
-    if dh_id is None:
-        dh_id = assign_dummy_half(match, atk, near_xy=(bx, by))
-
-    # 3) DH sub-routine: PASS (use ball.holder — they should have it now)
-    if dh_id:
-        # If for some reason the holder isn't DH yet, try to pick up quickly
-        if getattr(match.ball, "holder", None) != dh_id:
-            dh = match.get_player_by_code(dh_id)
-            px, py, _ = _xyz(dh.location)
-            # If close enough, catch; else nudge toward base — purely as a safety fallback
-            if (px-bx)**2 + (py-by)**2 <= (1.5*1.5):
-                calls.append((dh_id, ("catch", None), (px, py, 0.0), (bx, by, 0.0)))
-                match.ball.holder = dh_id
-            else:
-                calls.append((dh_id, ("move", None), (px, py, 0.0),
-                              match.pitch.clamp_position((bx, by, 0.0))))
-        # If DH has the ball, just pass
-        if getattr(match.ball, "holder", None) == dh_id:
-            receiver = _choose_receiver(match, atk, dh_id)
-            if receiver:
-                rx, ry, _ = _xyz(receiver.location)
-                rid = f"{receiver.sn}{receiver.team_code}"
-                dh = match.get_player_by_code(dh_id)
-                calls.append((dh_id, ("pass", rid), _xyz(dh.location), (rx, ry, 0.0)))
-                # (Optional) immediately transfer holder if your engine expects that on pass call:
-                # match.ball.holder = rid
-
-    # 4) Attack phase shape (non-ruck, non-DH)
+    # non-ruck players follow shapes
     atk_targets = phase_attack_targets(match, atk, (bx, by))
     for p in match.players:
+        if p.team_code != atk or p.state_flags.get("in_ruck", False):
+            continue
         pid = f"{p.sn}{p.team_code}"
-        if p.team_code != atk: 
+        if dh_id and pid == dh_id:
             continue
-        if p.state_flags.get("in_ruck", False): 
-            continue
-        if dh_id and pid == dh_id: 
-            continue  # DH is busy with the pass routine
         tgt = atk_targets.get(p)
-        if not tgt: 
-            continue
-        calls.append((pid, ("move", None), _xyz(p.location), tgt))
+        if tgt:
+            calls.append((pid, ("move", None), _xyz(p.location), tgt))
 
-    # 5) Defence line
     def_targets = phase_defence_targets(match, deff, (bx, by))
     for p in match.players:
-        if p.team_code != deff: 
-            continue
-        if p.state_flags.get("in_ruck", False): 
+        if p.team_code != deff or p.state_flags.get("in_ruck", False):
             continue
         tgt = def_targets.get(p)
-        if not tgt: 
-            continue
-        calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), tgt))
+        if tgt:
+            calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), tgt))
+
+    # DH pass gating
+    if dh_id and getattr(match.ball, "holder", None) == dh_id:
+        ready = _team_ready(match, atk, (bx, by), dh_id)
+        timeout = match._ruck_out_wait >= _wait_limit_ticks(match)
+        receiver = _choose_receiver(match, atk, dh_id) if (ready or timeout) else None
+
+        if receiver:
+            rx, ry, _ = _xyz(receiver.location)
+            rid = f"{receiver.sn}{receiver.team_code}"
+            dh = match.get_player_by_code(dh_id)
+            calls.append((dh_id, ("pass", rid), _xyz(dh.location), (rx, ry, 0.0)))
+            match._ruck_out_wait = 0
+        else:
+            # hold position briefly
+            dh = match.get_player_by_code(dh_id)
+            px, py, _ = _xyz(dh.location)
+            calls.append((dh_id, ("move", None), (px,py,0.0), (bx+0.001,by+0.001,0.0)))
+            match._ruck_out_wait += 1
+            match._frames_since_ruck = 0
 
     return calls
