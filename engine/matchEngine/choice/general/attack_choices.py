@@ -42,6 +42,11 @@ def plan(match, state_tuple) -> List[DoCall]:
     pod_gap      = float(t.get("pod_gap", 6.0))
     pod_depth    = float(t.get("pod_depth", 2.0))
 
+   
+
+    # who’s attacking? (unchanged prelude) ...
+    # ... resolve team, team_code, holder_id, bx/by, tactics, etc.
+
     def _eligible(p) -> bool:
         if p.team_code != team_code: return False
         if holder_id and f"{p.sn}{p.team_code}" == holder_id: return False
@@ -54,40 +59,50 @@ def plan(match, state_tuple) -> List[DoCall]:
     if not elig:
         return []
 
-    # split backs/forwards
     backs    = [p for p in elig if p.rn in BACKS]
     forwards = [p for p in elig if p.rn in FORWARDS]
 
     calls: List[DoCall] = []
 
-    # ---- BACKS: shallow line behind the ball ----
-    # center around ball.y, with 10 deeper
+    # --- helper: respect "hold for pass" freeze and tick it down
+    def _tick_hold(p) -> bool:
+        v = int(p.state_flags.get("hold_for_pass", 0) or 0)
+        if v > 0:
+            p.state_flags["hold_for_pass"] = v - 1
+            return True    # caller should SKIP moving this player this tick
+        return False
+
+    # ---- BACKS: pivot (10) deeper, unless being held for the pass
     pivot = next((p for p in backs if p.rn == 10), None)
     if pivot:
-        tx = bx - attack_dir * depth10
-        ty = by
-        target = match.pitch.clamp_position((tx, ty, 0.0))
-        calls.append((f"{pivot.sn}{pivot.team_code}", ("move", None), _xyz(pivot.location), _xyz(target)))
+        if not _tick_hold(pivot):
+            tx = bx - attack_dir * depth10
+            ty = by
+            target = match.pitch.clamp_position((tx, ty, 0.0))
+            calls.append((f"{pivot.sn}{pivot.team_code}", ("move", None), _xyz(pivot.location), _xyz(target)))
         backs = [p for p in backs if p is not pivot]
 
-    # remaining backs → slots around ball.y: ..., -2*gap, -gap, +gap, +2*gap ...
-    backs_sorted = sorted(backs, key=lambda p: p.rn)  # stable-ish
+    # remaining backs → slots around ball.y: ..., -2g, -g, +g, +2g ...
+    backs_sorted = sorted(backs, key=lambda p: p.rn)
     offsets = []
     for i in range(len(backs_sorted)):
         k = (i // 2) + 1
         offsets.append(-k * gap if i % 2 == 0 else +k * gap)
 
     for p, off in zip(backs_sorted, offsets):
+        if _tick_hold(p):
+            continue
         tx = bx - attack_dir * min_behind
         ty = by + off
         target = match.pitch.clamp_position((tx, ty, 0.0))
         calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), _xyz(target)))
 
-    # ---- FORWARDS: two pods near the ball ----
-    # alternate left/right of ball.y at pod_gap, shallow depth
+    # ---- FORWARDS: two pods near the ball (respect hold)
     pods = [by - pod_gap, by + pod_gap]
     xf   = bx - attack_dir * pod_depth
     for i, p in enumerate(sorted(forwards, key=lambda p: p.rn)):
+        if _tick_hold(p):
+            continue
         ty = pods[i % 2]
         target = match.pitch.clamp_position((xf, ty, 0.0))
         calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), _xyz(target)))

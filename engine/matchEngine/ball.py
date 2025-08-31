@@ -68,7 +68,7 @@ class Ball:
 
     def set_action(self, action: str | None) -> None:
         self.action = action
-        print(action)
+        print(action,self.holder)
         self._commit_status_if_action_changed()
 
     # -----------------------

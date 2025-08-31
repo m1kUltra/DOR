@@ -1,7 +1,0 @@
-from typing import List, Tuple, Optional
-from choice.general.attack_choices import plan as attack_plan
-from choice.general.defender_choices import plan as defend_plan
-Do = Tuple[str, Tuple[str, Optional[str]], tuple, tuple]
-def plan(match, state_tuple) -> List[Do]:
-    
-    return (attack_plan(match, state_tuple) or []) + (defend_plan(match, state_tuple) or [])

@@ -12,7 +12,7 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     # --- Global wildcards ---
     ("_", "kicked"):            "open_play.kick_chase",   # ⬅️ any -> kicked
     ("_", "passed"):            SAME,                     # ⬅️ any -> passed (no state change)
-
+    ("_", "caught"):            "open_play.joue",
     # --- Kicking flows (kept; exact beats wildcard, both resolve to kick_chase anyway) ---
     ("kicked", "caught"):       "open_play.kick_return",
     ("kicked", "dropped"):      "open_play.scramble",
@@ -36,7 +36,8 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
 
     # --- Grounding ---
     ("_",  "grounded"):          "score.check_try",
-    ("grounded", "try"):        "nudge.conversion",
+    ("grounded", "in_a_tackle"): "score.check_try",
+    ("_", "try"):        "nudge.conversion",
     ("_", "conversion"):         "nudge.after_conversion",
 
    #tackle 
@@ -50,6 +51,13 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("picked", "passed"): "open_play.phase_play",
     ("passed", "pass_error"):  "open_play.scramble",
     ("_",      "pass_error"):  "open_play.scramble",
+    
+
+
+("_",        "line_break"): "open_play.line_break", # safety
+
+
+("_",        "turnover"):   "open_play.turnover", 
 
 
       #

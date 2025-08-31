@@ -47,7 +47,7 @@ def phase_defence_targets(
     side_def: str,
     ruck_xy: Vec2,
     *,
-    line_depth: float = 1.5,
+    line_depth: float = -2,
     gap: float = 3.0,
 ) -> Dict[object, Vec3]:
     rx, ry = ruck_xy

@@ -73,10 +73,10 @@ def _resolve_state_tag(last_action, curr_action) -> str:
     if tag:
         return tag
     # check (last, "_") BEFORE ("_", curr)
-    tag = ACTION_MATRIX.get((last_action, WILDCARD))
+    tag = ACTION_MATRIX.get((WILDCARD, curr_action))
     if tag:
         return tag
-    tag = ACTION_MATRIX.get((WILDCARD, curr_action))
+    tag = ACTION_MATRIX.get((last_action, WILDCARD))
     if tag:
         return tag
     return DEFAULT_FALLBACK

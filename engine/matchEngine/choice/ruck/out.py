@@ -14,6 +14,52 @@ def _d2(a,b): dx,dy=a[0]-b[0],a[1]-b[1]; return dx*dx+dy*dy
 def _wait_limit_ticks(match) -> int:
     tps = getattr(match, "ticks_per_second", 20)
     return int(5 * max(1, tps))
+# choice/ruck/out.py (top of file)
+PRESENT_HOLD_TICKS = 18  # ~0.9s @ 20Hz; tweak to taste
+
+def _clear_first_receiver_flags(match, team_code: str):
+    for p in match.players:
+        if p.team_code == team_code:
+            p.state_flags.pop("first_receiver", None)
+            p.state_flags.pop("hold_for_pass", None)
+
+def _assign_first_receiver(match, atk: str, dh_id: str, base_xy) -> Optional[object]:
+    """Prefer 10, else 12, 13, 15, else nearest attacker not DH/in_ruck."""
+    bx, by = base_xy
+    team = match.team_a if atk == "a" else match.team_b
+
+    # clear any stale flags first
+    _clear_first_receiver_flags(match, atk)
+
+    # shortlist in priority order
+    pref_rns = [10, 12, 13, 15]
+    for rn in pref_rns:
+        p = team.get_player_by_rn(rn)
+        if not p: 
+            continue
+        pid = f"{p.sn}{p.team_code}"
+        if pid == dh_id: 
+            continue
+        if p.state_flags.get("in_ruck", False): 
+            continue
+        # flag & freeze
+        p.state_flags["first_receiver"] = True
+        p.state_flags["hold_for_pass"] = PRESENT_HOLD_TICKS
+        return p
+
+    # fallback: nearest eligible attacker to base
+    cand = [p for p in match.players 
+            if p.team_code == atk 
+            and f"{p.sn}{p.team_code}" != dh_id
+            and not p.state_flags.get("in_ruck", False)]
+    if not cand:
+        return None
+    cand.sort(key=lambda p:(p.location[0]-bx)**2+(p.location[1]-by)**2)
+    r = cand[0]
+    r.state_flags["first_receiver"] = True
+    r.state_flags["hold_for_pass"] = PRESENT_HOLD_TICKS
+    return r
+
 
 def _team_ready(match, atk: str, base_xy, dh_id: Optional[str]) -> bool:
     bx, by = base_xy
@@ -91,6 +137,7 @@ def plan(match, state_tuple) -> List[DoCall]:
             calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), tgt))
 
     # DH pass gating
+    receiver = _assign_first_receiver(match, atk, dh_id, (bx, by))
     if dh_id and getattr(match.ball, "holder", None) == dh_id:
         ready = _team_ready(match, atk, (bx, by), dh_id)
         timeout = match._ruck_out_wait >= _wait_limit_ticks(match)
