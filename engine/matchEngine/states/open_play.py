@@ -80,6 +80,7 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
     if getattr(b, "holder", None) is None:
         if last.get("action") == "passed" and curr.get("action") != "pass_error":
             if _z(getattr(b, "location", loc)) <= PASS_ERROR_Z:
+                print(loc)
                 b.set_action("pass_error")
                 return True
 

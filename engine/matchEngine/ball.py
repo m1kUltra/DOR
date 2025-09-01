@@ -125,7 +125,7 @@ class Ball:
                 team = match.team_a if team_code == "a" else match.team_b
                 p = team.get_player_by_sn(sn)
                 if p:
-                    self.location = p.location
+                    self.location = (p.location[0], p.location[1], max(p.location[2], 1.0))
             except Exception:
                 # if parsing fails, just keep location
                 pass

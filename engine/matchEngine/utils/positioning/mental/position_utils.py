@@ -76,25 +76,27 @@ def forward_pod_lane(index0: int) -> int:
     if 1 <= index0 <= 3: return 0
     if 4 <= index0 <= 6: return +1
     return +1
-
-def forwards_shape_positions(team, ball_loc, rn: int, ordinal_in_forwards: int) -> Tuple[float,float,float]:
+def forwards_shape_positions(team, ball_loc, rn: int, ordinal_in_forwards: int):
     t = team.tactics
     bx, by, _ = ball_loc
-    dir_ = t.get("attack_dir", +1.0)
+    dir_ = float(t.get("attack_dir", +1.0))
 
-    pod_gap     = t["pod_gap"]
-    pod_depth   = t["pod_depth"]
-    min_behind  = t["backline_min_behind"]
-    wing_margin = t["far_wing_margin"]
+    pod_gap   = float(t.get("pod_gap", 6.0))
+    pod_depth = float(t.get("pod_depth", 2.0))
+
+    # NEW: forwards-only minimum (defaults to 0.0 so pod_depth “wins”)
+    f_min_behind = float(t.get("forwards_min_behind", 0.0))
 
     z = 0.0
-    clamp_y = lambda y: _clamp_y(y, wing_margin)
-
     lane = forward_pod_lane(ordinal_in_forwards)
-    y = clamp_y(by + lane * pod_gap)
-    x = _ahead(bx, dir_, -pod_depth)
-    if dir_ > 0:
-        x = min(x, bx - min_behind)
-    else:
-        x = max(x, bx + min_behind)
+    lane_bias = {-1: +0.3, 0: 0.0, +1: +0.3}[lane]
+    dist = max(pod_depth + lane_bias, f_min_behind)
+    x = _ahead(bx, dir_, -dist)
+
+    y = _clamp_y(by + lane * pod_gap, float(t.get("far_wing_margin", 0.0)))
+
+    # exact distance behind the ball = max(pod_depth, f_min_behind)
+    dist = max(pod_depth, f_min_behind)
+    x = _ahead(bx, dir_, -dist)
     return (x, y, z)
+

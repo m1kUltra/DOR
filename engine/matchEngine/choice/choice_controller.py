@@ -41,7 +41,7 @@ def select(match, state_tuple) -> List[DoCall]:
         catcher = best_catcher(match.players, (bx, by, bz), radius=1.0, max_height=1.6)
         if catcher:
             pid = f"{catcher.sn}{catcher.team_code}"
-            return [(pid, ("catch", None), _xyz(catcher.location), (bx, by, 0.0))]
+            return [(pid, ("catch", None), _xyz(catcher.location), (bx, by, bz))]
 
     # --- explicit routers for open-play facets (early return) ---
     if isinstance(tag, str):

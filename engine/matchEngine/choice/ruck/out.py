@@ -144,10 +144,11 @@ def plan(match, state_tuple) -> List[DoCall]:
         receiver = _choose_receiver(match, atk, dh_id) if (ready or timeout) else None
 
         if receiver:
-            rx, ry, _ = _xyz(receiver.location)
+            rx, ry, rz = _xyz(receiver.location)
             rid = f"{receiver.sn}{receiver.team_code}"
             dh = match.get_player_by_code(dh_id)
-            calls.append((dh_id, ("pass", rid), _xyz(dh.location), (rx, ry, 0.0)))
+            tz = rz if rz else 1.0
+            calls.append((dh_id, ("pass", rid), _xyz(dh.location), (rx, ry, tz)))
             match._ruck_out_wait = 0
         else:
             # hold position briefly

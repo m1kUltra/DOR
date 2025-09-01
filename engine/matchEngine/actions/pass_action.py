@@ -32,6 +32,8 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
 
     # NEW: mark status -> passed so the FSM sees it
     ball.set_action("passed")
+    print(location)
+    print(target)
 
     ball.release()
     ball.start_linear_to(target, speed=speed)

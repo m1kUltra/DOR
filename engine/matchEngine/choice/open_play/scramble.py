@@ -29,7 +29,7 @@ def plan(match, state_tuple) -> List[Do]:
             within.sort(key=lambda t: t[0])  # shortest distance wins
             _, winner = within[0]
             pid = f"{winner.sn}{winner.team_code}"
-            calls.append((pid, ("catch", None), _xyz(winner.location), (bx, by, 0.0)))
+            calls.append((pid, ("catch", None), _xyz(winner.location), (bx, by, bz)))
             # We still let others move below (optional), but holder will be set by the action system.
             # You can early-return here if you prefer a single action:
             # return calls
@@ -44,7 +44,7 @@ def plan(match, state_tuple) -> List[Do]:
         group.sort(key=d2)
         for p in group[:CHASERS_PER_TEAM]:
             pid = f"{p.sn}{p.team_code}"
-            calls.append((pid, ("move", None), _xyz(p.location), match.pitch.clamp_position((bx, by, 0.0))))
+            calls.append((pid, ("move", None), _xyz(p.location), match.pitch.clamp_position((bx, by, bz))))
 
     # (Optional) You could add a light “ring” or hold behavior for everyone else later.
 

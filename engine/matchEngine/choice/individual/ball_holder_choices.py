@@ -30,8 +30,8 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
         recv = _nearest_legal_receiver_within(match, holder, attack_dir, OFFLOAD_MAX_RANGE)
         """
         if recv is not None:
-            rx, ry, _ = recv.location
-            return (("offload", None), match.pitch.clamp_position((rx, ry, 0.0)))
+           rx, ry, rz = recv.location
+           return (("offload", None), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
         else:
         """
         hx, hy, _ = holder.location
@@ -62,8 +62,8 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
     # recvs = _legal_receivers(match, holder, attack_dir)
     # if recvs:
     #     r = random.choice(recvs)
-    #     rx, ry, _ = r.location
-    #     return (("pass", "flat"), match.pitch.clamp_position((rx, ry, 0.0)))
+    #     rx, ry, rz = r.location
+    #     return (("pass", "flat"), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
     # """
 
     # """
