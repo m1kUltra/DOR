@@ -10,7 +10,9 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
 
     # Put ball on ground at carrier location and mark the action
     x, y, _ = location
-    ball.release()
+  
     ball.location = (x, y, 0.0)
-    ball.set_action("tackled")   # → ACTION_MATRIX will enter ruck.start
+    ball.set_action("tackled")
+    
+    ball.release()   # → ACTION_MATRIX will enter ruck.start
     return True
