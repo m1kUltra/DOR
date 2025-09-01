@@ -3,7 +3,7 @@ from typing import Tuple, Any
 from states.controller import StateController
 from choice.choice_controller import select as choose_select
 from actions.action_controller import do_action
-from states import restart, scoring, nudge, ruck, open_play
+from states import restart, scoring, nudge, ruck, open_play,  scrum, lineout
 from team.team_controller import sync_flags
 
 class BaseState:
@@ -20,7 +20,7 @@ class BaseState:
         sync_flags(self.match)
 
         # 2) HARD handlers: own actions + early return
-        for mod in (restart, scoring, nudge, ruck):
+        for mod in (restart, scoring, nudge, ruck,  scrum, lineout):
             handler = getattr(mod, "maybe_handle", None)
             if handler and handler(self.match, tag, loc, ctx):
                 self.match.ball.update(self.match)
