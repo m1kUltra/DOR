@@ -1,6 +1,7 @@
 # matchEngine/actions/pass_action.py
 
 from constants import EPS
+import math
 
 
 def _team_attack_dir(match, team_code: str) -> float:
@@ -36,7 +37,14 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
     print(target)
 
     ball.release()
-    ball.start_linear_to(target, speed=speed)
+ 
+
+    # compute a gentle arc so misplaced passes still drop to ground
+    x, y, _ = location
+    tx, ty, tz = target
+    dist = math.hypot(tx - x, ty - y)
+    hang = dist / speed if speed > 0 else 0.0
+    ball.start_parabola_to((tx, ty, tz), T=hang, H=1.1, gamma=1.1)
     return True
 
 def _speed_for(subtype: Optional[str]) -> float:
@@ -47,4 +55,4 @@ def _speed_for(subtype: Optional[str]) -> float:
         return 18.0
     if subtype == "tip":
         return 14.0
-    return 15.0
+    return 30.0
