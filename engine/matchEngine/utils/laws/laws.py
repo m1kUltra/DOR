@@ -1,7 +1,10 @@
 from typing import Optional, Dict, List, Tuple
 from constants import (
     FORWARD_PASS_EPS, KNOCK_ON_FORWARD_METERS, OFFSIDE_OPENPLAY_BUFFER,
-    FIFTY22_MIN_ORIGIN, FIFTY22_TARGET_MINX
+     FIFTY22_MIN_ORIGIN, FIFTY22_TARGET_MINX,
+     TRYLINE_A_X, TRYLINE_B_X, Twenty2_A_X, Twenty2_B_X, The5_A_X, The5_B_X
+
+
 )
 
 def _sign(v: float) -> int:
@@ -16,7 +19,7 @@ def detect_forward_pass(match, prev_holder_loc, new_holder_loc, attack_dir) -> O
     if attack_dir >= 0:
         forward = (rx - px) > FORWARD_PASS_EPS
     else:
-        forward = (px - rx) > FORWARD_PASS_EPS
+         return {"type":"forward_pass","x":px,"y":ry,"team":team,"adv_type":"knock_on"}
     if forward:
         team = match.last_touch_team
         return {"type":"forward_pass","x":px,"y":ry,"team":team}
@@ -46,7 +49,24 @@ def detect_touch(match, prev_ball_loc, new_ball_loc, last_touch_team) -> Optiona
     if was_in and now_out:
         x,y,_ = new_ball_loc
         other = 'a' if last_touch_team=='b' else 'b'
-        return {"type":"into_touch","x":x,"y":y,"to": other}
+        result = {"type":"into_touch","x":x,"y":y,"to": other}
+        lk = getattr(match, "last_kick", None)
+        if lk and lk.get("team") == last_touch_team:
+            kx = lk.get("x", x)
+            bounced = lk.get("bounced", False)
+            taken_back = lk.get("taken_back", False)
+            adir = match.get_attack_dir(last_touch_team)
+            if not bounced:
+                in_22 = (kx <= Twenty2_A_X) if adir >= 0 else (kx >= Twenty2_B_X)
+                if not in_22 or taken_back:
+                    result["mark"] = (kx, y)
+                else:
+                    result["mark"] = (x, y)
+            else:
+                result["mark"] = (x, y)
+        else:
+            result["mark"] = (x, y)
+        return result
     return None
 
 def detect_offside_open_play(match) -> List[Dict]:
@@ -71,11 +91,28 @@ def detect_goal_line_dropout(match) -> Optional[Dict]:
     # If attackers kicked dead in-goal or defender grounded → goal-line DO to defenders.
     # For v1 we look for ball dead behind defenders' goal line with last kick by attackers.
     if getattr(match, "ball_dead", False):
+        
+        bx, by, _ = getattr(match.ball, "location", (None, None, None))
+        if bx is None:
+            return None
+        if bx <= TRYLINE_A_X:
+            defend = 'a'
+            attack = 'b'
+            scrum_x = The5_A_X
+        elif bx >= TRYLINE_B_X:
+            defend = 'b'
+            attack = 'a'
+            scrum_x = The5_B_X
+        else:
+            return None
         lk = getattr(match, "last_kick", None)
-        if lk:
-            atk = lk["team"]
-            defend = 'a' if atk=='b' else 'b'
-            return {"type":"goal_line_do","to": defend}
+        last = getattr(match, "last_touch_team", None)
+
+        if last == defend and not (lk and lk.get("team") == attack):
+            return {"type": "scrum_5", "x": scrum_x, "y": by, "put_in": attack}
+        if (lk and lk.get("team") == attack) or last == attack:
+            return {"type": "goal_line_do", "to": defend}
+       
     return None
 
 def detect_fifty22(match, kick_ctx, out_event) -> Optional[Dict]:

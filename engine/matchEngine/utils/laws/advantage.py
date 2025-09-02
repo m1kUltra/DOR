@@ -10,7 +10,7 @@ METERS_LIMITS = {
     "penalty": 20.0,
 }
 
-def start(current_adv: dict | None, *, type_: str, to: str, start_x: float, start_y: float, start_t: float) -> dict | None:
+def start(current_adv: dict | None, *, type_: str, to: str, start_x: float, start_y: float, start_t: float, reason: str | None = None) -> dict | None:
     """
     Start an advantage overlay if none is active.
     Returns the new advantage dict (or the existing one if already running).
@@ -25,6 +25,7 @@ def start(current_adv: dict | None, *, type_: str, to: str, start_x: float, star
         "start_y": float(start_y),
         "timer_s": 0.0,
         "meters": 0.0,
+        "reason": reason or type_,
     }
 
 def _meters_from(bx: float, start_x: float, attack_dir: float) -> float:
@@ -57,8 +58,7 @@ def tick(adv: dict | None, *, match_time: float, ball_x: float, attack_dir: floa
     # Called back by time
     if adv["timer_s"] >= time_limit:
         if type_ == "knock_on":
-            flag = {"pending_scrum": {"x": adv["start_x"], "y": adv["start_y"], "put_in": adv["to"], "reason": "knock_on"}}
-            return None, flag, "called_back"
+            flag = {"pending_scrum": {"x": adv["start_x"], "y": adv["start_y"], "put_in": adv["to"], "reason": adv.get("reason", "knock_on")}}
         if type_ == "penalty":
             flag = {"pending_penalty": {"mark": (adv["start_x"], adv["start_y"]), "to": adv["to"], "reason": "penalty"}}
             return None, flag, "called_back"
