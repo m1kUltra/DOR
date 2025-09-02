@@ -27,6 +27,9 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
 
     ball.release()
     ball.start_linear_to(target, speed=speed)
+    for p in match.players:
+        p.state_flags["being_tackled"]=False
+        p.state_flags["tackling"]=False
     return True
 
 def _speed_for(subtype: Optional[str]) -> float:
