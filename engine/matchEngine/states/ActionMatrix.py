@@ -32,6 +32,7 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     # --- Loose ball recoveries ---
     ("dropped", "caught"):       "open_play.turnover",
     ("dropped", "dropped"):      "open_play.scramble",
+    ("grounded", "dropped"):    'open_play.scramble',
 
     # --- Touch / out-of-play ---
     ("_",  "in_touch"):          "lineout.start",

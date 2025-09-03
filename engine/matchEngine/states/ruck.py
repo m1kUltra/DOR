@@ -13,7 +13,7 @@ RUCK_TAGS = {START, FORMING, OVER, OUT}
 
 # states/ruck.py
 from set_pieces.ruck import handle_start, handle_forming, handle_over, handle_out
-
+from constants import TRYLINE_A_X, TRYLINE_B_X
 
 
 def maybe_handle(match, tag, loc, ctx) -> bool:
@@ -22,8 +22,13 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
         return False
     
     if tag == START:
-        """run a check here to see if the ball is over tryline. If yes set ball.set_action(grounded)"""
-        handle_start(match, (tag, loc, ctx))
+        """TODO: run a check here to see if the ball is over tryline. If yes set ball.set_action(grounded)"""
+        bx, _, _ = getattr(match.ball, "location", (0.0, 0.0, 0.0))
+        if bx <= TRYLINE_A_X or bx >= TRYLINE_B_X:
+            match.ball.set_action("grounded")
+            match.ball.update(match)
+        else:
+            handle_start(match, (tag, loc, ctx))
 
         return True
 
