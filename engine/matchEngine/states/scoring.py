@@ -8,7 +8,9 @@ from utils.core.scoreboard import score_update
 CHECK_TRY = "score.check_try"
 SCORING_TAGS = { CHECK_TRY }
 
-
+"""todo have scoring check if ball is over line. 
+if over opposition tryline of holder award try else give goaline drop out restart to the ball holders team
+"""
 
 
 def try_now(match, to: str = "b") -> bool:

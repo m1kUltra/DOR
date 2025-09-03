@@ -5,6 +5,17 @@ from choice.choice_controller import select as choose_select
 from actions.action_controller import do_action
 from states import restart, scoring, nudge, ruck, open_play,  scrum, lineout
 from team.team_controller import sync_flags
+from utils.laws import advantage as adv_law
+
+
+def _team_attack_dir(match, code: str | None) -> float:
+    team = match.team_a if code == "a" else match.team_b
+    return float((getattr(team, "tactics", {}) or {}).get("attack_dir", +1.0))
+
+
+def _holder_team(ball) -> str | None:
+    hid = getattr(ball, "holder", None)
+    return hid[-1] if isinstance(hid, str) else None
 
 class BaseState:
     def __init__(self, match):
@@ -18,6 +29,22 @@ class BaseState:
 
         # keep flags sane before anyone looks at them
         sync_flags(self.match)
+
+        # Update advantage overlay each frame
+        adv_dir = _team_attack_dir(self.match, (self.match.advantage or {}).get("to"))
+        adv, flag, outcome = adv_law.tick(
+            self.match.advantage,
+            match_time=self.match.match_time,
+            ball_x=self.match.ball.location[0],
+            attack_dir=adv_dir,
+            holder_team=_holder_team(self.match.ball),
+        )
+        self.match.advantage = adv
+        if outcome == "called_back":
+            if flag and "pending_scrum" in flag:
+                self.match.ball.set_action("scrum")
+            elif flag and "pending_penalty" in flag:
+                self.match.ball.set_action("penalty")
 
         # 2) HARD handlers: own actions + early return
         for mod in (restart, scoring, nudge, ruck,  scrum, lineout):
@@ -42,7 +69,6 @@ class BaseState:
             for pid, action, _ignored, target in calls:
                 loc_p = self.match.get_player_by_code(pid).location
                 do_action(self.match, pid, action, loc_p, target)
-
         # 5) single physics step + resync
         self.match.ball.update(self.match)
         sync_flags(self.match)

@@ -57,9 +57,7 @@ def plan(match, state_tuple) -> List[DoCall]:
     calls: List[DoCall] = []
 
     # mark clears; we’ll set in_ruck per rules below
-    for p in match.players:
-        p.state_flags["in_ruck"] = False
-        p.state_flags["jackal"]  = False
+    
 
     # attacker side logic
     attackers = [p for p in match.players if p.team_code == atk]

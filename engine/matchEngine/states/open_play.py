@@ -19,6 +19,7 @@ OPEN_PLAY_TAGS = {
 from typing import Any, Tuple, Optional
 import event
 
+
 # --- tunables (fast to tweak) ---
 PASS_ERROR_Z   = 0.0     # if pass hits ground at/below this height
 READY_LINE_N   = 11      # line-break threshold: defenders behind holder >= this many

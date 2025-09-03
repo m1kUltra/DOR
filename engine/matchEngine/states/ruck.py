@@ -22,7 +22,9 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
         return False
     
     if tag == START:
+        """run a check here to see if the ball is over tryline. If yes set ball.set_action(grounded)"""
         handle_start(match, (tag, loc, ctx))
+
         return True
 
     if tag == FORMING:

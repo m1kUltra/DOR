@@ -1,28 +1,38 @@
 from typing import Optional, Dict, List, Tuple
 from constants import (
     FORWARD_PASS_EPS, KNOCK_ON_FORWARD_METERS, OFFSIDE_OPENPLAY_BUFFER,
-     FIFTY22_MIN_ORIGIN, FIFTY22_TARGET_MINX,
-     TRYLINE_A_X, TRYLINE_B_X, Twenty2_A_X, Twenty2_B_X, The5_A_X, The5_B_X
+     
+    FIFTY22_MIN_ORIGIN, FIFTY22_TARGET_MINX,
+    TRYLINE_A_X, TRYLINE_B_X, Twenty2_A_X, Twenty2_B_X, The5_A_X, The5_B_X,
+
 
 
 )
+def _attack_dir(match, team_code: str) -> float:
+    """Helper: attack direction for team code 'a' or 'b'."""
+    team = match.team_a if team_code == "a" else match.team_b
+    return float((getattr(team, "tactics", {}) or {}).get("attack_dir", +1.0))
 
 def _sign(v: float) -> int:
     return 1 if v >= 0 else -1
 
 def detect_forward_pass(match, prev_holder_loc, new_holder_loc, attack_dir) -> Optional[Dict]:
     # Baseline: if receiver is ahead of passer in attack direction by > eps
+    """Return an event dict if the pass travelled forward."""
     if not prev_holder_loc or not new_holder_loc:
         return None
     px, _, _ = prev_holder_loc
-    rx, ry, rz = new_holder_loc
+    
+    rx, ry, _ = new_holder_loc
     if attack_dir >= 0:
         forward = (rx - px) > FORWARD_PASS_EPS
     else:
          return {"type":"forward_pass","x":px,"y":ry,"team":team,"adv_type":"knock_on"}
+        
     if forward:
         team = match.last_touch_team
-        return {"type":"forward_pass","x":px,"y":ry,"team":team}
+       
+        return {"type": "forward_pass", "x": px, "y": ry, "team": team, "adv_type": "knock_on"}
     return None
 
 def detect_knock_on(match, last_touch_team, prev_ball_loc, new_ball_loc, attack_dir) -> Optional[Dict]:
@@ -55,7 +65,8 @@ def detect_touch(match, prev_ball_loc, new_ball_loc, last_touch_team) -> Optiona
             kx = lk.get("x", x)
             bounced = lk.get("bounced", False)
             taken_back = lk.get("taken_back", False)
-            adir = match.get_attack_dir(last_touch_team)
+    
+            adir = _attack_dir(match, last_touch_team)
             if not bounced:
                 in_22 = (kx <= Twenty2_A_X) if adir >= 0 else (kx >= Twenty2_B_X)
                 if not in_22 or taken_back:
@@ -81,6 +92,7 @@ def detect_offside_open_play(match) -> List[Dict]:
     for p in match.players_for_team(team):
         px, py, pz = getattr(p, "location", (0,0,0))
         ahead = (px > kx + OFFSIDE_OPENPLAY_BUFFER) if match.get_attack_dir(team) >= 0 else (px < kx - OFFSIDE_OPENPLAY_BUFFER)
+        ahead = (px > kx + OFFSIDE_OPENPLAY_BUFFER) if _attack_dir(match, team) >= 0 else (px < kx - OFFSIDE_OPENPLAY_BUFFER)
         if ahead and match.can_interfere(p):  # stub hooks expected in engine
             other = 'a' if team=='b' else 'b'
             evs.append({"type":"penalty","mark": (px, py), "to": other, "reason": "offside_kick"})
@@ -129,7 +141,8 @@ def detect_fifty22(match, kick_ctx, out_event) -> Optional[Dict]:
         return None
     # own half origin
     kx = kick_ctx.get("x", 0.0)
-    if match.get_attack_dir(team) >= 0:
+   
+    if _attack_dir(match, team) >= 0:
         in_own_half = kx <= FIFTY22_MIN_ORIGIN
         past_22 = out_event["x"] >= FIFTY22_TARGET_MINX
     else:
@@ -137,8 +150,5 @@ def detect_fifty22(match, kick_ctx, out_event) -> Optional[Dict]:
         past_22 = out_event["x"] <= (100.0 - FIFTY22_TARGET_MINX)
     if not (in_own_half and kick_ctx.get("bounced", False) and past_22):
         return None
+ 
     return {"type":"into_touch_50_22","x": out_event["x"], "y": out_event["y"], "to": team}
-
-"""
-no clue how to actually implement this after the implementing new state functionality
-"""

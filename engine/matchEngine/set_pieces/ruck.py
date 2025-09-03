@@ -22,6 +22,11 @@ def _team_possession(match) -> str:
 def _other(code: str) -> str: return "b" if code == "a" else "a"
 
 def handle_start(match, state_tuple) -> None:
+    #TODO implment check over_line 
+    """
+    if over. own tryline implment goaline restart
+    else its a try (call check_scoring)
+    """
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     _team_possession(match)
     match.ball.holder   = None

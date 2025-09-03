@@ -7,7 +7,9 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     # --- Starts / restarts (open-play entry) ---
     (None,     "idle"):         "restart.kick_off",
     ("dead",   "idle"):         "restart.22Drop",
-    ("idle",   "kicked"):       "open_play.kick_chase",   # e.g., 22 drop-out / restart kick
+    ("idle",   "kicked"):       "open_play.kick_chase",
+    ("goal_line", "idle"):      "restart.goal_line_drop",
+    ("_", "goal_line"):      "restart.goal_line_drop",   # e.g., 22 drop-out / restart kick
     ("conversion", "idle") :     "restart.kick_off",
     # --- Global wildcards ---
     ("_", "kicked"):            "open_play.kick_chase",   # ⬅️ any -> kicked
@@ -58,6 +60,27 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
 
 
 ("_",        "turnover"):   "open_play.turnover", 
+
+
+    # --- existing mappings above ---
+
+    # --- Penalty & scrum call‑backs ---
+    ("_", "penalty"):            "nudge.quick_tap",      # route into penalty‑option handler
+
+    ("_", "scrum"):              "scrum.start",
+    ("scrum", "scrum_forming"):  "scrum.forming",
+    ("scrum_forming", "scrum_over"): "scrum.over",
+    ("scrum_over", "_"):         "scrum.out",            # ball released from the scrum
+
+    # --- Line‑out sequence ---
+    ("_", "lineout_forming"):        "lineout.forming",
+    ("lineout_forming", "lineout_over"): "lineout.over",
+    ("lineout_over", "_"):           "lineout.out",   
+       
+       
+       # throw contest resolved
+
+    # --- existing mappings below ---
 
 
       #
