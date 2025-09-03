@@ -21,24 +21,20 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
     crossed = (
         (attack_dir > 0 and x >= try_x - EPS) or
         (attack_dir < 0 and x <= try_x + EPS)
-   )
+    )
     if crossed:
         return (("ground", None), match.pitch.clamp_position((x, y, 0.0)))
 
     # --- 1) If being tackled, attempt a short offload (<=10m, not forward) ---
     if holder.state_flags.get("being_tackled", False):
         recv = _nearest_legal_receiver_within(match, holder, attack_dir, OFFLOAD_MAX_RANGE)
-        """
         if recv is not None:
-           rx, ry, rz = recv.location
-           return (("offload", None), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
+            rx, ry, rz = recv.location
+            return (("offload", None), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
         else:
-        """
-        hx, hy, _ = holder.location
-        return (("tackled", None), match.pitch.clamp_position((hx, hy, 0.0)))
+            hx, hy, _ = holder.location
+            return (("tackled", None), match.pitch.clamp_position((hx, hy, 0.0)))
             
-        # if no legal offload, fall through to run logic
-
     # --- 2) Under pressure → evade or short probe ---
     if _nearest_defender_distance(holder, match) < 5.0:
         if random.random() < 0.5:
@@ -48,30 +44,17 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
                 (x + RUN_PROBE_LEN * attack_dir, y, 0.0)
             ))
 
-    # --- 3) Default (passes/kicks currently disabled) → simple run probe ---
-    run_target = match.pitch.clamp_position((x + RUN_PROBE_LEN * attack_dir, y, 0.0))
-    return (("move", None), run_target)
+    # --- 3) Passing option ---
+    recvs = _legal_receivers(match, holder, attack_dir)
+    if recvs:
+        r = random.choice(recvs)
+        rx, ry, rz = r.location
+        return (("pass", "flat"), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
 
-    # --------------------------
-    # (COMMENTED OUT FOR TESTING)
-    # To re-enable later, remove the triple-quotes around each block.
-    # --------------------------
-
-    # """
-    # # PASS option (legal, not-forward, within PASS_MAX_RANGE)
-    # recvs = _legal_receivers(match, holder, attack_dir)
-    # if recvs:
-    #     r = random.choice(recvs)
-    #     rx, ry, rz = r.location
-    #     return (("pass", "flat"), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
-    # """
-
-    # """
-    # # KICK option (choose subtype + target)
-    # kick_subtype = random.choice(["exit", "bomb", "chip", "grubber"])
-    # k_target = _kick_target_for(holder, match, kick_subtype, attack_dir)
-    # return (("kick", kick_subtype), k_target)
-    # """
+    # --- 4) Kick option ---
+    kick_subtype = random.choice(["exit", "bomb", "chip", "grubber"])
+    k_target = _kick_target_for(holder, match, kick_subtype, attack_dir)
+    return (("kick", kick_subtype), k_target)
 
 # ---------------- helpers ----------------
 
@@ -96,7 +79,6 @@ def _nearest_legal_receiver_within(match, holder, attack_dir: float, max_range: 
     for p in match.players:
         if p is holder or p.team_code != holder.team_code:
             continue
-        # avoid compromised receivers
         sf = p.state_flags
         if sf.get("being_tackled", False) or sf.get("off_feet", False):
             continue
@@ -105,7 +87,6 @@ def _nearest_legal_receiver_within(match, holder, attack_dir: float, max_range: 
         d2 = dx*dx + dy*dy
         if d2 > max_range * max_range:
             continue
-        # not forward relative to attack_dir
         if (attack_dir > 0 and dx > EPS) or (attack_dir < 0 and dx < -EPS):
             continue
         if d2 < best_d2:
@@ -118,7 +99,6 @@ def _legal_not_forward(attack_dir: float, dx: float) -> bool:
     else:               return dx >= -EPS
 
 def _legal_receivers(match, holder, attack_dir: float):
-    # full implementation (used by the commented PASS block)
     hx, hy, _ = holder.location
     out = []
     max_d2 = PASS_MAX_RANGE * PASS_MAX_RANGE
@@ -129,7 +109,6 @@ def _legal_receivers(match, holder, attack_dir: float):
         if d2 > max_d2: continue
         dx = px - hx
         if not _legal_not_forward(attack_dir, dx): continue
-        # avoid compromised receivers
         sf = p.state_flags
         if sf.get("being_tackled", False) or sf.get("off_feet", False):
             continue
@@ -138,11 +117,11 @@ def _legal_receivers(match, holder, attack_dir: float):
 
 def _kick_target_for(holder, match, subtype: str, attack_dir: float) -> XYZ:
     x, y, _ = holder.location
-    if subtype == "exit":    dist = 30.0
+    if subtype == "exit":    dist = 60.0
     elif subtype == "bomb":  dist = 35.0
     elif subtype == "chip":  dist = 12.0
     elif subtype == "grubber": dist = 18.0
-    else: dist = 20.0
+    else: dist = 50.0
     return match.pitch.clamp_position((x + dist * attack_dir, y, 0.0))
 
 def _evade_target(holder, attack_dir: float, match) -> XYZ:
