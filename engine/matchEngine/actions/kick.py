@@ -1,4 +1,3 @@
-# matchEngine/actions/kick.py
 from typing import Optional, Tuple
 from math import hypot, isfinite
 
@@ -6,15 +5,21 @@ XYZ = Tuple[float, float, float]
 
 def _profile_for(subtype: Optional[str]) -> Tuple[float, float, float]:
     # (T, H, gamma)
+    """Return (speed, apex height, gamma) profile for the kick subtype."""
     if subtype in ("bomb", "contestable"):
-        return 2.2, 10.0, 1.1
+        
+        return 23.0, 10.0, 1.1
     if subtype in ("grubber", "dribble"):
-        return 0.6, 0.4, 1.0
+        
+        return 15.0, 0.4, 1.0
     if subtype in ("exit", "long"):
-        return 2.0, 8.0, 1.0
+        
+        return 30.0, 8.0, 1.0
     if subtype in ("place_kick", "conversion"):
-        return 1.15, 6.0, 1.0
-    return 1.8, 8.0, 1.0  # default punt
+      
+    
+        return 30.0, 6.0, 1.0
+    return 26.0, 8.0, 1.0  # default punt
 
 def do_action(match, kicker_id: str, subtype: Optional[str], location: XYZ, target: XYZ) -> bool:
     """
@@ -45,10 +50,18 @@ def do_action(match, kicker_id: str, subtype: Optional[str], location: XYZ, targ
 
     # profile params
     T, H, gamma = _profile_for(subtype)
+    speed, H, gamma = _profile_for(subtype)
+    tx = float(target[0])
+    ty = float(target[1])
+    tz = float(target[2] if len(target) > 2 else 0.0)
+
+    dist_xy = hypot(tx - sx, ty - sy)
+    T = dist_xy / max(speed, 1e-6)
 
     # Grubber/dribble: force to ground quickly, ignore z-constraint
     if subtype in ("grubber", "dribble"):
         ball.start_parabola_to((target[0], target[1], 0.0), T=T, H=H, gamma=gamma)
+        ball.start_parabola_to((tx, ty, 0.0), T=T, H=H, gamma=gamma)
         return True
 
     tx = float(target[0])
@@ -91,6 +104,9 @@ def do_action(match, kicker_id: str, subtype: Optional[str], location: XYZ, targ
     # final safety: bad numerics fallback
     if not all(map(isfinite, (land_x, land_y))):
         land_x, land_y = tx + dirx, ty + diry  # minimal 1m fallback
+
+    total_xy = hypot(land_x - sx, land_y - sy)
+    T = total_xy / max(speed, 1e-6)
 
     ball.start_parabola_to((land_x, land_y, 0.0), T=T, H=H, gamma=gamma)
     return True

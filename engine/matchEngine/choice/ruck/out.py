@@ -157,10 +157,10 @@ def plan(match, state_tuple) -> List[DoCall]:
             calls.append((dh_id, ("move", None), (px,py,0.0), (bx+0.001,by+0.001,0.0)))
             match._ruck_out_wait += 1
             match._frames_since_ruck = 0
-            for p in match.players:
+            
+    for p in match.players:
                 p.state_flags["in_ruck"] = False
                 p.state_flags["jackal"]  = False
                 p.state_flags["being_tackled"]=False
                 p.state_flags["tackling"]=False
-
     return calls
