@@ -38,7 +38,7 @@ def _attr(player, name: str) -> float:
 def _initial_score(match) -> Tuple[float, bool]:
     """Stages 1‑3: crouch, bind, set. Returns (score, lock_out)."""
     atk = _team_possession(match)
-    team = match.teams[atk]
+    team = match.team_a if atk == "a" else match.team_b
 
     lh = team.get_player_by_rn(1)
     hk = team.get_player_by_rn(2)
@@ -158,7 +158,7 @@ def handle_start(match, state_tuple) -> None:
 
     match.ball.location = (bx, by, 0.0)
     atk = match.possession
-    team = match.get_team(atk)
+    team = match.team_a if atk == "a" else match.team_b
     p9 = team.get_player_by_rn(9) if team else None
     if p9:
         match.ball.holder = f"{p9.sn}{p9.team_code}"
