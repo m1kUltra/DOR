@@ -10,7 +10,7 @@ DEFAULT_FALLBACK = SAME  # your safe default
 class StateController:
     def __init__(self, match):
         self.match = match
-        self.status = ("scrum.start",
+        self.status = ("restart.kick_off",
                        getattr(match.ball, "location", (50.0, 35.0, 0.0)),
                        getattr(match.ball, "holder", None))
 
@@ -57,7 +57,15 @@ class StateController:
 
 
 
+def _resolve_state_tag(last_action: Optional[str], curr_action: Optional[str]) -> str:
 
+    
+    """
+    Priority:
+      1) exact   : (last, curr)
+      2) wildcard: ("_", curr)
+      3) default : DEFAULT_FALLBACK
+    """
     # exact match first
    # states/controller.py
 def _resolve_state_tag(last_action, curr_action) -> str:

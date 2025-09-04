@@ -60,14 +60,20 @@ class Match:
     # main loop
     # ----------------------------
     #TODO move this to anywhere but match
+    def get_team(self, code: str):
+        """Return team for code ('a' or 'b'), or None if missing."""
+        return self.teams.get(code)
+
     def get_player_by_code(self, code: str):
         """e.g. '10a' -> Player or None"""
         if not code:
             return None
         sn = int(code[:-1])
         team_code = code[-1]
-        team = self.team_a if team_code == 'a' else self.team_b
-        return team.get_player_by_sn(sn)
+        
+        team = self.get_team(code[-1])
+        return team.get_player_by_sn(sn) if team else None
+   
     
      # 
    

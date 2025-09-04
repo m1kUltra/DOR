@@ -18,7 +18,7 @@ SCRUM_LOCK_BACK_X = -0.6
 SCRUM_BACKROW_BACK_X = -1.2
 SCRUM_NO8_X = -1.4
 SCRUM_9_SIDE_OFFSET_Y = 1.5
-
+SCRUM_BACKS_LINE_X = 5.0
 # Lineout
 LINEOUT_POD_GAP_X = 2.0
 LINEOUT_LIFTER_OFFSET_Y = 0.8
@@ -135,27 +135,36 @@ def get_scrum_formation(mark_xy: Vec2, put_in_team: str, match) -> Dict[object, 
     """Return targets for *both* teams at a scrum mark. Attacking team = put_in_team.
     Keys are Player objects; values are (x, y, 0.0).
     """
+    mx, my = mark_xy
     ax = (match.team_a if put_in_team == 'a' else match.team_b).tactics.get("attack_dir", +1.0)
     defx = (match.team_a if put_in_team != 'a' else match.team_b).tactics.get("attack_dir", -1.0)
 
     attack = match.team_a if put_in_team == 'a' else match.team_b
     defend = match.team_b if put_in_team == 'a' else match.team_a
 
-    # Decide 9 side based on touch proximity
-    _, my = mark_xy
-    nine_side = -SCRUM_9_SIDE_OFFSET_Y if my < ( (TOUCHLINE_BOTTOM_Y + TOUCHLINE_TOP_Y) / 2.0 ) else +SCRUM_9_SIDE_OFFSET_Y
+    mid_y = (TOUCHLINE_BOTTOM_Y + TOUCHLINE_TOP_Y) / 2.0
+    open_positive = my < mid_y  # True if open side is +Y
+    nine_side = -SCRUM_9_SIDE_OFFSET_Y  # 9 always on attack left
 
     targets: Dict[object, Vec3] = {}
 
+    
     # --- Attacking pack & default backs ---
     for rn, (lx, ly) in _SCRUM_LOCAL.items():
         ly_adj = ly
+        lx_adj = lx
         if rn == 9:
             ly_adj = nine_side
+        elif rn in (6, 7):
+            if not open_positive:
+                ly_adj = -ly
+        if rn > 9:
+            lx_adj = SCRUM_BACKS_LINE_X
         p = nearest_role(attack, rn)
         if not p:
             continue
-        wx, wy = local_to_world(lx, ly_adj, mark_xy, ax)
+        wx, wy = local_to_world(lx_adj, ly_adj, mark_xy, ax)
+       
         targets[p] = (wx, wy, 0.0)
 
     # --- Defending pack: mirror in local, then world-transform by their attack dir
@@ -164,6 +173,8 @@ def get_scrum_formation(mark_xy: Vec2, put_in_team: str, match) -> Dict[object, 
             # Defending backs handled by defensive helper below
             continue
         mx_lx, mx_ly = _scrum_def_mirror((lx, ly))
+        if rn in (6, 7) and not open_positive:
+            mx_ly = -mx_ly
         p = nearest_role(defend, rn)
         if not p:
             continue
