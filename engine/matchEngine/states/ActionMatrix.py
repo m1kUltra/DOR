@@ -16,7 +16,7 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("_", "passed"):            SAME,                     # ⬅️ any -> passed (no state change)
     ("_", "caught"):            "open_play.joue",
     # --- Kicking flows (kept; exact beats wildcard, both resolve to kick_chase anyway) ---
-    ("kicked", "caught"):       "scrum.start",
+    ("kicked", "caught"):       "open_play.kick_return",
     ("kicked", "dropped"):      "open_play.scramble",
     ("caught", "kicked"):       "open_play.kick_chase",
     ("dropped","kicked"):       "open_play.kick_chase",
