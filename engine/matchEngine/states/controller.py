@@ -10,7 +10,7 @@ DEFAULT_FALLBACK = SAME  # your safe default
 class StateController:
     def __init__(self, match):
         self.match = match
-        self.status = ("restart.kick_off",
+        self.status = ("scrum.start",
                        getattr(match.ball, "location", (50.0, 35.0, 0.0)),
                        getattr(match.ball, "holder", None))
 

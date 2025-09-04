@@ -41,8 +41,13 @@ def _counter_shove(match) -> float:
 def handle_start(match, state_tuple) -> None:
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     _team_possession(match)
-    match.ball.holder = None
+   
     match.ball.location = (bx, by, 0.0)
+    atk = match.possession
+    p9 = match.teams[atk].get_player_by_rn(9)
+    if p9:
+        match.ball.holder = f"{p9.sn}{p9.team_code}"
+        match.ball.location = p9.location
     match.ball.set_action("scrum_forming")
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
