@@ -38,7 +38,11 @@ def select(match, state_tuple) -> List[DoCall]:
     ball = match.ball
     if getattr(ball, "holder", None) is None:
         bx, by, bz = ball.location
-        catcher = best_catcher(match.players, (bx, by, bz), radius=1.0, max_height=1.6)
+        last_holder = ball.status.get("holder") if isinstance(ball.status, dict) else None
+        players = match.players
+        if last_holder:
+            players = [p for p in players if f"{p.sn}{p.team_code}" != last_holder]
+        catcher = best_catcher(players, (bx, by, bz), radius=1.0, max_height=1.6)
         if catcher:
             pid = f"{catcher.sn}{catcher.team_code}"
             return [(pid, ("catch", None), _xyz(catcher.location), (bx, by, bz))]
