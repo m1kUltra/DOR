@@ -151,7 +151,7 @@ class ScrumScore:
     Container to accumulate the stage score. You can swap compute hooks later.
     """
     def __init__(self):
-        self.value = 0.0
+        self.value = 0.5
         self.lock_out = False
 
 def compute_stage_1(match, atk_code: str, s: ScrumScore) -> None:
@@ -167,8 +167,11 @@ def compute_stage_3(match, atk_code: str, s: ScrumScore) -> None:
     # 3. += (pack_weight/1000) * (rn-1(scrum)+rn-3(scrum)) * random()
     s.value += 0.0
     # lock_out chance
+    """"
     if random.random() > 0.5:
         s.lock_out = True
+    """
+    return None
 
 def tactic_decision(match, atk_code: str, s: ScrumScore, tactic: str) -> str:
     """
@@ -177,15 +180,8 @@ def tactic_decision(match, atk_code: str, s: ScrumScore, tactic: str) -> str:
       - mixed:    scrum_on if score > 0.5 or score < -0.75; else take_out
       - leave_in: take out only if -0.75 < score < -0.25; else scrum_on
     """
-    v = s.value
-    if tactic == "channel1":
-        return "take_out" if v > -0.75 else "scrum_on"
-    if tactic == "mixed":
-        if v > 0.5 or v < -0.75:
-            return "scrum_on"
-        return "take_out"
-    # leave_in
-    return "take_out" if (-0.75 < v < -0.25) else "scrum_on"
+    return "take_out"
+    
 
 def compute_drive_increment(match, atk_code: str) -> float:
     # 5. += ((rn-3(s*s*a)+rn-1(s*s*a)+rn-2(s*s*a)/2 + rn-4(d*s) + rn-5(d*s)*1.5)/5)

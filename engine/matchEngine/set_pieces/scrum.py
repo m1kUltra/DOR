@@ -58,19 +58,6 @@ def _tunnel_point(match) -> Tuple[float, float, float]:
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     return (bx, by, 0.0)
 
-def _pack_balance_metric(match) -> float:
-    """
-    Heuristic for which pack is winning the shove.
-    Positive => attackers (put-in) dominant, negative => defenders dominant.
-    TODO: wire to your player strength/bind/angle data.
-    """
-    atk = _team_possession(match)
-    bal = 0.0
-    for p in getattr(match, "players", []):
-        if getattr(p, "phase_role", "") == "scrum":
-            weight = getattr(p, "scrum_power", 1.0)
-            bal += weight if p.team_code == atk else -weight
-    return bal
 
 # -------------------------
 # Handlers (invoked by states/scrum.maybe_handle)
@@ -142,14 +129,14 @@ def handle_drive(match, state_tuple) -> None:
     calls = drive_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
-
+"""
     # Very simple pack dominance effect on ball drift (placeholder)
     bx, by, bz = _xyz(getattr(match.ball, "location", None))
     bal = _pack_balance_metric(match)
     # Move slightly toward attacking 8's feet on positive balance
     drift = 0.1 if bal > 0 else -0.1 if bal < 0 else 0.0
     match.ball.location = (bx + drift, by, max(0.0, bz))
-    
+    """
 
     # Optionally promote to STABLE when near back-row feet
     # if _ball_at_back_row(match): match.ball.set_action("scrum_stable")
