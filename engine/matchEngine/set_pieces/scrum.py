@@ -85,7 +85,7 @@ def handle_start(match, state_tuple) -> None:
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     match.ball.holder = None
     match.ball.location = (bx, by, 0.0)
-    match.ball.set_action("scrum_crouch")
+    match.ball.set_action("scrum.crouch")
 
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
@@ -98,7 +98,7 @@ def handle_crouch(match, state_tuple) -> None:
     calls = crouch_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
-    match.ball.set_action("scrum_bind")
+    match.ball.set_action("scrum.bind")
 def handle_bind(match, state_tuple) -> None:
     """
     Bind: props bind, check legal binds, stability, angle.
@@ -118,7 +118,7 @@ def handle_set(match, state_tuple) -> None:
     calls = set_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
-
+    match.ball.set_action("scrum.set")
     # Optionally transition to FEED when stability threshold achieved
     # if _is_stable_enough(match): match.ball.set_action("scrum_feed_ready")
 
@@ -129,7 +129,7 @@ def handle_feed(match, state_tuple) -> None:
     # Ensure ball is at tunnel entry
     match.ball.holder = None
     match.ball.location = _tunnel_point(match)
-    match.ball.set_action("scrum_feed")
+    
 
     calls = feed_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
@@ -149,6 +149,7 @@ def handle_drive(match, state_tuple) -> None:
     # Move slightly toward attacking 8's feet on positive balance
     drift = 0.1 if bal > 0 else -0.1 if bal < 0 else 0.0
     match.ball.location = (bx + drift, by, max(0.0, bz))
+    
 
     # Optionally promote to STABLE when near back-row feet
     # if _ball_at_back_row(match): match.ball.set_action("scrum_stable")
