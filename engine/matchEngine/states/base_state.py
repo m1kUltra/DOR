@@ -38,13 +38,14 @@ class BaseState:
             ball_x=self.match.ball.location[0],
             attack_dir=adv_dir,
             holder_team=_holder_team(self.match.ball),
+            ball=self.match.ball,
         )
         self.match.advantage = adv
-        if outcome == "called_back":
-            if flag and "pending_scrum" in flag:
-                self.match.ball.set_action("scrum")
-            elif flag and "pending_penalty" in flag:
-                self.match.ball.set_action("penalty")
+        if flag:
+            if "pending_scrum" in flag:
+                self.match.pending_scrum = flag["pending_scrum"]
+            elif "pending_penalty" in flag:
+                self.match.pending_penalty = flag["pending_penalty"]
 
         # 2) HARD handlers: own actions + early return
         for mod in (restart, scoring, nudge, ruck,  scrum, lineout):

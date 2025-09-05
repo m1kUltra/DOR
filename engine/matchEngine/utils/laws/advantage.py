@@ -37,7 +37,9 @@ def tick(
     match_time: float,
     ball_x: float,
     attack_dir: float,
+    ball,
     holder_team: str | None = None
+  
 ) -> tuple[dict | None, dict | None, str | None]:
     """
     Advance the advantage overlay by time and meters.
@@ -65,12 +67,25 @@ def tick(
 
     # 2) Possession flipped to offending side → call back NOW with flag
     if holder_team and holder_team != adv["to"]:
+        # release and reposition ball at mark
+        try:
+            ball.release()
+            ball.location = (
+                adv["start_x"],
+                adv["start_y"],
+                ball.location[2],
+            )
+        except Exception:
+            pass
+
         if type_ == "knock_on":
+            ball.set_action("scrum")
             flag = {"pending_scrum": {
                 "x": adv["start_x"], "y": adv["start_y"],
                 "put_in": adv["to"], "reason": adv.get("reason", "knock_on")
             }}
         elif type_ == "penalty":
+            ball.set_action("penalty")
             flag = {"pending_penalty": {
                 "mark": (adv["start_x"], adv["start_y"]),
                 "to": adv["to"], "reason": adv.get("reason", "penalty")

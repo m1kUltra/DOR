@@ -15,13 +15,7 @@ except Exception:  # pragma: no cover - fallback used when module missing
     get_scrum_formation = None
 
 # --- Public API (handlers) ---
-def handle_crouch(match, ev): _handler(match, ev, _on_crouch)
-def handle_bind(match, ev):   _handler(match, ev, _on_bind)
-def handle_set(match, ev):    _handler(match, ev, _on_set)
-def handle_feed(match, ev):   _handler(match, ev, _on_feed)
-def handle_drive(match, ev):  _handler(match, ev, _on_drive)
-def handle_stable(match, ev): _handler(match, ev, _on_stable)
-def handle_out(match, ev):    _handler(match, ev, _on_out)
+
 
 # Stage tags (must match states/scrum.py)
 CROUCH = "scrum.crouch"; BIND = "scrum.bind"; SET = "scrum.set"
@@ -148,15 +142,6 @@ def _apply_positions(match, feeding_side: str, pos_feed: Dict[int, Tuple[float, 
     # keep a debug copy on match for visualization/tools
  
     setattr(match, "debug_last_scrum_positions", {"feeding": pos_feed, "opposing": pos_opp})
-# Event utility: attempt to push next tag; fall back to storing on match
-def _push_next(match, next_tag: str, loc, ctx):
-    try:
-        import event
-        if hasattr(event, "push"): event.push(match, next_tag, loc, ctx)
-        elif hasattr(event, "emit"): event.emit(match, next_tag, loc, ctx)
-        else: setattr(match, "next_state_tag", (next_tag, loc, ctx))
-    except Exception:
-        setattr(match, "next_state_tag", (next_tag, loc, ctx))
 
 # Access / init state
 def _state(match) -> ScrumState:
@@ -173,26 +158,27 @@ def _state(match) -> ScrumState:
   
     return st
 
-# --- Stage handlers ---
-def _on_crouch(match, tag, loc, ctx, st: ScrumState):
-    feed = _gather_team_attrs(match, st.feeding_side)
-    scrum_1 = feed.get(1,{}).get("scrum",1.0); scrum_3 = feed.get(3,{}).get("scrum",1.0)
-    lead_2  = feed.get(2,{}).get("leadership",1.0)
-    delta = (lead_2**2.0) * ((scrum_1 + scrum_3)/3.0)
-    st.score += delta; st.penalty = _stage_checks(st.score)
-    st.timeline.append({"stage":"crouch","delta":delta,"score":st.score,"penalty":st.penalty})
-    _push_next(match, "scrum.bind" if not st.penalty else "scrum.out", loc, ctx)
+def handle_crouch(match, tag, loc, ctx, st: ScrumState):
+        feed = _gather_team_attrs(match, st.feeding_side)
+        scrum_1 = feed.get(1,{}).get("scrum",1.0); scrum_3 = feed.get(3,{}).get("scrum",1.0)
+        lead_2  = feed.get(2,{}).get("leadership",1.0)
+        delta = (lead_2**2.0) * ((scrum_1 + scrum_3)/3.0)
+        st.score += delta; st.penalty = _stage_checks(st.score)
+        st.timeline.append({"stage":"crouch","delta":delta,"score":st.score,"penalty":st.penalty})
+        
+        match.ball.set_action("scrum.bind" if not st.penalty else "scrum.out")
 
-def _on_bind(match, tag, loc, ctx, st: ScrumState):
+def handle_bind(match, tag, loc, ctx, st: ScrumState):
     feed = _gather_team_attrs(match, st.feeding_side)
     s2_l = feed.get(1,{}).get("scrum",1.0)*feed.get(1,{}).get("strength",1.0)
     s2_r = feed.get(3,{}).get("scrum",1.0)*feed.get(3,{}).get("strength",1.0)
     delta = s2_l * s2_r
     st.score += delta; st.penalty = _stage_checks(st.score)
     st.timeline.append({"stage":"bind","delta":delta,"score":st.score,"penalty":st.penalty})
-    _push_next(match, "scrum.set" if not st.penalty else "scrum.out", loc, ctx)
+   
+    match.ball.set_action("scrum.set" if not st.penalty else "scrum.out")
 
-def _on_set(match, tag, loc, ctx, st: ScrumState):
+def handle_set(match, tag, loc, ctx, st: ScrumState):
     feed = _gather_team_attrs(match, st.feeding_side)
     pack_w = _pack_weight(feed)
     scrum_1 = feed.get(1,{}).get("scrum",1.0); scrum_3 = feed.get(3,{}).get("scrum",1.0)
@@ -200,17 +186,20 @@ def _on_set(match, tag, loc, ctx, st: ScrumState):
     st.score += delta
     st.lock_out = (st.rng.random() > 0.5)
     st.timeline.append({"stage":"set","delta":delta,"score":st.score,"lock_out":st.lock_out})
-    _push_next(match, "scrum.feed", loc, ctx)
+    
+    match.ball.set_action("scrum.feed")
 
-def _on_feed(match, tag, loc, ctx, st: ScrumState):
+def handle_feed(match, tag, loc, ctx, st: ScrumState):
     decision = _tactic_decision(st.score, st.tactic, st.rng, st.lock_out)
     st.timeline.append({"stage":"feed","decision":decision,"score":st.score})
     if decision == "out_now":
-        _push_next(match, "scrum.out", loc, ctx)
+        
+        match.ball.set_action("scrum.out")
     else:
-        _push_next(match, "scrum.drive", loc, ctx)
+        
+        match.ball.set_action("scrum.drive")
 
-def _on_drive(match, tag, loc, ctx, st: ScrumState):
+def handle_drive(match, tag, loc, ctx, st: ScrumState):
     feed = _gather_team_attrs(match, st.feeding_side)
     def g(rn,k,default=1.0): return feed.get(rn,{}).get(k,default)
     terms = [
@@ -225,13 +214,16 @@ def _on_drive(match, tag, loc, ctx, st: ScrumState):
     decision = _tactic_decision(st.score, st.tactic, st.rng, st.lock_out)
     st.timeline.append({"stage":"drive","delta":delta,"decision":decision,"score":st.score,"penalty":st.penalty})
     if st.penalty:
-        _push_next(match, "scrum.out", loc, ctx)
+       
+        match.ball.set_action("scrum.out")
     elif decision == "out_now":
-        _push_next(match, "scrum.out", loc, ctx)
+       
+        match.ball.set_action("scrum.out")
     else:
-        _push_next(match, "scrum.stable", loc, ctx)
+     
+        match.ball.set_action("scrum.stable")
 
-def _on_stable(match, tag, loc, ctx, st: ScrumState):
+def handle_stable(match, tag, loc, ctx, st: ScrumState):
     if not st.did_counter:
         feed = _gather_team_attrs(match, st.feeding_side)
         opp  = _gather_team_attrs(match, "b" if st.feeding_side=="a" else "a")
@@ -244,9 +236,10 @@ def _on_stable(match, tag, loc, ctx, st: ScrumState):
         st.score += delta; st.penalty = _stage_checks(st.score)
         st.timeline.append({"stage":"stable_counter_shuv","delta":delta,"score":st.score,"penalty":st.penalty})
         st.did_counter = True
-    _push_next(match, "scrum.out", loc, ctx)
+    
+    match.ball.set_action("scrum.out")
 
-def _on_out(match, tag, loc, ctx, st: ScrumState):
+def handle_out(match, tag, loc, ctx, st: ScrumState):
     # Ball is at the back; expose a compact result for downstream handler (9 pass / 8 pick).
     outcome = "won_clean" if st.score >= 0 and not st.penalty else ("reset" if st.penalty else "won_under_pressure")
     result = {
@@ -261,8 +254,6 @@ def _on_out(match, tag, loc, ctx, st: ScrumState):
     for attr in ("_scrum_state", "_scrum_positions_applied"):
         if hasattr(match, attr):
             delattr(match, attr)
-    # No next push here; leave to game FSM (open play, 9 pass, etc.).
-
 # Generic handler wrapper: ensures state, applies positions once, then runs stage fn.
 def _handler(match, ev, fn):
     tag, loc, ctx = ev
