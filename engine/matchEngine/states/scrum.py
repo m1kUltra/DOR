@@ -17,6 +17,7 @@ SCRUM_TAGS = {START, CROUCH, BIND, SET, FEED, DRIVE, STABLE, OUT}
 
 # Handlers are implemented in set_pieces.scrum
 from set_pieces.scrum import (
+    handle_start,
     handle_crouch, handle_bind, handle_set,
     handle_feed, handle_drive, handle_stable, handle_out
 )
@@ -28,7 +29,7 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
         return False
 
     if tag == START:
-        handle_crouch(match, (CROUCH, loc, ctx)); return True
+        handle_start(match, (tag, loc, ctx)); return True
     if tag == CROUCH:
         handle_crouch(match, (tag, loc, ctx)); return True
     if tag == BIND:

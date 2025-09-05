@@ -1,278 +1,179 @@
+# engine/matchEngine/set_pieces/scrum.py
+from typing import List, Tuple, Optional
+from actions.action_controller import do_action
 
-# set_pieces/scrum.py
-# Wireframe scrum handlers that align with states/scrum.py's tags.
-# Uses normalized attributes if present; safe defaults otherwise.
-from dataclasses import dataclass, field
-from typing import Dict, Tuple, Any, Optional
-import random
+# Planners (mirror ruck structure)
+from choice.scrum.crouch import plan as crouch_plan
+from choice.scrum.bind import plan as bind_plan
+from choice.scrum.set import plan as set_plan
+from choice.scrum.feed import plan as feed_plan
+from choice.scrum.drive import plan as drive_plan
+from choice.scrum.stable import plan as stable_plan
+from choice.scrum.out import plan as out_plan
+from choice.scrum.start import plan as start_plan
 
-# Optional: your constants; used here only for sign conventions or field layout if needed
-# from constants import TOUCHLINE_TOP_Y, TOUCHLINE_BOTTOM_Y
-# Use formation utility if available
-try:  # lazy import to avoid hard dependency during tests
-    from utils.positioning.mental.formations import get_scrum_formation
-except Exception:  # pragma: no cover - fallback used when module missing
-    get_scrum_formation = None
+# (Optional) if you want a "start" entry even though states maps START->crouch
+# from choice.scrum.start import plan as start_plan
 
-# --- Public API (handlers) ---
+DoCall = Tuple[
+    str,                                  # pid
+    Tuple[str, Optional[str]],            # (action, maybe_param)
+    Tuple[float, float, float],           # location (x,y,z)
+    Tuple[float, float, float],           # target (x,y,z) or (0,0,0)
+]
 
+def _xyz(p) -> Tuple[float, float, float]:
+    return tuple(p) if isinstance(p, (list, tuple)) and len(p) == 3 else (0.0, 0.0, 0.0)
 
-# Stage tags (must match states/scrum.py)
-CROUCH = "scrum.crouch"; BIND = "scrum.bind"; SET = "scrum.set"
-FEED = "scrum.feed"; DRIVE = "scrum.drive"; STABLE = "scrum.stable"; OUT = "scrum.out"
+def _team_possession(match) -> str:
+    """
+    Return 'a' or 'b' for the team with the scrum put-in.
+    Falls back to ball.holder suffix or 'a' if unknown.
+    """
+    if getattr(match, "possession", None) in ("a", "b"):
+        return match.possession
+    hid = getattr(match.ball, "holder", None)
+    code = hid[-1] if isinstance(hid, str) and hid else "a"
+    match.possession = code
+    return code
 
-PEN_FEEDING = "feeding_penalty"
-PEN_OPPOSING = "opposing_penalty"
+def _other(code: str) -> str:
+    return "b" if code == "a" else "a"
 
-# --- Internal state container ---
-@dataclass
-class ScrumState:
-    score: float = 0.0
-    penalty: Optional[str] = None
-    lock_out: bool = False
-    did_counter: bool = False
-    tactic: str = "mixed"    # channel1 | mixed | leave_in
-    seed: Optional[int] = None
-    rng: Any = field(default_factory=random.Random)
-    timeline: list = field(default_factory=list)
-    feeding_side: str = "a"  # 'a' or 'b'
+def _set_ball_for_scrum(match) -> None:
+    """
+    Normalize ball state for scrum phases: no holder, ball on ground at tunnel entry.
+    """
+    bx, by, _ = _xyz(getattr(match.ball, "location", None))
+    match.ball.holder = None
+    match.ball.location = (bx, by, 0.0)
+    match.ball.set_action("scrum")
 
-# --- Utilities ---
-def _get_attrs_from_player(p) -> Dict[str, float]:
-    """Pick up attributes from common spots; defaults to 1.0 (weight=110)."""
-    def get_from_dict(d, k, default=None):
-        if isinstance(d, dict) and k in d: return d[k]
-        return default
-    def fetch(k, default=1.0):
-        for name in ("attributes","ratings","skills","stats"):
-            v = get_from_dict(getattr(p, name, None), k, None)
-            if v is not None: return float(v)
-        if hasattr(p, k): 
-            try: return float(getattr(p, k))
-            except: return default
-        return default
-    return {
-        "scrum": fetch("scrum", 1.0),
-        "strength": fetch("strength", 1.0),
-        "aggression": fetch("aggression", 1.0),
-        "leadership": fetch("leadership", 1.0),
-        "determination": fetch("determination", 1.0),
-        "weight": fetch("weight", 110.0),
-    }
+def _tunnel_point(match) -> Tuple[float, float, float]:
+    """
+    Compute/return the tunnel (feed) location.
+    TODO: Replace with your scrum pack midpoint/tunnel calc.
+    """
+    # crude default: use current ball (x,y), z=0
+    bx, by, _ = _xyz(getattr(match.ball, "location", None))
+    return (bx, by, 0.0)
 
-def _gather_team_attrs(match, side: str) -> Dict[int, Dict[str,float]]:
-    team = match.team_a if side == "a" else match.team_b
-    attrs: Dict[int, Dict[str,float]] = {}
-    for p in getattr(team, "squad", []):
-        rn = getattr(p, "rn", None)
-        if rn is None: continue
-        attrs[int(rn)] = _get_attrs_from_player(p)
-    return attrs
+def _pack_balance_metric(match) -> float:
+    """
+    Heuristic for which pack is winning the shove.
+    Positive => attackers (put-in) dominant, negative => defenders dominant.
+    TODO: wire to your player strength/bind/angle data.
+    """
+    atk = _team_possession(match)
+    bal = 0.0
+    for p in getattr(match, "players", []):
+        if getattr(p, "phase_role", "") == "scrum":
+            weight = getattr(p, "scrum_power", 1.0)
+            bal += weight if p.team_code == atk else -weight
+    return bal
 
-def _pack_weight(attrs: Dict[int, Dict[str,float]]) -> float:
-    return sum(attrs.get(rn, {}).get("weight", 110.0) for rn in range(1,9))
+# -------------------------
+# Handlers (invoked by states/scrum.maybe_handle)
+# -------------------------
+def handle_start(match, state_tuple) -> None:
+    """
+    Initialize a scrum:
+      - Clear ball holder and set to ground at its current x,y
+      - Move both packs, 9s, and backs into correct formation
+      - Transition ball to 'scrum_crouch'
+    """
+    bx, by, _ = _xyz(getattr(match.ball, "location", None))
+    match.ball.holder = None
+    match.ball.location = (bx, by, 0.0)
+    match.ball.set_action("scrum_crouch")
 
-def _stage_checks(score: float) -> Optional[str]:
-    if score > 1.0:  return PEN_FEEDING
-    if score < -1.0: return PEN_OPPOSING
-    return None
+    calls = start_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
+def handle_crouch(match, state_tuple) -> None:
+    """
+    Enter crouch: align front rows, set initial posture/spacing and camera/audio cues.
+    """
+    _set_ball_for_scrum(match)
+    calls = crouch_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
+    match.ball.set_action("scrum_bind")
+def handle_bind(match, state_tuple) -> None:
+    """
+    Bind: props bind, check legal binds, stability, angle.
+    Potential early resets if angles/height are illegal.
+    """
+    calls = bind_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
 
-def _tactic_decision(score: float, tactic: str, rng: random.Random, lock_out: bool) -> str:
-    if lock_out: return "out_now"
-    t = (tactic or "mixed").lower()
-    if t == "channel1":
-        return "out_now" if score > -0.75 else "scrum_on"
-    if t == "mixed":
-        if score > 0.5:   return "scrum_on"
-        if score < -0.75: return "scrum_on"
-        return "out_now"
-    if t == "leave_in":
-        return "out_now" if (-0.75 < score < -0.25) else "scrum_on"
-    return "scrum_on"
+    # Optional: simple illegal bind/reset gate (placeholder)
+    # if _illegal_bind_detected(match): match.ball.set_action("scrum_reset")
 
-# Positioning
-def _scrum_positions_attacking(open_side_pos_y=True) -> Dict[int, Tuple[float,float]]:
-    dx_front, dx_locks, dx_back = 0.0, -0.8, -1.6
-    y_front = [-0.9, 0.0, 0.9]; y_locks = [-0.45, 0.45]; y_back = [0.6, 0.0, 1.0]  # 6,8,7 (+y side)
-    if not open_side_pos_y:
-        y_front = [-y for y in y_front]; y_locks = [-y for y in y_locks]; y_back = [-y for y in y_back]
-    pos = { 1:(dx_front,y_front[0]), 2:(dx_front,y_front[1]), 3:(dx_front,y_front[2]),
-            4:(dx_locks,y_locks[0]), 5:(dx_locks,y_locks[1]),
-            6:(dx_back,y_back[0]), 8:(dx_back,y_back[1]), 7:(dx_back,y_back[2]),
-            9:(-0.4, 1.4 if open_side_pos_y else -1.4) }
-    backs_y = [-1.0, -0.66, -0.33, 0.0, 0.33, 0.66]
-    for i, rn in enumerate(range(10,16)):
-        pos[rn] = (-5.0, backs_y[i]*6.0)  # ~5m back
-    return pos
-def _mirror_defensive(attack_pos):
-    return {rn: (-x, y) for rn, (x, y) in attack_pos.items()}
+def handle_set(match, state_tuple) -> None:
+    """
+    Set: packs engage to a stable, safe position before the feed.
+    """
+    calls = set_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
 
+    # Optionally transition to FEED when stability threshold achieved
+    # if _is_stable_enough(match): match.ball.set_action("scrum_feed_ready")
 
-def _apply_targets(targets):
-    """Assign target positions to players."""
-    for p, xyz in targets.items():
-        if not p:
-            continue
-        am = getattr(p, "action_meta", None)
-        if isinstance(am, dict):
-            am["to"] = xyz
-        else:
-            setattr(p, "action_meta", {"to": xyz})
+def handle_feed(match, state_tuple) -> None:
+    """
+    Feed: scrum-half puts the ball into the tunnel; set ball path & slight bias.
+    """
+    # Ensure ball is at tunnel entry
+    match.ball.holder = None
+    match.ball.location = _tunnel_point(match)
+    match.ball.set_action("scrum_feed")
 
+    calls = feed_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
 
-def _apply_positions(match, feeding_side: str, pos_feed: Dict[int, Tuple[float, float]], pos_opp: Dict[int, Tuple[float, float]]):
-    """Fallback placement using shirt numbers."""
-    def team_for(side):
-        return match.team_a if side == "a" else match.team_b
-    def set_to(team, rn, xy):
-        for p in getattr(team, "squad", []):
-            if getattr(p, "rn", None) == rn:
-                am = getattr(p, "action_meta", None)
-                if isinstance(am, dict):
-                    # TARGET (no teleport)
-                    am["to"] = (xy[0], xy[1], 0.0)
-                else:
-                   
-                    setattr(p, "action_meta", {"to": (xy[0], xy[1], 0.0)})
+def handle_drive(match, state_tuple) -> None:
+    """
+    Drive: teams push; move ball through feet; possible wheel/collapse/penalty.
+    """
+    calls = drive_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
 
-    atk = team_for(feeding_side)
-    dff = team_for("b" if feeding_side == "a" else "a")
-    for rn, xy in pos_feed.items(): set_to(atk, rn, xy)
-    for rn, xy in pos_opp.items():  set_to(dff, rn, xy)
-    # keep a debug copy on match for visualization/tools
- 
-    setattr(match, "debug_last_scrum_positions", {"feeding": pos_feed, "opposing": pos_opp})
+    # Very simple pack dominance effect on ball drift (placeholder)
+    bx, by, bz = _xyz(getattr(match.ball, "location", None))
+    bal = _pack_balance_metric(match)
+    # Move slightly toward attacking 8's feet on positive balance
+    drift = 0.1 if bal > 0 else -0.1 if bal < 0 else 0.0
+    match.ball.location = (bx + drift, by, max(0.0, bz))
 
-# Access / init state
-def _state(match) -> ScrumState:
-    st = getattr(match, "_scrum_state", None)
-    if isinstance(st, ScrumState):
-        return st
-    st = ScrumState()
-    st.tactic = getattr(getattr(match, "tactics", None), "scrum_tactic", "mixed") if hasattr(match, "tactics") else "mixed"
-    st.seed = getattr(match, "seed", None)
-    st.rng = random.Random(st.seed)
-    st.feeding_side = getattr(match, "possession", "a")
-    setattr(match, "_scrum_state", st)
-    # place players initially
-  
-    return st
+    # Optionally promote to STABLE when near back-row feet
+    # if _ball_at_back_row(match): match.ball.set_action("scrum_stable")
 
-def handle_crouch(match, tag, loc, ctx, st: ScrumState):
-        feed = _gather_team_attrs(match, st.feeding_side)
-        scrum_1 = feed.get(1,{}).get("scrum",1.0); scrum_3 = feed.get(3,{}).get("scrum",1.0)
-        lead_2  = feed.get(2,{}).get("leadership",1.0)
-        delta = (lead_2**2.0) * ((scrum_1 + scrum_3)/3.0)
-        st.score += delta; st.penalty = _stage_checks(st.score)
-        st.timeline.append({"stage":"crouch","delta":delta,"score":st.score,"penalty":st.penalty})
-        
-        match.ball.set_action("scrum.bind" if not st.penalty else "scrum.out")
+def handle_stable(match, state_tuple) -> None:
+    """
+    Stable: ball is controllable at 8's feet; choose pick, 8-9, or penalty advantage.
+    """
+    calls = stable_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
 
-def handle_bind(match, tag, loc, ctx, st: ScrumState):
-    feed = _gather_team_attrs(match, st.feeding_side)
-    s2_l = feed.get(1,{}).get("scrum",1.0)*feed.get(1,{}).get("strength",1.0)
-    s2_r = feed.get(3,{}).get("scrum",1.0)*feed.get(3,{}).get("strength",1.0)
-    delta = s2_l * s2_r
-    st.score += delta; st.penalty = _stage_checks(st.score)
-    st.timeline.append({"stage":"bind","delta":delta,"score":st.score,"penalty":st.penalty})
-   
-    match.ball.set_action("scrum.set" if not st.penalty else "scrum.out")
+    # NOTE: stable_plan should decide when to call pickup/pass via actions
+    # Optionally, timeout -> force 'use it' -> out
+    # if _use_it_timer_expired(match): match.ball.set_action("scrum_out")
 
-def handle_set(match, tag, loc, ctx, st: ScrumState):
-    feed = _gather_team_attrs(match, st.feeding_side)
-    pack_w = _pack_weight(feed)
-    scrum_1 = feed.get(1,{}).get("scrum",1.0); scrum_3 = feed.get(3,{}).get("scrum",1.0)
-    delta = (pack_w/1000.0) * (scrum_1 + scrum_3) * st.rng.random()
-    st.score += delta
-    st.lock_out = (st.rng.random() > 0.5)
-    st.timeline.append({"stage":"set","delta":delta,"score":st.score,"lock_out":st.lock_out})
-    
-    match.ball.set_action("scrum.feed")
+def handle_out(match, state_tuple) -> None:
+    """
+    Out: ball leaves scrum (pick/pass). Hand off to phase play or set move.
+    """
+    calls = out_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
 
-def handle_feed(match, tag, loc, ctx, st: ScrumState):
-    decision = _tactic_decision(st.score, st.tactic, st.rng, st.lock_out)
-    st.timeline.append({"stage":"feed","decision":decision,"score":st.score})
-    if decision == "out_now":
-        
-        match.ball.set_action("scrum.out")
-    else:
-        
-        match.ball.set_action("scrum.drive")
-
-def handle_drive(match, tag, loc, ctx, st: ScrumState):
-    feed = _gather_team_attrs(match, st.feeding_side)
-    def g(rn,k,default=1.0): return feed.get(rn,{}).get(k,default)
-    terms = [
-        g(3,"scrum")*g(3,"strength")*g(3,"aggression"),
-        g(1,"scrum")*g(1,"strength")*g(1,"aggression"),
-        0.5*g(2,"scrum")*g(2,"strength")*g(2,"aggression"),
-        g(4,"determination")*g(4,"strength"),
-        1.5*g(5,"determination")*g(5,"strength"),
-    ]
-    delta = sum(terms)/5.0
-    st.score += delta; st.penalty = _stage_checks(st.score)
-    decision = _tactic_decision(st.score, st.tactic, st.rng, st.lock_out)
-    st.timeline.append({"stage":"drive","delta":delta,"decision":decision,"score":st.score,"penalty":st.penalty})
-    if st.penalty:
-       
-        match.ball.set_action("scrum.out")
-    elif decision == "out_now":
-       
-        match.ball.set_action("scrum.out")
-    else:
-     
-        match.ball.set_action("scrum.stable")
-
-def handle_stable(match, tag, loc, ctx, st: ScrumState):
-    if not st.did_counter:
-        feed = _gather_team_attrs(match, st.feeding_side)
-        opp  = _gather_team_attrs(match, "b" if st.feeding_side=="a" else "a")
-        str1, w1 = feed.get(1,{}).get("strength",1.0), feed.get(1,{}).get("weight",110.0)
-        str3, w3 = feed.get(3,{}).get("strength",1.0), feed.get(3,{}).get("weight",110.0)
-        feed_term = (str1*w1/150.0)*(str3*w3/150.0)
-        ag3, sc3 = opp.get(3,{}).get("aggression",1.0), opp.get(3,{}).get("scrum",1.0)
-        opp_term = (ag3*sc3/150.0)*(ag3*sc3/150.0)
-        delta = feed_term*(st.rng.random()**(1/3)) - opp_term*(st.rng.random()**(1/3))
-        st.score += delta; st.penalty = _stage_checks(st.score)
-        st.timeline.append({"stage":"stable_counter_shuv","delta":delta,"score":st.score,"penalty":st.penalty})
-        st.did_counter = True
-    
-    match.ball.set_action("scrum.out")
-
-def handle_out(match, tag, loc, ctx, st: ScrumState):
-    # Ball is at the back; expose a compact result for downstream handler (9 pass / 8 pick).
-    outcome = "won_clean" if st.score >= 0 and not st.penalty else ("reset" if st.penalty else "won_under_pressure")
-    result = {
-        "timeline": st.timeline,
-        "final_score": st.score,
-        "penalty": st.penalty,
-        "lock_out": st.lock_out,
-        "outcome": outcome,
-        "possession": "feeding",
-    }
-    setattr(match, "debug_last_scrum_result", result)
-    for attr in ("_scrum_state", "_scrum_positions_applied"):
-        if hasattr(match, attr):
-            delattr(match, attr)
-# Generic handler wrapper: ensures state, applies positions once, then runs stage fn.
-def _handler(match, ev, fn):
-    tag, loc, ctx = ev
-    st = _state(match)
-    # Ensure positions are set at entry (once)
-    if not getattr(match, "_scrum_positions_applied", False):
-        mark_xy = (loc[0], loc[1]) if isinstance(loc, (tuple, list)) else getattr(match.ball, "location", (0.0, 0.0))[:2]
-        if get_scrum_formation:
-            try:
-                targets = get_scrum_formation(mark_xy, st.feeding_side, match)
-                _apply_targets(targets)
-                setattr(match, "debug_last_scrum_positions", targets)
-            except Exception:
-                pos_feed = _scrum_positions_attacking(True)
-                pos_opp = _mirror_defensive(pos_feed)
-                _apply_positions(match, st.feeding_side, pos_feed, pos_opp)
-        else:
-            pos_feed = _scrum_positions_attacking(True)
-            pos_opp = _mirror_defensive(pos_feed)
-            _apply_positions(match, st.feeding_side, pos_feed, pos_opp)
-        setattr(match, "_scrum_positions_applied", True)
-    fn(match, tag, loc, ctx, st)
+    # Responsibility of out_plan: set next possession, e.g.:
+    #   - set match.ball.holder = "<player_id>"
+    #   - set match.ball.location = player's loc
+    #   - set match.ball.set_action("open_play") or similar
