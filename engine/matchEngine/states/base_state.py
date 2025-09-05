@@ -46,6 +46,11 @@ class BaseState:
                 self.match.pending_scrum = flag["pending_scrum"]
             elif "pending_penalty" in flag:
                 self.match.pending_penalty = flag["pending_penalty"]
+            
+            if outcome == "called_back":
+            # ensure state machine sees new ball action (e.g. scrum or penalty)
+                self.controller.tick()
+                tag, loc, ctx = self.controller.status
 
         # 2) HARD handlers: own actions + early return
         for mod in (restart, scoring, nudge, ruck,  scrum, lineout):

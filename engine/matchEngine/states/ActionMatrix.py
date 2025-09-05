@@ -69,7 +69,7 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("_", "penalty"):            "nudge.quick_tap",      # route into penalty‑option handler
 
    # Scrum progression driven by ball actions
-    ("_", "scrum.crouch"):       "scrum.crouch",
+    ("_", "scrum"):       "scrum.crouch",
     ("_", "scrum.bind"):         "scrum.bind",
     ("_", "scrum.set"):          "scrum.set",
     ("_", "scrum.feed"):         "scrum.feed",
