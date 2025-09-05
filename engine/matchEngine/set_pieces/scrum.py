@@ -8,6 +8,11 @@ import random
 
 # Optional: your constants; used here only for sign conventions or field layout if needed
 # from constants import TOUCHLINE_TOP_Y, TOUCHLINE_BOTTOM_Y
+# Use formation utility if available
+try:  # lazy import to avoid hard dependency during tests
+    from utils.positioning.mental.formations import get_scrum_formation
+except Exception:  # pragma: no cover - fallback used when module missing
+    get_scrum_formation = None
 
 # --- Public API (handlers) ---
 def handle_crouch(match, ev): _handler(match, ev, _on_crouch)
@@ -105,26 +110,44 @@ def _scrum_positions_attacking(open_side_pos_y=True) -> Dict[int, Tuple[float,fl
     for i, rn in enumerate(range(10,16)):
         pos[rn] = (-5.0, backs_y[i]*6.0)  # ~5m back
     return pos
-def _mirror_defensive(attack_pos): return {rn:(-x,y) for rn,(x,y) in attack_pos.items()}
+def _mirror_defensive(attack_pos):
+    return {rn: (-x, y) for rn, (x, y) in attack_pos.items()}
 
-# Assign positions in a generic way (non-teleport): store targets on players if available
-def _apply_positions(match, feeding_side: str, pos_feed: Dict[int,Tuple[float,float]], pos_opp: Dict[int,Tuple[float,float]]):
-    def team_for(side): return match.team_a if side == "a" else match.team_b
+
+def _apply_targets(targets):
+    """Assign target positions to players."""
+    for p, xyz in targets.items():
+        if not p:
+            continue
+        am = getattr(p, "action_meta", None)
+        if isinstance(am, dict):
+            am["to"] = xyz
+        else:
+            setattr(p, "action_meta", {"to": xyz})
+
+
+def _apply_positions(match, feeding_side: str, pos_feed: Dict[int, Tuple[float, float]], pos_opp: Dict[int, Tuple[float, float]]):
+    """Fallback placement using shirt numbers."""
+    def team_for(side):
+        return match.team_a if side == "a" else match.team_b
     def set_to(team, rn, xy):
         for p in getattr(team, "squad", []):
             if getattr(p, "rn", None) == rn:
                 am = getattr(p, "action_meta", None)
                 if isinstance(am, dict):
-                    am["to"] = (xy[0], xy[1], 0.0)  # TARGET (no teleport)
+                    # TARGET (no teleport)
+                    am["to"] = (xy[0], xy[1], 0.0)
                 else:
-                    setattr(p, "action_meta", {"to": (xy[0],xy[1],0.0)})
+                   
+                    setattr(p, "action_meta", {"to": (xy[0], xy[1], 0.0)})
+
     atk = team_for(feeding_side)
     dff = team_for("b" if feeding_side == "a" else "a")
     for rn, xy in pos_feed.items(): set_to(atk, rn, xy)
     for rn, xy in pos_opp.items():  set_to(dff, rn, xy)
     # keep a debug copy on match for visualization/tools
+ 
     setattr(match, "debug_last_scrum_positions", {"feeding": pos_feed, "opposing": pos_opp})
-
 # Event utility: attempt to push next tag; fall back to storing on match
 def _push_next(match, next_tag: str, loc, ctx):
     try:
@@ -147,9 +170,7 @@ def _state(match) -> ScrumState:
     st.feeding_side = getattr(match, "possession", "a")
     setattr(match, "_scrum_state", st)
     # place players initially
-    pos_feed = _scrum_positions_attacking(True)
-    pos_opp  = _mirror_defensive(pos_feed)
-    _apply_positions(match, st.feeding_side, pos_feed, pos_opp)
+  
     return st
 
 # --- Stage handlers ---
@@ -237,6 +258,9 @@ def _on_out(match, tag, loc, ctx, st: ScrumState):
         "possession": "feeding",
     }
     setattr(match, "debug_last_scrum_result", result)
+    for attr in ("_scrum_state", "_scrum_positions_applied"):
+        if hasattr(match, attr):
+            delattr(match, attr)
     # No next push here; leave to game FSM (open play, 9 pass, etc.).
 
 # Generic handler wrapper: ensures state, applies positions once, then runs stage fn.
@@ -245,8 +269,19 @@ def _handler(match, ev, fn):
     st = _state(match)
     # Ensure positions are set at entry (once)
     if not getattr(match, "_scrum_positions_applied", False):
-        pos_feed = _scrum_positions_attacking(True)
-        pos_opp  = _mirror_defensive(pos_feed)
-        _apply_positions(match, st.feeding_side, pos_feed, pos_opp)
+        mark_xy = (loc[0], loc[1]) if isinstance(loc, (tuple, list)) else getattr(match.ball, "location", (0.0, 0.0))[:2]
+        if get_scrum_formation:
+            try:
+                targets = get_scrum_formation(mark_xy, st.feeding_side, match)
+                _apply_targets(targets)
+                setattr(match, "debug_last_scrum_positions", targets)
+            except Exception:
+                pos_feed = _scrum_positions_attacking(True)
+                pos_opp = _mirror_defensive(pos_feed)
+                _apply_positions(match, st.feeding_side, pos_feed, pos_opp)
+        else:
+            pos_feed = _scrum_positions_attacking(True)
+            pos_opp = _mirror_defensive(pos_feed)
+            _apply_positions(match, st.feeding_side, pos_feed, pos_opp)
         setattr(match, "_scrum_positions_applied", True)
     fn(match, tag, loc, ctx, st)

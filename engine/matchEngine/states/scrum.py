@@ -1,9 +1,9 @@
-
 # states/scrum.py
 from typing import Optional
 import random, event  # your project's event system
 
 # Public tags
+START  = "scrum.start"
 CROUCH = "scrum.crouch"
 BIND   = "scrum.bind"
 SET    = "scrum.set"
@@ -12,7 +12,8 @@ DRIVE  = "scrum.drive"
 STABLE = "scrum.stable"
 OUT    = "scrum.out"
 
-SCRUM_TAGS = {CROUCH, BIND, SET, FEED, DRIVE, STABLE, OUT}
+
+SCRUM_TAGS = {START, CROUCH, BIND, SET, FEED, DRIVE, STABLE, OUT}
 
 # Handlers are implemented in set_pieces.scrum
 from set_pieces.scrum import (
@@ -22,9 +23,12 @@ from set_pieces.scrum import (
 
 def maybe_handle(match, tag, loc, ctx) -> bool:
     """Dispatch scrum states using the same style as states/ruck.py."""
-    if not isinstance(tag, str) or not (tag == CROUCH or tag.startswith("scrum.")):
+    
+    if not isinstance(tag, str) or not tag.startswith("scrum."):
         return False
 
+    if tag == START:
+        handle_crouch(match, (CROUCH, loc, ctx)); return True
     if tag == CROUCH:
         handle_crouch(match, (tag, loc, ctx)); return True
     if tag == BIND:
