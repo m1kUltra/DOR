@@ -11,7 +11,8 @@ from choice.scrum.drive import plan as drive_plan
 from choice.scrum.stable import plan as stable_plan
 from choice.scrum.out import plan as out_plan
 from choice.scrum.start import plan as start_plan
-from utils.positioning.mental.formations import get_scrum_formation
+from shapes.scrum.scrum import generate_scrum_shape
+from shapes.scrum.default import generate_phase_play_shape
 
 # (Optional) if you want a "start" entry even though states maps START->crouch
 # from choice.scrum.start import plan as start_plan
@@ -64,7 +65,6 @@ def _tunnel_point(match) -> Tuple[float, float, float]:
 # -------------------------
 # Handlers (invoked by states/scrum.maybe_handle)
 # -------------------------
-from choice.scrum.common import pid_by_jersey
 def handle_start(match, state_tuple) -> None:
     """
     Initialize a scrum:
@@ -76,25 +76,36 @@ def handle_start(match, state_tuple) -> None:
     atk = pending.get("put_in") or _other(_team_possession(match))
     set_possession(match, atk)
     match.pending_scrum = {}
-
-    
     sh = f"9{atk}"
-    
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
-    
-    
-    formation = get_scrum_formation((bx, by), atk, match)
-    for player, target in formation.items():
-        player.update_location(match.pitch.clamp_position(target))
-    
-       
-        
-        
+
+    attack_team = match.team_a if atk == "a" else match.team_b
+    defend_team = match.team_b if atk == "a" else match.team_a
+    attack_dir = float(attack_team.tactics.get("attack_dir", 1.0))
+
+   # backline_style = match.tactics.get("backline_style", "default")
+    phase_shape = generate_phase_play_shape("default", attack_dir)
+    layout = generate_scrum_shape(backline_positions=phase_shape)
+
+    def _apply(team, sub_layout):
+        for rn, (lx, ly) in sub_layout.items():
+            try:
+                jersey = int(rn)
+            except (TypeError, ValueError):
+                continue
+            p = team.get_player_by_rn(jersey)
+            if not p:
+                continue
+            wx = bx + attack_dir * lx
+            wy = by + ly
+            p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
+
+    _apply(attack_team, layout.get("team_a", {}))
+    _apply(defend_team, layout.get("team_b", {}))
     match.ball.holder = sh
-    
-   
     match.ball.set_action("scrum.crouch")
     set_possession(match, atk)
+  
 def handle_crouch(match, state_tuple) -> None:
     """
     Enter crouch: align front rows, set initial posture/spacing and camera/audio cues.

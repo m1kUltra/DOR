@@ -16,7 +16,8 @@ from __future__ import annotations
 from typing import Dict, Tuple, Optional
 
 Vec2 = Tuple[float, float]
-ScrumLayout = Dict[str, Dict[str, Vec2]]
+ScrumLayout = Dict[str, Dict[int, Vec2]]
+
 
 
 def generate_scrum_shape(
@@ -29,7 +30,7 @@ def generate_scrum_shape(
     back_offset: float = 2.0,
     include_scrum_halves: bool = False,
     sh_y_offsets: Tuple[float, float] = (-4.20, -5.60),
-    backline_positions: Optional[Dict[str, Dict[str, Vec2]]] = None,
+   backline_positions: Optional[Dict[str, Dict[int, Vec2]]] = None,
 ) -> ScrumLayout:
     """Create a scrum layout for both teams.
 
@@ -75,35 +76,34 @@ def generate_scrum_shape(
     a = layout["team_a"]
     a.update(
         {
-            "loosehead_prop": (front_x, +lateral),
-            "hooker": (front_x, 0.0),
-            "tighthead_prop": (front_x, -lateral),
-            "lock1": (lock_x, +1.0),
-            "lock2": (lock_x, -1.0),
-            "blindside_flanker": (flanker_x, +flanker_y),
-            "openside_flanker": (flanker_x, -flanker_y),
-            "no8": (no8_x, 0.0),
-        }
+      1: (front_x, +lateral),
+            2: (front_x, 0.0),
+            3: (front_x, -lateral),
+            4: (lock_x, +1.0),
+            5: (lock_x, -1.0),
+            6: (flanker_x, +flanker_y),
+            7: (flanker_x, -flanker_y),
+            8: (no8_x, 0.0),}
     )
     if include_scrum_halves:
-        a["scrum_half"] = (0.0, sh_y_offsets[0])
+        a[9] = (0.0, sh_y_offsets[0])
 
     # Team B (mirror along x-axis)
     b = layout["team_b"]
     b.update(
         {
-            "loosehead_prop": (-front_x, -lateral),
-            "hooker": (-front_x, 0.0),
-            "tighthead_prop": (-front_x, +lateral),
-            "lock1": (-lock_x, +1.0),
-            "lock2": (-lock_x, -1.0),
-            "blindside_flanker": (-flanker_x, +flanker_y),
-            "openside_flanker": (-flanker_x, -flanker_y),
-            "no8": (-no8_x, 0.0),
+            1: (-front_x, -lateral),
+            2: (-front_x, 0.0),
+            3: (-front_x, +lateral),
+            4: (-lock_x, +1.0),
+            5: (-lock_x, -1.0),
+            6: (-flanker_x, +flanker_y),
+            7: (-flanker_x, -flanker_y),
+            8: (-no8_x, 0.0),
         }
     )
     if include_scrum_halves:
-        b["scrum_half"] = (0.0, sh_y_offsets[1])
+        b[9] = (0.0, sh_y_offsets[1])
 
     # Merge externally supplied backline positions
     if backline_positions:
