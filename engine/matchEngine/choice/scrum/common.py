@@ -129,12 +129,12 @@ def move_pack_and_9_calls(match, team_code: str) -> List[DoCall]:
             if not pid: continue
             tgt = pos_map.get(j)
             if not tgt: continue
-            out.append((pid, ("move_to", None), tgt, tgt))
+            out.append((pid, ("move", None), tgt, tgt))
         # backs line (10..15)
         for j, tgt in backs_line_positions(center, dir_sign_for_team(team)):
             pid = ids.get(j)
             if pid:
-                out.append((pid, ("move_to", None), tgt, tgt))
+                out.append((pid, ("move", None), tgt, tgt))
         return out
 
     calls: List[DoCall] = []

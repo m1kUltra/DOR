@@ -45,7 +45,7 @@ def _set_ball_for_scrum(match) -> None:
     Normalize ball state for scrum phases: no holder, ball on ground at tunnel entry.
     """
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
-    match.ball.holder = None
+    
     match.ball.location = (bx, by, 0.0)
     match.ball.set_action("scrum")
 
@@ -62,6 +62,7 @@ def _tunnel_point(match) -> Tuple[float, float, float]:
 # -------------------------
 # Handlers (invoked by states/scrum.maybe_handle)
 # -------------------------
+from choice.scrum.common import pid_by_jersey
 def handle_start(match, state_tuple) -> None:
     """
     Initialize a scrum:
@@ -69,10 +70,23 @@ def handle_start(match, state_tuple) -> None:
       - Move both packs, 9s, and backs into correct formation
       - Transition ball to 'scrum_crouch'
     """
+    atk = _team_possession(match)
+    sh_pid = pid_by_jersey(match.players, atk, 9)
+
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
-    match.ball.holder = None
+    
     match.ball.location = (bx, by, 0.0)
     match.ball.set_action("scrum.crouch")
+
+    calls = start_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
+
+    if sh_pid:
+        sh = match.get_player_by_code(sh_pid)
+        if sh and getattr(sh, "location", None):
+            match.ball.holder = sh_pid
+            match.ball.location = getattr(sh, "location")
 
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
@@ -115,6 +129,7 @@ def handle_feed(match, state_tuple) -> None:
     """
     # Ensure ball is at tunnel entry
     match.ball.holder = None
+    #have the rn.2 be able to hook the ball without holiding it, can move the ball without holding if within 1m of them 
     match.ball.location = _tunnel_point(match)
     
 
