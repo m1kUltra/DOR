@@ -37,7 +37,7 @@ class Player:
     
 }
         self.flags = self.state_flags          # ← alias so p.flags[...] works
-        self.code  = f"{self.sn}{self.team_code}"
+        self.code  = f"{self.rn}{self.team_code}"
 
 
         self.orientation_deg = None

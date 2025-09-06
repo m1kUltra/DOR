@@ -17,7 +17,8 @@ def plan(match, state_tuple) -> List[DoCall]:
     bx, by, _ = getattr(match.ball, "location", (0.0, 0.0, 0.0))
     formation = get_scrum_formation((bx, by), atk, match)
     for player, tgt in formation.items():
-        pid = getattr(player, "pid", None) or getattr(player, "id", None) or getattr(player, "code", None)
+        pid = getattr(player, "code", None)
+        
         if pid:
             calls.append((pid, ("move", None), tgt, tgt))
     # Score stage 1

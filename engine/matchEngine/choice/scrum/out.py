@@ -54,5 +54,6 @@ def plan(match, state_tuple, decision: str) -> List[DoCall]:
             nid = f"{nine.sn}{nine.team_code}"
             tid = f"{ten.sn}{ten.team_code}"
             calls.append((nid, ("pass", tid), _xyz(nine.location), _xyz(ten.location)))
+             
 
     return calls

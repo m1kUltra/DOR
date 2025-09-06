@@ -15,7 +15,7 @@ def plan(match, state_tuple) -> List[DoCall]:
     pid9 = None
     for p in match.players:
         if p.team_code == atk and getattr(p, "jersey", 0) == 9:
-            pid9 = getattr(p, "pid", None) or getattr(p, "id", None)
+            pid9 =getattr (p, "code", None)
             break
     if pid9:
         calls.append((pid9, ("feed", None), (0.0,0.0,0.0), (0.0,0.0,0.0)))

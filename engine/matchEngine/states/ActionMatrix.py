@@ -76,7 +76,8 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("scrum.set", "feed"):         "scrum.feed",
     ("_", "hooked"):        "scrum.drive",
     ("_", "scrum.stable"):       "scrum.stable",
-    ("_", "scrum.out"):         "scrum.out",          # ball released from the scrum
+    ("_", "scrum.out"):         "scrum.out",  
+          # ball released from the scrum
 
     # --- Line‑out sequence ---
     ("_", "lineout_forming"):        "lineout.forming",

@@ -1,7 +1,7 @@
 # engine/matchEngine/set_pieces/scrum.py
 from typing import List, Tuple, Optional
 from actions.action_controller import do_action
-
+from team.team_controller import set_possession
 # Planners (mirror ruck structure)
 from choice.scrum.crouch import plan as crouch_plan
 from choice.scrum.bind import plan as bind_plan
@@ -35,6 +35,7 @@ def _team_possession(match) -> str:
     hid = getattr(match.ball, "holder", None)
     code = hid[-1] if isinstance(hid, str) and hid else "a"
     match.possession = code
+    set_possession(match, code)
     return code
 
 def _other(code: str) -> str:
@@ -47,7 +48,7 @@ def _set_ball_for_scrum(match) -> None:
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     
     match.ball.location = (bx, by, 0.0)
-    match.ball.set_action("scrum")
+    
 
 def _tunnel_point(match) -> Tuple[float, float, float]:
     """
@@ -71,12 +72,12 @@ def handle_start(match, state_tuple) -> None:
       - Transition ball to 'scrum_crouch'
     """
     atk = _team_possession(match)
-    sh_pid = pid_by_jersey(match.players, atk, 9)
+    sh_pid = pid_by_jersey(match, atk, 9)
 
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     
     match.ball.location = (bx, by, 0.0)
-    match.ball.set_action("scrum.crouch")
+    
 
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
@@ -91,6 +92,8 @@ def handle_start(match, state_tuple) -> None:
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
+    match.ball.set_action("scrum.crouch")
+    set_possession(match, atk)
 def handle_crouch(match, state_tuple) -> None:
     """
     Enter crouch: align front rows, set initial posture/spacing and camera/audio cues.
@@ -108,6 +111,7 @@ def handle_bind(match, state_tuple) -> None:
     calls = bind_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
+        match.ball.set_action("scrum.set")
 
     # Optional: simple illegal bind/reset gate (placeholder)
     # if _illegal_bind_detected(match): match.ball.set_action("scrum_reset")
@@ -119,7 +123,7 @@ def handle_set(match, state_tuple) -> None:
     calls = set_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
-    match.ball.set_action("scrum.set")
+    match.ball.set_action("scrum.feed")
     # Optionally transition to FEED when stability threshold achieved
     # if _is_stable_enough(match): match.ball.set_action("scrum_feed_ready")
 
@@ -136,6 +140,7 @@ def handle_feed(match, state_tuple) -> None:
     calls = feed_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
+    match.ball.set_action("scrum.drive") #TODO pop this
 
 def handle_drive(match, state_tuple) -> None:
     """
@@ -144,6 +149,7 @@ def handle_drive(match, state_tuple) -> None:
     calls = drive_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
+    match.ball.set_action("scrum.stable")
 """
     # Very simple pack dominance effect on ball drift (placeholder)
     bx, by, bz = _xyz(getattr(match.ball, "location", None))
@@ -163,6 +169,7 @@ def handle_stable(match, state_tuple) -> None:
     calls = stable_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
+        match.ball.set_action("scrum.out")
 
     # NOTE: stable_plan should decide when to call pickup/pass via actions
     # Optionally, timeout -> force 'use it' -> out

@@ -1,7 +1,7 @@
 # engine/matchEngine/choice/scrum/common.py
 from typing import List, Tuple, Dict, Optional
 import random
-
+from team.team_controller import team_by_code
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
 
 # -----------------------------
@@ -43,19 +43,29 @@ def left_of_attack_vector(ax: float, ay: float) -> Tuple[float, float]:
     # attack vector (ax,0); its left normal is (0, +1) for +x, (0, -1) for -x
     return (0.0, 1.0 if ax >= 0 else -1.0)
 
-def pid_by_jersey(players, team_code: str, jersey: int) -> Optional[str]:
-    for p in players:
-        if getattr(p, "team_code", None) == team_code and getattr(p, "jersey", None) == jersey:
-            return getattr(p, "pid", None) or getattr(p, "id", None)
-    return None
+def pid_by_jersey(match, team_code: str, jersey: int) -> Optional[str]:
+    team = team_by_code(match, team_code)
+    if not team:
+        return None
+    player = team.get_player_by_rn(jersey)
+    if not player:
+        return None
+    return getattr(player, "pid", None) 
 
-def pids_pack(players, team_code: str) -> Dict[int, Optional[str]]:
+def pids_pack(match, team_code: str) -> Dict[int, Optional[str]]:
     """
     Map jersey (1..8 + 9) -> pid; 9 is SH.
     """
-    out = {}
+
+    team = team_by_code(match, team_code)
+    out: Dict[int, Optional[str]] = {}
+    if not team:
+        return out
     for j in range(1, 16):
-        out[j] = pid_by_jersey(players, team_code, j)
+        
+        player = team.get_player_by_rn(j)
+        pid = getattr(player, "pid", None) or getattr(player, "id", None) if player else None
+        out[j] = pid
     return out
 
 def formation_scrum_positions(center: Tuple[float,float,float], attack_sign: float, far_side_sign: int) -> Dict[int, Tuple[float,float,float]]:
@@ -122,7 +132,7 @@ def move_pack_and_9_calls(match, team_code: str) -> List[DoCall]:
     pos_def = formation_scrum_positions(center, -sgn, far_sign)  # mirror on engage vector
 
     def calls_for(team, pos_map: Dict[int, Tuple[float,float,float]]) -> List[DoCall]:
-        ids = pids_pack(match.players, team)
+        ids = pids_pack(match, team)
         out: List[DoCall] = []
         for j in (1,2,3,4,5,6,7,8,9):
             pid = ids.get(j)

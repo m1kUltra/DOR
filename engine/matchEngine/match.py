@@ -65,10 +65,10 @@ class Match:
         """e.g. '10a' -> Player or None"""
         if not code:
             return None
-        sn = int(code[:-1])
+        rn = int(code[:-1])
         team_code = code[-1]
         team = self.team_a if team_code == 'a' else self.team_b
-        return team.get_player_by_sn(sn)
+        return team.get_player_by_rn(rn)
     
      # 
    
