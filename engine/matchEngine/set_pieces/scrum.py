@@ -200,17 +200,11 @@ from utils.positioning.mental.phase import phase_attack_targets, phase_defence_t
 READY_DIST = 5.0
 READY_D2   = READY_DIST * READY_DIST
 
-def _xyz(p): 
-    return tuple(p) if isinstance(p,(list,tuple)) and len(p) == 3 else (0.0,0.0,0.0)
-
 def _d2(a,b):
     dx,dy = a[0]-b[0], a[1]-b[1]
     return dx*dx + dy*dy
 
-def _wait_limit_ticks(match) -> int:
-    # 5s; try to read engine tick rate if available, else assume 5 Hz fallback
-    tps = getattr(match, "ticks_per_second", 5)
-    return int(5 * max(1, tps))
+
 
 def _team_ready(match, atk: str, base_xy, dh_id: Optional[str]) -> bool:
     bx, by = base_xy
@@ -315,8 +309,7 @@ def handle_stable(match, state_tuple) -> None:
 
     # If DH just picked, transition to out
     # (We check holder to avoid flipping state prematurely)
-    if getattr(match.ball, "holder", None) == dh_id:
-        match.ball.set_action("scrum.out")
+
 def handle_out(match, state_tuple) -> None:
     """
     Scrum OUT: 9 has picked but we're protecting the pass from open_play logic.

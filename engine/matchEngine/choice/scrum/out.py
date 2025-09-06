@@ -154,7 +154,7 @@ def plan(match, state_tuple) -> List[DoCall]:
             px, py, _ = _xyz(dh.location)
             calls.append((dh_id, ("move", None), (px,py,0.0), (bx+0.001,by+0.001,0.0)))
             match._scrum_out_wait += 1
-            match._frames_since_scrum = 0
+            match._frames_since_ruck = 0
 
     # clear scrum flags once out logic runs
     for p in match.players:

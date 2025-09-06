@@ -78,7 +78,9 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("_", "scrum.stable"):       "scrum.stable",
     ("_", "scrum.out"):         "scrum.out",
     ("scrum.stable", "picked"): "scrum.out",
-    ("picked", "_"): "open_play.phase_play",  
+    ("scrum.out", "passed"): "open_play.phase_play",
+    ("scrum.out", "_"): "open_play.phase_play",
+    ("picked", "_"): "open_play.phase_play",
           # ball released from the scrum
 
     # --- Line‑out sequence ---
