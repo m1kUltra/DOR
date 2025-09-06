@@ -174,28 +174,177 @@ def handle_drive(match, state_tuple) -> None:
     # Optionally promote to STABLE when near back-row feet
     # if _ball_at_back_row(match): match.ball.set_action("scrum_stable")
 
+# ---- tiny local helpers to avoid undefined names ----
+def _dist2(a_xy, b_xy) -> float:
+    ax, ay = a_xy
+    bx, by = b_xy
+    dx = ax - bx
+    dy = ay - by
+    return dx*dx + dy*dy
+
+def _wait_limit_ticks(match) -> int:
+    """
+    Soft cap on how long we wait in STABLE for the 9 to get set.
+    Reads optional config: match.config.scrum_wait_limit; default 12 ticks.
+    """
+    cfg = getattr(match, "config", None)
+    return int(getattr(cfg, "scrum_wait_limit", 12))
+
+# -------------------------
+# Stable: ball controllable at 8's feet
+# -------------------------
+# ---- mirror ruck/over constants + helpers ----
+from typing import List, Tuple, Optional
+from utils.positioning.mental.phase import phase_attack_targets, phase_defence_targets
+
+READY_DIST = 5.0
+READY_D2   = READY_DIST * READY_DIST
+
+def _xyz(p): 
+    return tuple(p) if isinstance(p,(list,tuple)) and len(p) == 3 else (0.0,0.0,0.0)
+
+def _d2(a,b):
+    dx,dy = a[0]-b[0], a[1]-b[1]
+    return dx*dx + dy*dy
+
+def _wait_limit_ticks(match) -> int:
+    # 5s; try to read engine tick rate if available, else assume 5 Hz fallback
+    tps = getattr(match, "ticks_per_second", 5)
+    return int(5 * max(1, tps))
+
+def _team_ready(match, atk: str, base_xy, dh_id: Optional[str]) -> bool:
+    bx, by = base_xy
+    targets = phase_attack_targets(match, atk, (bx, by))
+    ready = 0
+    total = 0
+    for p in match.players:
+        if p.team_code != atk:
+            continue
+        if p.state_flags.get("in_ruck", False):
+            continue
+        pid = f"{p.sn}{p.team_code}"
+        if dh_id and pid == dh_id:
+            continue
+        tgt = targets.get(p)
+        if not tgt:
+            continue
+        total += 1
+        if _d2((p.location[0],p.location[1]), (tgt[0],tgt[1])) <= READY_D2:
+            ready += 1
+    # 10/15 in place (or 2/3 of available non-ruck, non-DH players)
+    return (ready >= 10) or (total and ready / total >= 0.66)
+
+# -------------------------
+# Stable: mirror ruck/over "plan" EXACTLY, with DH fixed to jersey 9
+# -------------------------
 def handle_stable(match, state_tuple) -> None:
     """
-    Stable: ball is controllable at 8's feet; choose pick, 8-9, or penalty advantage.
+    Stable: behave exactly like ruck/over plan():
+      - Move non-ruck ATT to phase attack targets (excluding DH)
+      - Move DEF to phase defence targets
+      - DH (forced to 9) waits until close/ready/timeout, then PICK
+      - After PICK, transition to 'scrum.out'
     """
-    calls = stable_plan(match, state_tuple) or []
+    # Base/ball position
+    bx, by, _ = _xyz(getattr(match.ball, "location", None))
+    base_xy = (bx, by)
+
+    # Team in possession
+    atk = _team_possession(match)
+    deff = "b" if atk == "a" else "a"
+
+    # Force DH = jersey 9 of attacking team
+    dh_id = f"9{atk}"
+
+    # init wait counter (reuse the same attribute name as ruck/over)
+    if not hasattr(match, "_ruck_over_wait"):
+        match._ruck_over_wait = 0
+
+    calls: List[DoCall] = []
+
+    # ATT: players not in ruck -> phase shapes (excluding DH)
+    atk_targets = phase_attack_targets(match, atk, base_xy)
+    for p in match.players:
+        if p.team_code != atk:
+            continue
+        if p.state_flags.get("in_ruck", False):
+            continue
+        pid = f"{p.sn}{p.team_code}"
+        if dh_id and pid == dh_id:
+            continue
+        tgt = atk_targets.get(p)
+        if not tgt:
+            continue
+        calls.append((pid, ("move", None), _xyz(p.location), tgt))
+
+    # DEF: players not in ruck -> defence shapes
+    def_targets = phase_defence_targets(match, deff, base_xy)
+    for p in match.players:
+        if p.team_code != deff or p.state_flags.get("in_ruck", False):
+            continue
+        calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), def_targets.get(p, _xyz(p.location))))
+
+    # DH waits until ready or timeout, then PICK
+    if dh_id:
+        dh = match.get_player_by_code(dh_id)
+        if dh:
+            px, py, _ = _xyz(dh.location)
+            close = _d2((px,py), base_xy) <= (1.5*1.5)
+            ready = _team_ready(match, atk, base_xy, dh_id)
+            timeout = match._ruck_over_wait >= _wait_limit_ticks(match)
+
+            if not close:
+                calls.append((dh_id, ("move", None), (px,py,0.0), match.pitch.clamp_position((bx,by,0.0))))
+                match._ruck_over_wait += 1
+            else:
+                if ready or timeout:
+                    calls.append((dh_id, ("picked", None), (px,py,0.0), (bx,by,0.0)))
+                    match._ruck_over_wait = 0
+                    # As soon as 9 picks, they become holder and we exit scrum
+                    match.ball.holder = dh_id
+                    match.ball.location = (bx, by, 0.0)
+                    # We'll set action to 'scrum.out' after dispatching calls below
+                else:
+                    # tiny nudge to keep orientation + let others settle
+                    calls.append((dh_id, ("move", None), (px,py,0.0), match.pitch.clamp_position((bx+0.001,by+0.001,0.0))))
+                    match._ruck_over_wait += 1
+
+    # Dispatch calls now
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
+
+    # If DH just picked, transition to out
+    # (We check holder to avoid flipping state prematurely)
+    if getattr(match.ball, "holder", None) == dh_id:
         match.ball.set_action("scrum.out")
-
-    # NOTE: stable_plan should decide when to call pickup/pass via actions
-    # Optionally, timeout -> force 'use it' -> out
-    # if _use_it_timer_expired(match): match.ball.set_action("scrum_out")
-
 def handle_out(match, state_tuple) -> None:
     """
-    Out: ball leaves scrum (pick/pass). Hand off to phase play or set move.
+    Scrum OUT: 9 has picked but we're protecting the pass from open_play logic.
+    Works with choice/scrum/out.plan that mirrors ruck/out (no tactics).
     """
+    # Team in possession + DH = jersey 9
+    atk = _team_possession(match)
+    dh_id = f"9{atk}"
+    dh = match.get_player_by_code(dh_id)
+    if dh:
+        # Mark the active dummy-half for the plan's _current_dh_id()
+        dh.state_flags["dummy_half"] = True
+        # Ensure holder defaults to 9 while we're in the protected state
+        if getattr(match.ball, "holder", None) != dh_id:
+            match.ball.holder = dh_id
+
+    # Get planned calls for protected scrum-out phase
     calls = out_plan(match, state_tuple) or []
+
+    # Did a pass leave this tick?
+    pass_happened = False
     for pid, action, loc, target in calls:
+        if isinstance(action, tuple) and action[0] == "pass":
+            # prefer detecting a pass from DH; if DH missing, any pass exits
+            if (dh_id and pid == dh_id) or not dh_id:
+                pass_happened = True
         do_action(match, pid, action, loc, target)
 
-    # Responsibility of out_plan: set next possession, e.g.:
-    #   - set match.ball.holder = "<player_id>"
-    #   - set match.ball.location = player's loc
-    #   - set match.ball.set_action("open_play") or similar
+    # Advance state only once the pass actually goes; otherwise remain protected
+    
+   
