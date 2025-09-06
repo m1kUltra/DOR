@@ -1,4 +1,4 @@
-# matchEngine/actions/pass_action_stripped.py
+# matchEngine/actions/feed.py
 
 import math
 from typing import Optional, Tuple
@@ -10,26 +10,27 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
     if not ball.is_held():
         return False
 
-    speed = 10 #simple for feeds
+    speed = 10.0  # units per second
 
     # Mark status so the FSM can react
     ball.set_action("feed")
     ball.release()
 
-    # Force x to 0 for both current location and target
-    _, y, z = location
-    _, ty, tz = target
-    x = 0.0
-    tx = 0.0
+    # Preserve x/y; lock z to 0 for start and end
+    x0, y0, _ = location
+    x1, y1, _ = target
+    start = (x0, y0, 0.0)
+    end   = (x1, y1, 0.0)
 
-    # Constant pace: time = distance / speed (use yz-plane distance)
-    dist = math.hypot(ty - y, tz - z)
-    T = dist / speed if speed > 0 else 0.0
+    # (Optional) snap the ball exactly to start if your engine needs it
 
-    # Use a "flat" trajectory (no arc) and constant timing.
-    # Reuse the same API to keep it compatible with the rest of the engine.
-    ball.start_parabola_to((tx, ty, 0), T=T, H=0.0, gamma=1.0)
+
+    # Time from full XY distance to keep constant pace
+    dx = x1 - x0
+    dy = y1 - y0
+    dist_xy = math.hypot(dx, dy)
+    T = max(dist_xy / speed, 1e-3)  # avoid zero-duration issues
+
+    # Flat path (H=0), linear timing (gamma=1.0), no vertical drift
+    ball.start_parabola_to(end, T=T, H=0.0, gamma=1.0)
     return True
-
-
-

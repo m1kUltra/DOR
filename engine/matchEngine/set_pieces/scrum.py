@@ -11,6 +11,7 @@ from choice.scrum.drive import plan as drive_plan
 from choice.scrum.stable import plan as stable_plan
 from choice.scrum.out import plan as out_plan
 from choice.scrum.start import plan as start_plan
+from utils.positioning.mental.formations import get_scrum_formation
 
 # (Optional) if you want a "start" entry even though states maps START->crouch
 # from choice.scrum.start import plan as start_plan
@@ -72,25 +73,22 @@ def handle_start(match, state_tuple) -> None:
       - Transition ball to 'scrum_crouch'
     """
     atk = _team_possession(match)
-    sh_pid = pid_by_jersey(match, atk, 9)
-
+    print("attack",atk)
+    sh = f"9{atk}"
+    
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     
-    match.ball.location = (bx, by, 0.0)
     
-
-    calls = start_plan(match, state_tuple) or []
-    for pid, action, loc, target in calls:
-        do_action(match, pid, action, loc, target)
-
+    formation = get_scrum_formation((bx, by), atk, match)
+    for player, target in formation.items():
+        player.update_location(match.pitch.clamp_position(target))
     
        
         
         
-    match.ball.holder = sh_pid
-    calls = start_plan(match, state_tuple) or []
-    for pid, action, loc, target in calls:
-        do_action(match, pid, action, loc, target)
+    match.ball.holder = sh
+    
+   
     match.ball.set_action("scrum.crouch")
     set_possession(match, atk)
 def handle_crouch(match, state_tuple) -> None:
@@ -117,13 +115,22 @@ def handle_bind(match, state_tuple) -> None:
     # if _illegal_bind_detected(match): match.ball.set_action("scrum_reset")
 
 def handle_set(match, state_tuple) -> None:
-    """
-    Set: packs engage to a stable, safe position before the feed.
-    """
-    calls = set_plan(match, state_tuple) or []
-    for pid, action, loc, target in calls:
-        do_action(match, pid, action, loc, target)
-    match.ball.set_action("scrum.feed")
+
+    atk = _team_possession(match)                  # 'a' or 'b'
+    sh_code = f"9{atk}"                            # scrum‑half code
+    hk_code = f"2{atk}"                            # hooker code
+
+    sh = match.get_player_by_code(sh_code)
+    hk = match.get_player_by_code(hk_code)
+    if sh and hk:
+        do_action(
+            match,
+            sh_code,                               # passer is the scrum‑half
+            ("feed", None),                       # use feed action
+            sh.location,                          # current ball location
+            hk.location                           # hooker’s position
+        )
+
     # Optionally transition to FEED when stability threshold achieved
     # if _is_stable_enough(match): match.ball.set_action("scrum_feed_ready")
 
@@ -131,16 +138,21 @@ def handle_feed(match, state_tuple) -> None:
     """
     Feed: scrum-half puts the ball into the tunnel; set ball path & slight bias.
     """
-    # Ensure ball is at tunnel entry
-    match.ball.holder = None
-    #have the rn.2 be able to hook the ball without holiding it, can move the ball without holding if within 1m of them 
-    match.ball.location = _tunnel_point(match)
-    
+    atk = _team_possession(match)                  # 'a' or 'b'
+    n8_code = f"8{atk}"                            # scrum‑half code
+    hk_code = f"2{atk}"                            # hooker code
 
-    calls = feed_plan(match, state_tuple) or []
-    for pid, action, loc, target in calls:
-        do_action(match, pid, action, loc, target)
-    match.ball.set_action("scrum.drive") #TODO pop this
+    n8 = match.get_player_by_code(n8_code)
+    hk = match.get_player_by_code(hk_code)
+    if n8 and hk:
+        do_action(
+            match,
+            hk_code,                               # passer is the scrum‑half
+            ("hook", None),                       # use feed action
+            hk.location,                          # current ball location
+            n8.location                           # hooker’s position
+        )
+    
 
 def handle_drive(match, state_tuple) -> None:
     """
