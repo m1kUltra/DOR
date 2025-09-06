@@ -83,12 +83,11 @@ def handle_start(match, state_tuple) -> None:
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
 
-    if sh_pid:
-        sh = match.get_player_by_code(sh_pid)
-        if sh and getattr(sh, "location", None):
-            match.ball.holder = sh_pid
-            match.ball.location = getattr(sh, "location")
-
+    
+       
+        
+        
+    match.ball.holder = sh_pid
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
@@ -111,7 +110,8 @@ def handle_bind(match, state_tuple) -> None:
     calls = bind_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
-        match.ball.set_action("scrum.set")
+
+    match.ball.set_action("scrum.set")   
 
     # Optional: simple illegal bind/reset gate (placeholder)
     # if _illegal_bind_detected(match): match.ball.set_action("scrum_reset")
