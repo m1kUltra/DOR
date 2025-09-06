@@ -73,7 +73,7 @@ def handle_start(match, state_tuple) -> None:
       - Transition ball to 'scrum_crouch'
     """
     atk = _team_possession(match)
-    print("attack",atk)
+    
     sh = f"9{atk}"
     
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
