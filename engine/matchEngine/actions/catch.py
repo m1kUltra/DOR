@@ -31,4 +31,5 @@ def do_action(match, catcher_id: str, subtype: Optional[str], location: XYZ, tar
         start_t=match.match_time,
         reason="forced_knock_on",
     )
+    print(other)
     return True

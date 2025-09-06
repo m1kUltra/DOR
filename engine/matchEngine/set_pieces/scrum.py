@@ -72,7 +72,11 @@ def handle_start(match, state_tuple) -> None:
       - Move both packs, 9s, and backs into correct formation
       - Transition ball to 'scrum_crouch'
     """
-    atk = _team_possession(match)
+    pending = getattr(match, "pending_scrum", {}) or {}
+    atk = pending.get("put_in") or _other(_team_possession(match))
+    set_possession(match, atk)
+    match.pending_scrum = {}
+
     
     sh = f"9{atk}"
     
