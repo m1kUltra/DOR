@@ -87,7 +87,7 @@ def handle_start(match, state_tuple) -> None:
     phase_shape = generate_phase_play_shape("default", attack_dir)
     layout = generate_scrum_shape(backline_positions=phase_shape)
 
-    def _apply(team, sub_layout):
+    def _apply(team, sub_layout, dirn):
         for rn, (lx, ly) in sub_layout.items():
             try:
                 jersey = int(rn)
@@ -96,12 +96,15 @@ def handle_start(match, state_tuple) -> None:
             p = team.get_player_by_rn(jersey)
             if not p:
                 continue
-            wx = bx + attack_dir * lx
+            
+            wx = bx + dirn * lx
             wy = by + ly
             p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
 
-    _apply(attack_team, layout.get("team_a", {}))
-    _apply(defend_team, layout.get("team_b", {}))
+    
+    _apply(attack_team, layout['team_a'], attack_dir)
+    defend_dir = float(defend_team.tactics.get("attack_dir", -attack_dir))
+    _apply(defend_team, layout['team_b'], defend_dir)
     match.ball.holder = sh
     match.ball.set_action("scrum.crouch")
     set_possession(match, atk)

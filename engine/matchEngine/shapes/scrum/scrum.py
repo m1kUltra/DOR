@@ -73,7 +73,7 @@ def generate_scrum_shape(
     layout: ScrumLayout = {"team_a": {}, "team_b": {}}
 
     # Team A (positive x, pushing left)
-    a = layout["team_a"]
+    a = layout["team_b"]
     a.update(
         {
       1: (front_x, +lateral),
