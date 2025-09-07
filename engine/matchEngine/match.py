@@ -77,6 +77,7 @@ class Match:
          
         for _ in range(ticks):
             t0 = time.time()
+            if self.tick_count >= 1000: break
 
             # advance clocks here (don’t rely on BaseState to do it)
             self.tick_count += 1

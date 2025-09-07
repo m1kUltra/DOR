@@ -29,13 +29,13 @@ def _default_shape(attack_dir: float) -> BacklineLayout:
     """
     attack_dir=-attack_dir
     a = {
-        9: (1.0 * attack_dir, -1.5),   # scrum-half
-        10: (7.0 * attack_dir, -1.0),  # fly-half
-        12: (6.0 * attack_dir, -3.0),  # inside centre
-        13: (6.5 * attack_dir, -4.5),  # outside centre
-        11: (8.0 * attack_dir, -6.0),  # left wing
-        14: (8.0 * attack_dir,  6.0),  # right wing
-        15: (-10.0 * attack_dir, 0.0), # full-back sweeps behind
+        9: (1.0 * attack_dir, -4.5),   # scrum-half
+        10: (10.0 * attack_dir, -1.0),  # fly-half
+        12: (10.0 * attack_dir, -3.0),  # inside centre
+        13: (10.5 * attack_dir, -4.5),  # outside centre
+        11: (10.0 * attack_dir, -6.0),  # left wing
+        14: (10.0 * attack_dir,  6.0),  # right wing
+        15: (10.0 * attack_dir, 0.0), # full-back sweeps behind
     }
     # Defensive side is mirrored both in x and y
     b = {rn: (-x, -y) for rn, (x, y) in a.items()}

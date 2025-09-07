@@ -11,9 +11,9 @@ def do_action(match, catcher_id: str, subtype: Optional[str], location: XYZ, tar
     ball = match.ball
 
     # failure path (keep simple: use subtype signal)
-    if subtype in ("fail", "drop", "dropped", "miss"):
+    if subtype in ( "drop"):
         ball.release()                 # ensure unheld
-        ball.set_action("dropped")
+        ball.set_action("drop")
              # FSM sees loose-ball
         return False
 
@@ -22,14 +22,6 @@ def do_action(match, catcher_id: str, subtype: Optional[str], location: XYZ, tar
     ball.set_action("caught")
     x, y, _ = ball.location
     other = "b" if catcher_id.endswith("a") else "a"
-    match.advantage = adv_law.start(
-        match.advantage,
-        type_="knock_on",
-        to=other,
-        start_x=x,
-        start_y=y,
-        start_t=match.match_time,
-        reason="forced_knock_on",
-    )
+    
     print(other)
     return True
