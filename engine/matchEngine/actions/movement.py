@@ -81,9 +81,9 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
             max_turn_deg_per_tick=None,  # snap for the first set
         )
 
-        new_pos = match.pitch.clamp_position(new_pos)
-        p.update_location(new_pos)
-        return True
+    new_pos = match.pitch.clamp_position(new_pos)
+    p.update_location(new_pos)
+    return True
 
 
 
