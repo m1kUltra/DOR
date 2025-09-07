@@ -55,7 +55,7 @@ def plan(match, state_tuple) -> List[DoCall]:
     ball_loc = _xyz(getattr(match.ball, "location", None))
 
     # quick single-player catch (fast path)
-    if ball_loc[2] > 2.0:
+    if 2.0 < ball_loc[2] <= 3.5:
         for p in match.players:
             radius = lateral_catch_radius(p)
             px, py, _ = _xyz(p.location)

@@ -34,4 +34,4 @@ def total_vertical_reach(player: Any, jump_height: float) -> float:
 def lateral_catch_radius(player: Any) -> float:
     """Lateral radius within which a player can attempt a catch."""
     h = float(getattr(player, "height", 0.0))
-    return 1.0 + h / 0.375
+    return (h/100)*.375+1
