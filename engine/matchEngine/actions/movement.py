@@ -35,19 +35,7 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
     xt, yt, zt = target
     dx, dy, dz = (xt - x), (yt - y), (zt - z)
     d2 = dx*dx + dy*dy + dz*dz
-  
-    step = p.current_speed * dt
-
-    if d2 <= max(step * step, (getattr(p, "arrive_radius", 0.5))**2):
-        new_pos = (xt, yt, zt)
-        p.current_action = "idle"
-    else:
-        k = step / math.sqrt(d2)
-        new_pos = (x + dx * k, y + dy * k, z + dz * k)
-        p.current_action = "run"
-
-    # ⬇️ FACE WHERE WE'RE ACTUALLY MOVING THIS TICK
-    vx, vy = (new_pos[0] - x), (new_pos[1] - y)
+    vx, vy = dx, dy
     if vx or vy:
         # assume you've already computed/loaded normalized attributes on the player:
         agility_norm = float(getattr(p, "agility_norm", 0.5))          # 0..1
@@ -63,7 +51,7 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
 
         p.orientation_deg = compute_orientation(
             (x, y),
-            (x + vx, y + vy),      # face the direction we will move this tick
+            (xt, yt),     # face toward the target firs                # face the direction we will move this tick
             attacking_dir=None,
             current_deg=p.orientation_deg,
             max_turn_deg_per_tick=max_turn_deg,
@@ -80,6 +68,26 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
             current_deg=None,
             max_turn_deg_per_tick=None,  # snap for the first set
         )
+
+    step = p.current_speed * dt
+
+    new_pos = (x, y, z)
+    if vx or vy:
+        # only move once we are facing (within a tiny tolerance)
+        heading_to_target = math.degrees(math.atan2(vy, vx))
+        diff = (heading_to_target - p.orientation_deg + 180.0) % 360.0 - 180.0
+        if abs(diff) < 1e-3:
+            if d2 <= max(step * step, (getattr(p, "arrive_radius", 0.5))**2):
+                new_pos = (xt, yt, zt)
+                p.current_action = "idle"
+            else:
+                k = step / math.sqrt(d2)
+                new_pos = (x + dx * k, y + dy * k, z + dz * k)
+                p.current_action = "run"
+        else:
+            p.current_action = "idle"
+    else:
+        p.current_action = "idle"
 
     new_pos = match.pitch.clamp_position(new_pos)
     p.update_location(new_pos)
