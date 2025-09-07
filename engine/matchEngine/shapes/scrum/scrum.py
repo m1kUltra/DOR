@@ -1,23 +1,8 @@
-"""Scrum shape generator.
-
-This module builds a purpose-built 3-4-1 scrum layout using the
-specification provided in the project brief.  The layout is expressed in a
-field-centric coordinate system where +x is towards Team A and -x towards
-Team B.  Coordinates are returned for both packs with optional scrum-halves
-and hooks to extend the backline later.
-
-The implementation mirrors the business logic for scrums contained in
-``utils.mental.formations`` but focuses purely on shape generation without
-player objects or match context.
-"""
-
 from __future__ import annotations
-
 from typing import Dict, Tuple, Optional
 
 Vec2 = Tuple[float, float]
-ScrumLayout = Dict[str, Dict[int, Vec2]]
-
+ScrumLayout = Dict[str, Dict[int, Vec2]]  # keep jersey numbers as ints
 
 
 def generate_scrum_shape(
@@ -30,37 +15,14 @@ def generate_scrum_shape(
     back_offset: float = 2.0,
     include_scrum_halves: bool = False,
     sh_y_offsets: Tuple[float, float] = (-4.20, -5.60),
-   backline_positions: Optional[Dict[str, Dict[int, Vec2]]] = None,
+    backline_positions: Optional[Dict[str, Dict[int, Vec2]]] = None,
+    attack_dir: float = +1.0,  # +1.0 → attack to +x (right), -1.0 → attack to -x (left)
 ) -> ScrumLayout:
-    """Create a scrum layout for both teams.
+    """Create a scrum layout for both teams, oriented by attack_dir.
 
-    Parameters
-    ----------
-    r: float
-        Radius of each player node in metres.
-    gap: float
-        Edge-to-edge tunnel width between opposing front rows.
-    row_depth: float
-        Centre-to-centre distance between adjacent rows of forwards.
-    flanker_bind_forward: float
-        Amount flankers bind ahead of locks (metres).
-    flanker_y: float
-        Lateral offset of flankers from scrum centre.
-    back_offset: float
-        Additional depth from locks to No.8.
-    include_scrum_halves: bool
-        Whether to include scrum-halves in the layout.
-    sh_y_offsets: tuple of two floats
-        Y positions for Team A and Team B scrum-halves respectively.
-    backline_positions: optional mapping
-        External positions to merge for backs.  Keys are "team_a"/"team_b" and
-        values are mapping of role name -> (x, y).
-
-    Returns
-    -------
-    dict
-        ``{"team_a": {...}, "team_b": {...}}`` mapping role names to
-        coordinates.
+    attack_dir:
+        +1.0 means the attacking team (team_a) plays to +x (right),
+        -1.0 means the attacking team plays to -x (left).
     """
 
     # Base geometric quantities derived from inputs
@@ -70,36 +32,41 @@ def generate_scrum_shape(
     flanker_x = front_x + row_depth - flanker_bind_forward
     no8_x = lock_x + back_offset
 
+    # If attacking to +x, the attacking pack starts on -x (faces right).
+    # If attacking to -x, the attacking pack starts on +x (faces left).
+    sign = -attack_dir
+
     layout: ScrumLayout = {"team_a": {}, "team_b": {}}
 
-    # Team A (positive x, pushing left)
-    a = layout["team_b"]
+    # team_a = attacking pack, oriented by `sign`
+    a = layout["team_a"]
     a.update(
         {
-      1: (front_x, +lateral),
-            2: (front_x, 0.0),
-            3: (front_x, -lateral),
-            4: (lock_x, +1.0),
-            5: (lock_x, -1.0),
-            6: (flanker_x, +flanker_y),
-            7: (flanker_x, -flanker_y),
-            8: (no8_x, 0.0),}
+            1: (sign * front_x, +lateral),
+            2: (sign * front_x, 0.0),
+            3: (sign * front_x, -lateral),
+            4: (sign * lock_x, +1.0),
+            5: (sign * lock_x, -1.0),
+            6: (sign * flanker_x, +flanker_y),
+            7: (sign * flanker_x, -flanker_y),
+            8: (sign * no8_x, 0.0),
+        }
     )
     if include_scrum_halves:
         a[9] = (0.0, sh_y_offsets[0])
 
-    # Team B (mirror along x-axis)
+    # team_b = defensive pack, mirrored along x and y to face team_a
     b = layout["team_b"]
     b.update(
         {
-            1: (-front_x, -lateral),
-            2: (-front_x, 0.0),
-            3: (-front_x, +lateral),
-            4: (-lock_x, +1.0),
-            5: (-lock_x, -1.0),
-            6: (-flanker_x, +flanker_y),
-            7: (-flanker_x, -flanker_y),
-            8: (-no8_x, 0.0),
+            1: (-sign * front_x, -lateral),
+            2: (-sign * front_x, 0.0),
+            3: (-sign * front_x, +lateral),
+            4: (-sign * lock_x, +1.0),
+            5: (-sign * lock_x, -1.0),
+            6: (-sign * flanker_x, +flanker_y),
+            7: (-sign * flanker_x, -flanker_y),
+            8: (-sign * no8_x, 0.0),
         }
     )
     if include_scrum_halves:

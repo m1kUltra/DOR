@@ -74,6 +74,7 @@ class Match:
    
     # matchEngine/match.py
     def run(self, ticks=1000, realtime=True, speed=1.0):
+         
         for _ in range(ticks):
             t0 = time.time()
 
@@ -85,6 +86,10 @@ class Match:
             self.state.tick()
            
             # emit JSON to STDOUT — no bare except swallowing errors
+         
+                
+                
+
             dump_tick_json(self)
             #import sys, math; tr=self.ball.transit or {}; pace=(tr.get("speed") if tr.get("type")=="linear" else ((math.hypot(tr["target"][0]-tr["start"][0], tr["target"][1]-tr["start"][1]) / tr["T"]) if tr.get("type")=="parabola" and tr.get("T") else None)); print(f"DBG target={self.ball.target} loc={self.ball.location} pace={pace}", file=sys.stderr, flush=True)
             

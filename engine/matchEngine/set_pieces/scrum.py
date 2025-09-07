@@ -108,6 +108,7 @@ def handle_start(match, state_tuple) -> None:
     match.ball.holder = sh
     match.ball.set_action("scrum.crouch")
     set_possession(match, atk)
+    match.tick_count = 999
   
 def handle_crouch(match, state_tuple) -> None:
     """

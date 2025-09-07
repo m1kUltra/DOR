@@ -25,21 +25,22 @@ def _default_shape(attack_dir: float) -> BacklineLayout:
     Parameters
     ----------
     attack_dir: float
-        Direction of attack for ``team_a``.  Currently unused but included so
-        future shapes can react to it.
+        Direction of attack for team_a (+1.0 → right, −1.0 → left).
     """
-
+    attack_dir=-attack_dir
     a = {
-        9: (1.0, -1.5),   # scrum-half
-        10: (7.0, -1.0),  # fly-half
-        12: (6.0, -3.0),  # inside centre
-        13: (6.5, -4.5),  # outside centre
-        11: (8.0, -6.0),  # left wing
-        14: (8.0, 6.0),   # right wing
-        15: (-10.0, 0.0), # full-back
+        9: (1.0 * attack_dir, -1.5),   # scrum-half
+        10: (7.0 * attack_dir, -1.0),  # fly-half
+        12: (6.0 * attack_dir, -3.0),  # inside centre
+        13: (6.5 * attack_dir, -4.5),  # outside centre
+        11: (8.0 * attack_dir, -6.0),  # left wing
+        14: (8.0 * attack_dir,  6.0),  # right wing
+        15: (-10.0 * attack_dir, 0.0), # full-back sweeps behind
     }
+    # Defensive side is mirrored both in x and y
     b = {rn: (-x, -y) for rn, (x, y) in a.items()}
     return {"team_a": a, "team_b": b}
+
 
 
 BACKLINE_SHAPES: Dict[str, Callable[[float], BacklineLayout]] = {
