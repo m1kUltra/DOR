@@ -1,7 +1,7 @@
 # matchEngine/actions/movement.py
 from typing import Optional, Tuple
 import math
-from constants import DEFAULT_PLAYER_SPEED
+from constants import GameSpeed
 from utils.positioning.movement.orientation import compute_orientation  # ⬅️ NEW
 
 XYZ = Tuple[float, float, float]
@@ -9,13 +9,7 @@ XYZ = Tuple[float, float, float]
 def _get_player(match, player_id: str):
     return match.get_player_by_code(player_id)
 
-def _resolve_speed(subtype: Optional[str], player) -> float:
-    if subtype:
-        try:
-            return max(0.0, float(subtype))
-        except ValueError:
-            pass
-    return float(DEFAULT_PLAYER_SPEED)
+
 
 def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, target: Optional[XYZ]) -> bool:
     p = _get_player(match, player_id)
@@ -30,13 +24,17 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
     p.target = tuple(target)
 
     dt = float(getattr(match, "tick_rate", 0.05))
-    speed = _resolve_speed(subtype, p) if subtype else float(getattr(p, "speed_mps", DEFAULT_PLAYER_SPEED))
+    dt = dt*GameSpeed #is the pace the user wants to watch game at 
+    accel = getattr(p, "accel_mps2", 4.0)
+    max_speed = getattr(p, "max_speed_mps", 5.5)
+    p.current_speed = min(max_speed, getattr(p, "current_speed", 0.0) + accel * dt)
 
     x, y, z = p.location
     xt, yt, zt = target
     dx, dy, dz = (xt - x), (yt - y), (zt - z)
     d2 = dx*dx + dy*dy + dz*dz
-    step = speed * dt
+  
+    step = p.current_speed * dt
 
     if d2 <= max(step * step, (getattr(p, "arrive_radius", 0.5))**2):
         new_pos = (xt, yt, zt)

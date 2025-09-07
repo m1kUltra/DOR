@@ -10,15 +10,26 @@ class Player:
         self.weight = weight
         self.location = tuple(location)
         self.target   = None              # (x, y, z) or None
-        self.speed_mps = (attributes or {}).get("pace", 5.5)  # fallback pace
+         # fallback pace
         self.arrive_radius = 0.5          # meters; tweak per role
 
-       
-        self.orientation_deg = None
+        attrs = attributes or {}
+        self.attributes = attrs
 
-        self.attributes = attributes or {
-            
-        }
+        pace_attr = attrs.get("pace")
+        if pace_attr is not None:
+            self.max_speed_mps = 5 + 5 * ((pace_attr - 1) / 19) ** 0.8
+        else:
+            self.max_speed_mps = 5.5
+
+        accel_attr = attrs.get("acceleration")
+        if accel_attr is not None:
+            self.accel_mps2 = 2.0 + (6.0 - 2.0) * ((accel_attr - 1) / 19) ** 0.8
+        else:
+            self.accel_mps2 = 4.0
+
+        self.current_speed = 0.0
+        self.speed_mps = self.max_speed_mps
 
         self.action = None  # e.g., 'run', 'pass', etc.
         # Phase 3: transient flags (reset each tick)

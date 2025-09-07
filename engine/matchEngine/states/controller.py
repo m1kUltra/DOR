@@ -18,6 +18,7 @@ class StateController:
         if self._event_check():
             return
         self._status_check()
+        
 
     def _event_check(self) -> bool:
         evt = event.get_event()
