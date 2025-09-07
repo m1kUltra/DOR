@@ -24,10 +24,12 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
     p.target = tuple(target)
 
     dt = float(getattr(match, "tick_rate", 0.05))
-    dt = dt*GameSpeed #is the pace the user wants to watch game at 
-    accel = getattr(p, "accel_mps2", 4.0)
-    max_speed = getattr(p, "max_speed_mps", 5.5)
-    p.current_speed = min(max_speed, getattr(p, "current_speed", 0.0) + accel * dt)
+    dt = dt * GameSpeed  # is the pace the user wants to watch game at
+    accel = float(getattr(p, "accel_mps2", 4.0))
+    max_speed = float(getattr(p, "max_speed_mps", 5.5))
+    p.current_speed = min(
+        max_speed, getattr(p, "current_speed", 0.0) + accel * dt
+    )
 
     x, y, z = p.location
     xt, yt, zt = target

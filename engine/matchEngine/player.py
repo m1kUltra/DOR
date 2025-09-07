@@ -22,15 +22,19 @@ class Player:
 
         norm_pace = self.norm_attributes.get("pace")
         if norm_pace is not None:
-            self.max_speed_mps = 5 + 5 * norm_pace
+         
+            self.max_speed_mps = float(5 + 5 * norm_pace)
         else:
-            self.max_speed_mps = 5.5
+           
+            self.max_speed_mps = float(5.5)
 
         norm_accel = self.norm_attributes.get("acceleration")
         if norm_accel is not None:
-            self.accel_mps2 = 2.0 + (6.0 - 2.0) * norm_accel
+            
+            self.accel_mps2 = float(2.0 + (6.0 - 2.0) * norm_accel)
         else:
-            self.accel_mps2 = 4.0
+            
+            self.accel_mps2 = float(4.0)
 
         self.current_speed = 0.0
         self.speed_mps = self.max_speed_mps
