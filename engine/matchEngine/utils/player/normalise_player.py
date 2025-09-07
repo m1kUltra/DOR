@@ -43,7 +43,7 @@ def normalise_attrs(raw: Dict[str, Any] | None,
         if clamp_1_20:
             if val < 1.0:  val = 1.0
             if val > 20.0: val = 20.0
-            val =  ((val- 1) / 19) ** 0.8
+            
         out[k] = val
 
     # keep unknown extras (future-proof), normalized & optionally clamped

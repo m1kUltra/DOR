@@ -127,4 +127,4 @@ FIFTY22_TARGET_MINX = 78.0       # must go out past opponent 22 via bounce
 
 POST_GAP = 2.5
 CROSSBAR = 3.0
-GameSpeed =100
+GameSpeed =2
