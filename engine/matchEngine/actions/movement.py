@@ -49,13 +49,24 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
     # ⬇️ FACE WHERE WE'RE ACTUALLY MOVING THIS TICK
     vx, vy = (new_pos[0] - x), (new_pos[1] - y)
     if vx or vy:
-        # use the immediate next point as the "target" for orientation
+        # assume you've already computed/loaded normalized attributes on the player:
+        agility_norm = float(getattr(p, "agility_norm", 0.5))          # 0..1
+        acceleration_norm = float(getattr(p, "acceleration_norm", 0.5))# 0..1
+
+        # compute max turn allowed this tick from speed + attrs
+        max_turn_deg = max_turn_deg_per_tick_from_attrs(
+            speed_mps=p.current_speed,
+            dt=dt,
+            agility_norm=agility_norm,
+            acceleration_norm=acceleration_norm,
+        )
+
         p.orientation_deg = compute_orientation(
             (x, y),
-            (x + vx, y + vy),
-            attacking_dir=None,                  # not needed when we have a movement vector
+            (x + vx, y + vy),      # face the direction we will move this tick
+            attacking_dir=None,
             current_deg=p.orientation_deg,
-            max_turn_deg_per_tick=None,          # snap; set to e.g. 30.0 for smooth turning
+            max_turn_deg_per_tick=max_turn_deg,
         )
     elif p.orientation_deg is None:
         # initialize idle facing once based on team attack direction
@@ -67,9 +78,43 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
             None,
             attacking_dir=attacking_dir,
             current_deg=None,
-            max_turn_deg_per_tick=None,
+            max_turn_deg_per_tick=None,  # snap for the first set
         )
 
-    new_pos = match.pitch.clamp_position(new_pos)
-    p.update_location(new_pos)
-    return True
+        new_pos = match.pitch.clamp_position(new_pos)
+        p.update_location(new_pos)
+        return True
+
+
+
+def max_turn_deg_per_tick_from_attrs(
+    speed_mps: float,
+    dt: float,
+    agility_norm: float,       # 0..1
+    acceleration_norm: float   # 0..1
+) -> float:
+    # 1) Agility -> lateral acceleration (3..8 m/s^2)
+    a_lat_max = 3.0 + (8.0 - 3.0) * agility_norm
+
+    # 2) Soft floor for low-speed turning (v0 shrinks with acceleration)
+    v0_min, v0_max = 0.3, 2.0
+    v0 = v0_max - (v0_max - v0_min) * acceleration_norm
+    v_eff = math.sqrt(speed_mps * speed_mps + v0 * v0)
+
+    # 3) Physical limit (rad/s)
+    omega_phys = a_lat_max / v_eff
+
+    # 4) Low-speed pivot spin and smooth blend
+    omega_pivot_min, omega_pivot_max = 3.0, 6.0  # rad/s
+    omega_pivot = omega_pivot_min + (omega_pivot_max - omega_pivot_min) * acceleration_norm
+
+    v_c = 2.0  # m/s, blend scale
+    s = speed_mps / (speed_mps + v_c)  # 0 at rest -> ~1 at speed
+    omega = (1.0 - s) * omega_pivot + s * omega_phys
+
+    # 5) Convert to degrees per tick (and keep a safety cap)
+    omega_cap = 6.0  # rad/s (~343 deg/s)
+    omega = min(omega, omega_cap)
+
+    max_turn_deg_per_tick = omega * dt * (180.0 / math.pi)
+    return max_turn_deg_per_tick
