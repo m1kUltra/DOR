@@ -102,7 +102,7 @@ def max_turn_deg_per_tick_from_attrs(
     acceleration_norm: float   # 0..1
 ) -> float:
     # 1) Agility -> lateral acceleration (3..8 m/s^2)
-    a_lat_max = 3.0 + (8.0 - 3.0) * agility_norm
+    a_lat_max = 5.0 + (8.0 - 3.0) * agility_norm
 
     # 2) Soft floor for low-speed turning (v0 shrinks with acceleration)
     v0_min, v0_max = 0.3, 2.0
@@ -121,7 +121,7 @@ def max_turn_deg_per_tick_from_attrs(
     omega = (1.0 - s) * omega_pivot + s * omega_phys
 
     # 5) Convert to degrees per tick (and keep a safety cap)
-    omega_cap = 6.0  # rad/s (~343 deg/s)
+    omega_cap = 10.0  # rad/s (~343 deg/s)
     omega = min(omega, omega_cap)
 
     max_turn_deg_per_tick = omega * dt * (180.0 / math.pi)

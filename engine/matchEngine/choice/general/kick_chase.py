@@ -1,6 +1,7 @@
 # matchEngine/choice/team/kick_chase.py
 from typing import List, Tuple, Optional
 from utils.actions.catch_windows import can_catch, best_catcher
+from utils.actions.jump_helpers import lateral_catch_radius
 XYZ    = Tuple[float, float, float]
 Action = Tuple[str, Optional[str]]
 DoCall = Tuple[str, Action, XYZ, XYZ]   # (player_id, action, location, target)
@@ -54,6 +55,14 @@ def plan(match, state_tuple) -> List[DoCall]:
     ball_loc = _xyz(getattr(match.ball, "location", None))
 
     # quick single-player catch (fast path)
+    if ball_loc[2] > 2.0:
+        for p in match.players:
+            radius = lateral_catch_radius(p)
+            px, py, _ = _xyz(p.location)
+            dx, dy = ball_loc[0] - px, ball_loc[1] - py
+            if dx * dx + dy * dy <= radius * radius:
+                return [(f"{p.sn}{p.team_code}", ("jump", None),
+                        (px, py, 0.0), ball_loc)]
     catcher = best_catcher(match.players, ball_loc, radius=1.0, max_height=1.6)
     if catcher and getattr(match.ball, "holder", None) is None:
         return [(f"{catcher.sn}{catcher.team_code}", ("catch", None),
