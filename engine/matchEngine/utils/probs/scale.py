@@ -17,12 +17,9 @@ scale_factor_lookup = {
 }
 
 
-
-def balanced_score(attacker_attr, defender_attr, exponent):
-    norm_att = ((attacker_attr - 1) / 19) ** 0.8
-    norm_def = ((defender_attr - 1) / 19) ** 0.8
-    att_pow = norm_att ** exponent
-    def_pow = norm_def ** exponent
+def balanced_score(attacker_norm, defender_norm, exponent):
+    att_pow = attacker_norm ** exponent
+    def_pow = defender_norm ** exponent
     
     # Generate raw score
     raw_score = att_pow * random.random() - def_pow * random.random()

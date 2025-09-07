@@ -12,7 +12,7 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
     holder = match.get_player_by_code(holder_id)
     if not holder:
         return (None, None)
-
+  
     attack_dir = _attack_dir_for(holder, match)  # +1 or -1
     x, y, _ = holder.location
 

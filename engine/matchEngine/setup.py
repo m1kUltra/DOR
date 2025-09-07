@@ -25,7 +25,8 @@ def setup_match(db_path, team_a_id, team_b_id):
             rn=p["rn"],
             team_code="a",
             location=(50.0, 35.0, 0.0),      # ← tuple
-            attributes=p["attributes"],      # already normalized in db_loader
+            attributes=p["attributes"], 
+            norm_attributes=p["norm_attributes"],
             height=p["height"],
             weight=p["weight"],
         )
@@ -40,6 +41,7 @@ def setup_match(db_path, team_a_id, team_b_id):
             team_code="b",
             location=(100.0, 35.0, 0.0),     # ← tuple
             attributes=p["attributes"],
+            norm_attributes=p["norm_attributes"],
             height=p["height"],
             weight=p["weight"],
         )

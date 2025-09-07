@@ -62,6 +62,7 @@ def load_team_from_db(db_path, nation_team_id):
         pdata = id_to_data.get(pid)
         if not pdata:
             continue
+        attrs, norm_attrs = normalise_attrs(pdata["attributes"])
         players.append({
             "player_id": pid,
             "name": pdata["name"],
@@ -70,7 +71,9 @@ def load_team_from_db(db_path, nation_team_id):
             "current_ability": pdata["current_ability"],
             "height": pdata["height"],
             "weight": pdata["weight"],
-            "attributes": normalise_attrs(pdata["attributes"])
+           
+            "attributes": attrs,
+            "norm_attributes": norm_attrs
         })
 
     return team_name, players

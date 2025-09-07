@@ -1,7 +1,8 @@
 # matchEngine/player.py
 
 class Player:
-    def __init__(self, name, sn, rn, team_code, location=(0.0, 0.0, 0.0), attributes=None, height=None, weight=None):
+    def __init__(self, name, sn, rn, team_code, location=(0.0, 0.0, 0.0),
+                 attributes=None, norm_attributes=None, height=None, weight=None):
         self.name = name
         self.sn = sn  # Squad Number
         self.rn = rn  # Role Number (actual field role)
@@ -15,16 +16,19 @@ class Player:
 
         attrs = attributes or {}
         self.attributes = attrs
+        self.norm_attributes = norm_attributes or {
+            k: ((v - 1.0) / 19.0) ** 0.8 for k, v in attrs.items()
+        }
 
-        pace_attr = attrs.get("pace")
-        if pace_attr is not None:
-            self.max_speed_mps = 5 + 5 * ((pace_attr - 1) / 19) ** 0.8
+        norm_pace = self.norm_attributes.get("pace")
+        if norm_pace is not None:
+            self.max_speed_mps = 5 + 5 * norm_pace
         else:
             self.max_speed_mps = 5.5
 
-        accel_attr = attrs.get("acceleration")
-        if accel_attr is not None:
-            self.accel_mps2 = 2.0 + (6.0 - 2.0) * ((accel_attr - 1) / 19) ** 0.8
+        norm_accel = self.norm_attributes.get("acceleration")
+        if norm_accel is not None:
+            self.accel_mps2 = 2.0 + (6.0 - 2.0) * norm_accel
         else:
             self.accel_mps2 = 4.0
 

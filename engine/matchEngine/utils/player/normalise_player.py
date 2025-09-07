@@ -29,7 +29,7 @@ def _to_float(v: Any) -> float:
 
 def normalise_attrs(raw: Dict[str, Any] | None,
                     clamp_1_20: bool = True,
-                    defaults: Dict[str, float] = DEFAULT_ATTRS) -> Dict[str, float]:
+                    defaults: Dict[str, float] = DEFAULT_ATTRS) -> tuple[Dict[str, float], Dict[str, float]]:
     """
     - Coerces all values to float
     - Fills missing keys from defaults
@@ -43,6 +43,7 @@ def normalise_attrs(raw: Dict[str, Any] | None,
         if clamp_1_20:
             if val < 1.0:  val = 1.0
             if val > 20.0: val = 20.0
+            val =  ((val- 1) / 19) ** 0.8
         out[k] = val
 
     # keep unknown extras (future-proof), normalized & optionally clamped
@@ -55,4 +56,6 @@ def normalise_attrs(raw: Dict[str, Any] | None,
             if val > 20.0: val = 20.0
         out[k] = val
 
-    return out
+    norm_attrs = {k: ((v - 1.0) / 19.0) ** 0.8 for k, v in out.items()}
+
+    return out, norm_attrs
