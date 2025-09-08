@@ -4,7 +4,7 @@ allows the nine to pass without getti ng insta hit or effected by open_play logi
 # engine/matchEngine/choice/ruck/out.py
 from typing import List, Tuple, Optional
 from utils.positioning.mental.phase import phase_attack_targets, phase_defence_targets
-
+import math
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
 READY_DIST = 5.0
 READY_D2   = READY_DIST * READY_DIST
@@ -147,9 +147,11 @@ def plan(match, state_tuple) -> List[DoCall]:
             rx, ry, rz = _xyz(receiver.location)
             rid = f"{receiver.sn}{receiver.team_code}"
             dh = match.get_player_by_code(dh_id)
-            tz = rz if rz else 1.0
-            calls.append((dh_id, ("pass", rid), _xyz(dh.location), (rx, ry, tz)))
-            match._ruck_out_wait = 0
+            px, py, pz = _xyz(dh.location)
+            dist = math.hypot(rx - px, ry - py)
+            
+          
+            calls.append((dh_id, ("pass", "spin"), (px, py, pz), (rx, ry, 1)))
         else:
             # hold position briefly
             dh = match.get_player_by_code(dh_id)

@@ -5,7 +5,7 @@ Mirrors ruck/out but for scrums.
 
 from typing import List, Tuple, Optional
 from utils.positioning.mental.phase import phase_attack_targets, phase_defence_targets
-
+import math
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
 READY_DIST = 5.0
 READY_D2   = READY_DIST * READY_DIST
@@ -144,11 +144,14 @@ def plan(match, state_tuple) -> List[DoCall]:
 
         if receiver:
             rx, ry, rz = _xyz(receiver.location)
-            rid = f"{receiver.sn}{receiver.team_code}"
+            
             dh = match.get_player_by_code(dh_id)
+            px, py, pz = _xyz(dh.location)
+            dist = math.hypot(rx - px, ry - py)
+           
             tz = rz if rz else 1.0
-            calls.append((dh_id, ("pass", rid), _xyz(dh.location), (rx, ry, tz)))
-            match._scrum_out_wait = 0
+            
+            calls.append((dh_id, ("pass", "spin"), (px, py, pz), (rx, ry, tz)))
         else:
             dh = match.get_player_by_code(dh_id)
             px, py, _ = _xyz(dh.location)

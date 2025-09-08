@@ -5,7 +5,7 @@ import math
 import random
 
 from utils.actions import pass_helpers
-
+from utils.laws import advantage as adv_law
 
 def _team_attack_dir(match, team_code: str) -> float:
     team = match.team_a if team_code == 'a' else match.team_b
@@ -43,7 +43,32 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
     passing = float(getattr(passer, "norm_attributes", {}).get("passing", 0.0))
     technique = float(getattr(passer, "norm_attributes", {}).get("technique", 0.0))
 
+   # determine attack direction and check for forward passes
+    attack_dir = _team_attack_dir(match, passer.team_code)
+    x, y, _ = location
+    tx, ty, tz = target
+    
+        
+    x, y, _ = location
+    tx, ty, tz = target
+    attack_dir = _team_attack_dir(match, passer.team_code)
+    if not _is_backward_pass(attack_dir, tx - x):
+        ball.set_action("forward_pass")
+        match.advantage = adv_law.start(
+            match.advantage,
+            type_="knock_on",
+            to=("b" if passer.team_code == "a" else "a"),
+            start_x=x,
+            start_y=y,
+            start_t=match.match_time,
+            reason="forward_pass",
+        )
+    else:
+        ball.set_action("passed")
+
     ball.release()
+
+
  
     speed = _speed_for(passing, technique)
     range_ = pass_helpers.pass_range(passing, technique)
@@ -60,8 +85,7 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
         success_bonus += 0.25
 
     # compute a gentle arc so misplaced passes still drop to ground
-    x, y, _ = location
-    tx, ty, tz = target
+   
     dist = math.hypot(tx - x, ty - y)
 
     success = pass_helpers.pass_success(dist, range_, passing) + success_bonus
