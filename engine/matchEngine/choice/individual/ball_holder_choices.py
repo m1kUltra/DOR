@@ -1,7 +1,10 @@
+
 # matchEngine/choice/individual/ball_holder_choices.py
 from typing import Optional, Tuple, List
 import math, random
-from constants import PASS_MAX_RANGE, RUN_PROBE_LEN, EPS, TRYLINE_A_X, TRYLINE_B_X
+
+from constants import RUN_PROBE_LEN, EPS, TRYLINE_A_X, TRYLINE_B_X
+from utils.actions.pass_helpers import pass_range, pass_scope
 
 XYZ    = Tuple[float, float, float]
 Action = Tuple[str, Optional[str]]
@@ -15,6 +18,12 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
   
     attack_dir = _attack_dir_for(holder, match)  # +1 or -1
     x, y, _ = holder.location
+
+    norms = getattr(holder, "norm_attributes", {})
+    norm_passing = float(norms.get("passing", 0.0))
+    norm_technique = float(norms.get("technique", 0.0))
+    range_ = pass_range(norm_passing, norm_technique)
+    scope = pass_scope(norm_technique)
 
     # --- 0) Tryline check → ground immediately ---
     try_x = TRYLINE_B_X if attack_dir > 0 else TRYLINE_A_X
@@ -45,11 +54,20 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
             ))
 
     # --- 3) Passing option ---
-    recvs = _legal_receivers(match, holder, attack_dir)
+ 
+    recvs = _legal_receivers(match, holder, attack_dir, range_, scope)
     if recvs:
         r = random.choice(recvs)
         rx, ry, rz = r.location
-        return (("pass", "flat"), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
+        
+        dist = math.hypot(rx - x, ry - y)
+        if dist < 10.0:
+            subtype = "flat"
+        elif dist < 20.0:
+            subtype = "spin"
+        else:
+            subtype = "league"
+        return (("pass", subtype), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
 
     # --- 4) Kick option ---
     kick_subtype = random.choice(["exit", "bomb", "chip", "grubber"])
@@ -98,17 +116,28 @@ def _legal_not_forward(attack_dir: float, dx: float) -> bool:
     if attack_dir > 0:  return dx <= EPS
     else:               return dx >= -EPS
 
-def _legal_receivers(match, holder, attack_dir: float):
+
+def _legal_receivers(match, holder, attack_dir: float, range_: float, scope: float):
     hx, hy, _ = holder.location
     out = []
-    max_d2 = PASS_MAX_RANGE * PASS_MAX_RANGE
+ 
+    max_d2 = range_ * range_
+    half_scope = scope / 2.0
     for p in match.players:
-        if p is holder or p.team_code != holder.team_code: continue
+        
+        if p is holder or p.team_code != holder.team_code:
+            continue
         px, py, _ = p.location
-        d2 = (px - hx)**2 + (py - hy)**2
-        if d2 > max_d2: continue
-        dx = px - hx
-        if not _legal_not_forward(attack_dir, dx): continue
+      
+        dx, dy = px - hx, py - hy
+        d2 = dx * dx + dy * dy
+        if d2 > max_d2:
+            continue
+        if not _legal_not_forward(attack_dir, dx):
+            continue
+        angle = abs(math.atan2(dy, dx if attack_dir > 0 else -dx))
+        if angle > half_scope:
+            continue
         sf = p.state_flags
         if sf.get("being_tackled", False) or sf.get("off_feet", False):
             continue

@@ -2,6 +2,9 @@
 
 from constants import EPS
 import math
+import random
+
+from utils.actions import pass_helpers
 
 
 def _team_attack_dir(match, team_code: str) -> float:
@@ -24,35 +27,65 @@ from typing import Optional, Tuple
 
 XYZ = Tuple[float, float, float]
 
+
 def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, target: XYZ) -> bool:
     ball = match.ball
     if not ball.is_held():
         return False
 
-    speed = _speed_for(subtype)
+    
+    passer = match.get_player_by_code(passer_id)
+    if not passer:
+        return False
 
     # NEW: mark status -> passed so the FSM sees it
-    ball.set_action("passed")
-    print(location)
-    print(target)
+   
+    passing = float(getattr(passer, "norm_attributes", {}).get("passing", 0.0))
+    technique = float(getattr(passer, "norm_attributes", {}).get("technique", 0.0))
 
     ball.release()
  
+    speed = _speed_for(passing, technique)
+    range_ = pass_helpers.pass_range(passing, technique)
+    scope = pass_helpers.pass_scope(technique)
+    success_bonus = 0.0
+
+    if subtype == "flat":
+        speed /= 2.5
+        range_ = min(range_, 10.0)
+        success_bonus += 0.50
+    elif subtype == "league":
+        speed *= 0.75
+        range_ = min(range_, 25.0)
+        success_bonus += 0.25
 
     # compute a gentle arc so misplaced passes still drop to ground
     x, y, _ = location
     tx, ty, tz = target
     dist = math.hypot(tx - x, ty - y)
+
+    success = pass_helpers.pass_success(dist, range_, passing) + success_bonus
+    success = max(0.0, min(1.0, success))
+
+    roll = random.random()
+    if roll > success:
+        error = roll - success
+        if random.random() < 0.5:
+            error = -error
+        max_lateral = math.tan(scope / 2.0) * dist if scope else dist
+        lateral = max(-max_lateral, min(max_lateral, (error * dist) / 3.0))
+        ty += lateral
+        target = (tx, ty, tz)
+        dist = math.hypot(tx - x, ty - y)
+
+    ball.set_action("passed")
+    ball.release()
+
     hang = dist / speed if speed > 0 else 0.0
     ball.start_parabola_to((tx, ty, tz), T=hang, H=1.1, gamma=1.1)
     return True
 
-def _speed_for(subtype: Optional[str]) -> float:
-    # super light placeholder; tweak later or replace with attr-based calc
-    if subtype == "flat":
-        return 16.0
-    if subtype == "skip":
-        return 18.0
-    if subtype == "tip":
-        return 14.0
-    return 30.0
+
+def _speed_for(passing: float, technique: float) -> float:
+    """Wrapper to compute base pass speed."""
+    return pass_helpers.pass_speed(passing, technique)
