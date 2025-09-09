@@ -10,5 +10,17 @@ def plan(match, state_tuple) -> List[DoCall]:
     - If score breaches +/-1, mark penalty side (for referee layer to consume).
     """
     calls: List[DoCall] = []
-    
+    atk = team_possession(match)
+    s = getattr(match, "_scrum_score", None) or ScrumScore()
+
+    compute_stage_3(match, atk, s)
+    match._scrum_score = s
+
+    outcome = outcome_from_score(s.value)
+    if outcome:
+        match._scrum_outcome = outcome
+        return calls
+
+    if s.lock_out:
+        match.ball.set_action("scrum.stable")
     return calls

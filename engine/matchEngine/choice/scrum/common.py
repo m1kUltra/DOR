@@ -167,20 +167,93 @@ class ScrumScore:
 def compute_stage_1(match, atk_code: str, s: ScrumScore) -> None:
     # 1. score = (rn-2(leadership)**2) * (rn-1(scrum) + rn-3(scrum)) / 3
     # Placeholder: attach real computations later
-    s.value += 0.0
+        def _calc(code: str) -> float:
+            team = team_by_code(match, code)
+            hook = team.get_player_by_rn(2) if team else None
+            prop1 = team.get_player_by_rn(1) if team else None
+            prop3 = team.get_player_by_rn(3) if team else None
+
+            leadership = float(getattr(hook, "norm_attributes", {}).get("leadership", 0.0)) if hook else 0.0
+            scrum1 = float(getattr(prop1, "norm_attributes", {}).get("scrummaging", 0.0)) if prop1 else 0.0
+            scrum3 = float(getattr(prop3, "norm_attributes", {}).get("scrummaging", 0.0)) if prop3 else 0.0
+
+            return (leadership ** 2) * (scrum1 + scrum3) / 3.0
+
+        a = _calc(atk_code)
+        b = _calc(other(atk_code))
+        s.value += a - b
 
 def compute_stage_2(match, atk_code: str, s: ScrumScore) -> None:
     # 2. += rn-1(scrum*strength) * rn-3(scrum*strength)
-    s.value += 0.0
+        # 2. += rn-1(scrum*strength) * rn-3(scrum*strength) for both packs
+    def prop_product(code: str) -> float:
+        team = team_by_code(match, code)
+        if not team:
+            return 0.0
+        p1 = team.get_player_by_rn(1)
+        p3 = team.get_player_by_rn(3)
+
+        def norm(player, key: str) -> float:
+            return float(getattr(player, "norm_attributes", {}).get(key, 0.0)) if player else 0.0
+
+        p1_scrum = norm(p1, "scrummaging")
+        p1_str = norm(p1, "strength")
+        p3_scrum = norm(p3, "scrummaging")
+        p3_str = norm(p3, "strength")
+        return p1_scrum * p1_str * p3_scrum * p3_str
+
+    a = prop_product(atk_code)
+    b = prop_product(other(atk_code))
+    s.value += a - b
 
 def compute_stage_3(match, atk_code: str, s: ScrumScore) -> None:
     # 3. += (pack_weight/1000) * (rn-1(scrum)+rn-3(scrum)) * random()
-    s.value += 0.0
-    # lock_out chance
-    """"
+    
+    def pack_weight(code: str) -> float:
+        team = team_by_code(match, code)
+   
+        if not team:
+            return total
+        for j in range(1, 9):
+            p = team.get_player_by_rn(j)
+            w = getattr(p, "weight", 0.0) if p else 0.0
+            try:
+                total += float(w)
+            except Exception:
+                pass
+        return total
+
+    def prop_scrum_sum(code: str) -> float:
+        team = team_by_code(match, code)
+        if not team:
+            return 0.0
+
+        def _scrum_norm(p) -> float:
+            if not p:
+                return 0.0
+            attrs = getattr(p, "norm_attributes", {})
+            return float(attrs.get("scrummaging") or attrs.get("scrum", 0.0))
+
+        p1 = team.get_player_by_rn(1)
+        p3 = team.get_player_by_rn(3)
+        return _scrum_norm(p1) + _scrum_norm(p3)
+
+    def_code = other(atk_code)
+
+    atk_term = (pack_weight(atk_code) / 1000.0) * prop_scrum_sum(atk_code) * random.random()
+    def_term = (pack_weight(def_code) / 1000.0) * prop_scrum_sum(def_code) * random.random()
+
+    s.value += atk_term - def_term
+
     if random.random() > 0.5:
         s.lock_out = True
-    """
+
+
+    # lock_out chance
+
+    if random.random() > 0.5:
+        s.lock_out = True
+  
     return None
 
 def tactic_decision(match, atk_code: str, s: ScrumScore, tactic: str) -> str:
@@ -190,12 +263,53 @@ def tactic_decision(match, atk_code: str, s: ScrumScore, tactic: str) -> str:
       - mixed:    scrum_on if score > 0.5 or score < -0.75; else take_out
       - leave_in: take out only if -0.75 < score < -0.25; else scrum_on
     """
+    val = s.value
+    if tactic == "channel1":
+        return "take_out" if val > -0.75 else "scrum_on"
+    if tactic == "mixed":
+        return "scrum_on" if val > 0.5 or val < -0.75 else "take_out"
+    if tactic == "leave_in":
+        return "take_out" if -0.75 < val < -0.25 else "scrum_on"
     return "take_out"
     
 
 def compute_drive_increment(match, atk_code: str) -> float:
     # 5. += ((rn-3(s*s*a)+rn-1(s*s*a)+rn-2(s*s*a)/2 + rn-4(d*s) + rn-5(d*s)*1.5)/5)
-    return 0.0
+     
+    def team_drive(code: str) -> float:
+        team = team_by_code(match, code)
+        if not team:
+            return 0.0
+
+        def norm_attr(player, key: str) -> float:
+            return float(getattr(player, "norm_attributes", {}).get(key, 0.0)) if player else 0.0
+
+        def front_row(player, weight: float = 1.0) -> float:
+            if not player:
+                return 0.0
+            s = norm_attr(player, "scrummaging")
+            st = norm_attr(player, "strength")
+            a = norm_attr(player, "aggression")
+            return weight * s * st * a
+
+        def lock(player, weight: float = 1.0) -> float:
+            if not player:
+                return 0.0
+            d = norm_attr(player, "determination")
+            st = norm_attr(player, "strength")
+            return weight * d * st
+
+        total = 0.0
+        total += front_row(team.get_player_by_rn(3))
+        total += front_row(team.get_player_by_rn(1))
+        total += front_row(team.get_player_by_rn(2), 0.5)
+        total += lock(team.get_player_by_rn(4))
+        total += lock(team.get_player_by_rn(5), 1.5)
+        return total / 5.0
+
+    atk_val = team_drive(atk_code)
+    def_val = team_drive(other(atk_code))
+    return atk_val - def_val
 
 def counter_shove_check(match, atk_code: str) -> Tuple[float,float]:
     """
@@ -203,7 +317,36 @@ def counter_shove_check(match, atk_code: str) -> Tuple[float,float]:
     opposing_scrum = rn-3(aggression*scrum/150) * rn-3(aggression*scrum/150)
     Return tuple (feeding_val, opposing_val). Stubbed to zeros.
     """
-    return (0.0, 0.0)
+    
+    # Feed side props (1 and 3) combine strength and weight
+    feed_vals = []
+    for j in (1, 3):
+        p = match.get_player_by_code(f"{j}{atk_code}")
+        if not p:
+            feed_vals.append(0.0)
+            continue
+        strength = float(p.attributes.get("strength", 0.0))
+        weight = float(getattr(p, "weight", 0.0) or 0.0)
+        feed_vals.append(strength * weight / 150.0)
+
+    feeding_scrum = feed_vals[0] * feed_vals[1] if len(feed_vals) == 2 else 0.0
+
+    # Opposition props rely on aggression and scrum ability
+    opp_code = other(atk_code)
+    opp_vals = []
+    for j in (1, 3):
+        p = match.get_player_by_code(f"{j}{opp_code}")
+        if not p:
+            opp_vals.append(0.0)
+            continue
+        aggression = float(p.attributes.get("aggression", 0.0))
+        scrum = float(p.attributes.get("scrum", 0.0))
+        opp_vals.append(aggression * scrum / 150.0)
+
+    opposing_scrum = opp_vals[0] * opp_vals[1] if len(opp_vals) == 2 else 0.0
+
+    return (feeding_scrum, opposing_scrum)
+
 
 def outcome_from_score(val: float) -> Optional[str]:
     """

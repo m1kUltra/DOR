@@ -13,7 +13,8 @@ from choice.scrum.out import plan as out_plan
 from choice.scrum.start import plan as start_plan
 from shapes.scrum.scrum import generate_scrum_shape
 from shapes.scrum.default import generate_phase_play_shape
-
+from choice.scrum.common import ScrumScore, counter_shove_check, outcome_from_score
+import random
 # (Optional) if you want a "start" entry even though states maps START->crouch
 # from choice.scrum.start import plan as start_plan
 
@@ -147,6 +148,20 @@ def handle_set(match, state_tuple) -> None:
             sh.location,                          # current ball location
             hk.location                           # hooker’s position
         )
+        # Post-feed scrum logic
+    calls = set_plan(match, state_tuple) or []
+    for pid, action, loc, target in calls:
+        do_action(match, pid, action, loc, target)
+
+    # Penalty? (_scrum_outcome set by plan)
+    if getattr(match, "_scrum_outcome", None):
+        return
+
+    s = getattr(match, "_scrum_score", None)
+    if getattr(s, "lock_out", False):
+        match.ball.set_action("scrum.stable")
+    else:
+        match.ball.set_action("scrum.feed")
 
     # Optionally transition to FEED when stability threshold achieved
     # if _is_stable_enough(match): match.ball.set_action("scrum_feed_ready")
@@ -263,7 +278,17 @@ def handle_stable(match, state_tuple) -> None:
     # Team in possession
     atk = _team_possession(match)
     deff = "b" if atk == "a" else "a"
-
+     # Single counter-shove opportunity to adjust scrum score
+    s = getattr(match, "_scrum_score", None) or ScrumScore()
+    if not getattr(match, "_counter_shove_checked", False):
+        feed_val, opp_val = counter_shove_check(match, atk)
+        s.value += feed_val - opp_val
+        match._scrum_score = s
+        match._counter_shove_checked = True
+        outcome = outcome_from_score(s.value)
+        if outcome:
+            match._scrum_outcome = outcome
+            return
     # Force DH = jersey 9 of attacking team
     dh_id = f"9{atk}"
 
