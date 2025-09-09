@@ -211,10 +211,15 @@ def compute_stage_3(match, atk_code: str, s: ScrumScore) -> None:
     
     def pack_weight(code: str) -> float:
         team = team_by_code(match, code)
+        total = 0.0
+      
    
+
         if not team:
-            return total
-        for j in range(1, 9):
+        
+            return 0.0
+     
+        for j in range(1, 8):
             p = team.get_player_by_rn(j)
             w = getattr(p, "weight", 0.0) if p else 0.0
             try:
