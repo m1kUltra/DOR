@@ -1,13 +1,19 @@
 from math import cos, sin, radians
 
 from constants import (
-    KICK_BASE_V0, KICK_PRESETS, LATERAL_DRIFT_MAX,
+     KICK_PRESETS, LATERAL_DRIFT_MAX,
+    KICK_PRESETS, LATERAL_DRIFT_MAX,
     DEADBALL_LINE_A_X, DEADBALL_LINE_B_X,
     TOUCHLINE_BOTTOM_Y, TOUCHLINE_TOP_Y,
 )
 
 GRAVITY = 9.81
 
+KICK_PRESETS = {
+    'spiral': {'v0': 1.15, 'elev_deg': 45, 'range_boost': 1.20, 'skill_mult': 2.0},
+    'grubber': {'v0': 1.0, 'elev_deg': -1, 'range_boost': 1.0},
+    'bomb': {'v0': 0.70, 'elev_deg': 70, 'range_boost': 0.50},
+    'chip': {'v0': 1.0, 'elev_deg': 60, 'range_boost': 1.0}}
 
 def _clamp(val: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, val))
@@ -28,7 +34,8 @@ def _attack_dir_from_team(match, team):
         return 1
 
 
-def compute_kick_velocity(match, kicker, kick_type: str, v0_hint: float, lateral_hint: float) -> dict:
+
+def compute_kick_velocity(match, kicker, kick_type: str, kicking_power: float, lateral_hint: float) -> dict:
     """
     Returns:
       {
@@ -43,7 +50,9 @@ def compute_kick_velocity(match, kicker, kick_type: str, v0_hint: float, lateral
     if preset is None:
         raise ValueError(f"Unknown kick_type: {kick_type}")
 
-    v0 = KICK_BASE_V0 * preset["v0"] * _clamp(v0_hint, 0.5, 1.4)
+  
+    kp = _clamp(float(kicking_power), 0.0, 1.0)
+    v0 = (20.0 + 18.0 * kp) * preset["v0"]
     elev = radians(preset["elev_deg"])
     attack_dir = _attack_dir_from_team(match, getattr(kicker, "team", None) or match.get_team(kicker))
 
@@ -61,23 +70,8 @@ def compute_kick_velocity(match, kicker, kick_type: str, v0_hint: float, lateral
 
     # naive landing projection (no air)
     t_fall = (2.0 * vz) / GRAVITY if vz > 0 else 0.0
+    range_boost = float(preset.get("range_boost", 1.0))
     x0, y0, _ = getattr(match.ball, "location", (0.0, 0.0, 1.5))
-    x_land = x0 + vx * t_fall
-    y_land = y0 + vy * t_fall
-
-    # Clamp landing inside the field: prefer Pitch.clamp_position, else constants
-    try:
-        px, py, _ = match.pitch.clamp_position((x_land, y_land, 0.0))
-        x_land, y_land = px, py
-    except Exception:
-        x_land, y_land = _clamp_xy(x_land, y_land)
-
-    return {
-        "vx": vx,
-        "vy": vy,
-        "vz": vz,
-        "type": kick_type,
-        "hang_bonus": float(preset.get("hang_bonus", 0.0)),
-        "spin": float(preset.get("spin", 0.0)),
-        "landing_pred": (x_land, y_land, t_fall),
-    }
+   
+    x_land = x0 + vx * t_fall * range_boost
+    y_land = y0 + vy * t_fall * range_boost

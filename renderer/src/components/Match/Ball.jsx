@@ -1,9 +1,15 @@
 // File: Match/Ball.jsx
 export default function Ball({ ball, toPixels, pxPerMeter }) {
-  const radiusM = 0.5;
+  const radiusM = 1;
   const { left, top } = toPixels({ x: ball.location[0], y: ball.location[1] });
-  const width = radiusM * 2 * pxPerMeter;
-  const height = radiusM * 1.5 * pxPerMeter;
+ 
+ const z = ball.location[2] ?? 0;
+  const scale = z > 1 ? z : 1;
+  const baseWidth = radiusM * 2 * (1+pxPerMeter/2);
+  const baseHeight = radiusM * 1.5 * (1+pxPerMeter/2);
+  const width = baseWidth * scale;
+  const height = baseHeight * scale;
+  const zIndex = 2 + Math.round(z);
 
   return (
     <div
@@ -17,7 +23,7 @@ export default function Ball({ ball, toPixels, pxPerMeter }) {
         backgroundColor: "black",
         borderRadius: "50%",
         zIndex: 2,
-      }}
+        }}
     />
   );
 }
