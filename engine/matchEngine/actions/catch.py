@@ -35,21 +35,22 @@ def do_action(
     # Use Euclidean distance in the horizontal plane
     bx, by, bz = ball.location
     cx, cy, cz = catcher.location
-    if cz<1:
-        cz=1
+    
     space = math.hypot(bx - cx, bz - cz)
 
     # Explicit failure via subtype hint
     
 
     # Success probability
-    if space < 0.5:
+    if space < 1.25:
         catch_success = 0.5 + handling
+        print ("near " ,catch_success)
     else:
         catch_success = 0.3 + 0.9 * (handling * technique)
+        print ("far", catch_success)
     catch_success = max(0.0, min(1.0, catch_success))
 
-    roll = rng()-0.5
+    roll = rng() - .25
 
     # Resolve outcome
     if roll <= catch_success:
