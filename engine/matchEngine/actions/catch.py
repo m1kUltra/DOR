@@ -42,7 +42,7 @@ def do_action(
     
 
     # Success probability
-    if space < 1.25:
+    if space < 1.15:
         catch_success = 0.5 + handling
         print ("near " ,catch_success)
     else:
