@@ -45,28 +45,15 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
 
    # determine attack direction and check for forward passes
     attack_dir = _team_attack_dir(match, passer.team_code)
-    x, y, _ = location
-    tx, ty, tz = target
+   
     
         
     x, y, _ = location
     tx, ty, tz = target
     attack_dir = _team_attack_dir(match, passer.team_code)
-    if not _is_backward_pass(attack_dir, tx - x):
-        ball.set_action("forward_pass")
-        match.advantage = adv_law.start(
-            match.advantage,
-            type_="knock_on",
-            to=("b" if passer.team_code == "a" else "a"),
-            start_x=x,
-            start_y=y,
-            start_t=match.match_time,
-            reason="forward_pass",
-        )
-    else:
-        ball.set_action("passed")
+   
 
-    ball.release()
+    
 
 
  
@@ -100,9 +87,26 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
         lateral = max(-max_lateral, min(max_lateral, (error * dist) / 3.0))
         ty += lateral
         target = (tx, ty, tz)
+        max_longitudinal = dist
+        longitudinal = max(-max_longitudinal, min(max_longitudinal, (error * dist) / 3.0))
+        tx += longitudinal
         dist = math.hypot(tx - x, ty - y)
 
     ball.set_action("passed")
+    if not _is_backward_pass(attack_dir, tx - x):
+        ball.set_action("forward_pass")
+        match.advantage = adv_law.start(
+            None,
+            type_="knock_on",
+            to=("b" if passer.team_code == "a" else "a"),
+            start_x=x,
+            start_y=y,
+            start_t=match.match_time,
+            reason="forward_pass",
+        )
+    else:
+        ball.set_action("passed")
+
     ball.release()
 
     hang = dist / speed if speed > 0 else 0.0
