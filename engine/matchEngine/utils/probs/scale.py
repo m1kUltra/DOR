@@ -15,17 +15,30 @@ scale_factor_lookup = {
     11: 0.0013931973574938213,
     12: 0.0007660485615191882
 }
+ 
+def balanced_score(attacker_norm, defender_norm, scale):
+    scale_factor = scale_factor_lookup[scale+1]
 
 
-def balanced_score(attacker_norm, defender_norm, exponent):
-    att_pow = attacker_norm ** exponent
-    def_pow = defender_norm ** exponent
+    # Normalise to [-1, 1]
     
+   
+    att_pow = attacker_norm 
+    def_pow = defender_norm 
+    # Generate samples skewed toward 1 to approximate a normal distribution
+    att_rand = random.random() ** 0.5
+    def_rand = random.random() ** 0.5
+    atk = (att_pow* att_rand) /scale_factor
+    dfd = (def_pow * def_rand)/scale_factor
+    
+
+
     # Generate raw score
-    raw_score = att_pow * random.random() - def_pow * random.random()
+    score =  atk - dfd
     
     # Analytic scale factor — maximum possible absolute value
-    scale_factor = max(att_pow, def_pow)
+   
+
+    # Lookup scale factor based on exponent calibration
     
-    # Normalise to [-1, 1]
-    return raw_score / scale_factor if scale_factor != 0 else 0
+    return max(-1.0, min(1.0, score))

@@ -23,10 +23,10 @@ def resolve_tackle(match, tackler, carrier):
     bravery = float(t_attrs.get("bravery", 0.0))
     determination = float(t_attrs.get("determination", 0.0))
 
-    att = (footwork * strength * balance) ** (1.0 / 3.0)
-    def_ = (tackling * bravery * determination) ** (1.0 / 3.0)
+    att = (footwork * strength * balance) 
+    def_ = (tackling * bravery * determination) 
 
-    score = balanced_score(att, def_, exponent=0.5)
+    score = balanced_score(att, def_, 3)
 
     if score > 0.5:
         outcome = "tackle_broken"
