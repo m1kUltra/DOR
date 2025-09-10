@@ -33,6 +33,9 @@ def handle_start(match, state_tuple) -> None:
     match.ball.location = (bx, by, 0.0)
     match.ball.set_action("ruck_forming")
 
+     # initialise ruck state tracking
+    match.ruck_state = {"time": 0.0, "won": False, "defender_engaged": False}
+
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
@@ -42,24 +45,46 @@ def handle_forming(match, state_tuple) -> None:
     atk = _team_possession(match)
     deff = _other(atk)
 
+    # ensure ruck state exists and advance timer
+    rs = getattr(match, "ruck_state", None)
+    if not rs:
+        rs = {"time": 0.0, "won": False, "defender_engaged": False}
+        match.ruck_state = rs
+    rs["time"] += 1
+
     calls = forming_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
 
-    # outcome: simple secure vs turnover (can keep your current heuristic)
-    R2 = 2.5 * 2.5
-    a_cnt = d_cnt = 0
-    for p in match.players:
-        dx, dy = p.location[0]-bx, p.location[1]-by
-        if dx*dx + dy*dy <= R2:
-            if p.team_code == atk: a_cnt += 1
-            else:                  d_cnt += 1
+    # track defender engagement
+    if not rs["defender_engaged"]:
+        rs["defender_engaged"] = any(
+            p.state_flags.get("in_ruck") and p.team_code == deff
+            for p in match.players
+        )
 
-    if a_cnt >= 2 or (d_cnt >= 1 and a_cnt == 0):
-        # flip to "ruck_over" and let over_plan gate pickup
-        match.ball.holder   = None
-        match.ball.location = (bx, by, 0.0)
-        match.ball.set_action("ruck_over")
+    # early ruck win check before defenders arrive
+    if not rs["won"] and not rs["defender_engaged"]:
+        attackers = [p for p in match.players if p.team_code == atk and p.state_flags.get("in_ruck")]
+        if attackers:
+            p = attackers[0]
+            rucking = p.norm_attributes.get("rucking", 0.0)
+            aggression = p.norm_attributes.get("aggression", 0.0)
+            weight = getattr(p, "weight", 0.0) or 0.0
+            t = rs["time"] if rs["time"] else 1e-6
+            shut_down = (rucking * aggression * (weight / 150.0)) / t
+            if shut_down > 1.0:
+                rs["won"] = True
+                for pl in match.players:
+                    pl.state_flags["jackal"] = False
+                    pl.state_flags["in_ruck"] = False
+                match.ball.holder = None
+                match.ball.location = (bx, by, 0.0)
+                match.ball.set_action("ruck_over")
+                return
+
+
+
 
 def handle_over(match, state_tuple) -> None:
     calls = over_plan(match, state_tuple) or []

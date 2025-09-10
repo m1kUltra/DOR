@@ -41,7 +41,23 @@ def resolve_tackle(match, tackler, carrier):
 
     match.ball.set_action(outcome)
 
-    # reset state flags
+    # reset state flags so participants enter ruck phase cleanly
+  
     tackler.state_flags["tackling"] = False
+    carrier.state_flags["being_tackled"] = False
+
     if outcome == "tackle_broken":
-        carrier.state_flags["being_tackled"] = False
+      
+        # both players stay upright
+        tackler.state_flags["off_feet"] = False
+        carrier.state_flags["off_feet"] = False
+    elif outcome in ("passive_tackle", "tackled"):
+        # carrier is grounded but tackler remains on feet
+        tackler.state_flags["off_feet"] = False
+        carrier.state_flags["off_feet"] = True
+    else:
+        # dominant tackles usually take both players to ground
+        tackler.state_flags["off_feet"] = True
+        carrier.state_flags["off_feet"] = True
+
+    return score, outcome

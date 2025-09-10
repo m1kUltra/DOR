@@ -14,7 +14,7 @@ if the player is the first player in and a defender the ruck they will jackal el
  """
 # engine/matchEngine/choice/ruck/forming.py
 from typing import List, Tuple, Optional
-
+import random
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
 
 R_ENTER = 1.0     # within 1m => enter ruck (attack side non-DH)
@@ -43,6 +43,16 @@ def _engagement_score(match, atk: str, bx: float, by: float) -> float:
 def plan(match, state_tuple) -> List[DoCall]:
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     atk = getattr(match, "possession", "a")
+    # per‑tick upkeep for ruck timers / cooldowns
+    tps = getattr(match, "ticks_per_second", 20)
+    dt = 1.0 / max(1, tps)
+    for p in match.players:
+        if p.state_flags.get("in_ruck") and not p.state_flags.get("off_feet"):
+            p.state_flags["time_in_ruck"] = p.state_flags.get("time_in_ruck", 0.0) + dt
+        else:
+            p.state_flags["time_in_ruck"] = 0.0
+        if p.state_flags.get("counter_cooldown", 0) > 0:
+            p.state_flags["counter_cooldown"] = p.state_flags.get("counter_cooldown", 0) - 1
 
     # compute score
     score = _engagement_score(match, atk, bx, by)
@@ -99,7 +109,8 @@ def plan(match, state_tuple) -> List[DoCall]:
                 p.state_flags["in_ruck"] = True
 
     # defenders: only enter if score <= 0
-    if score <= 0.0:
+    rstate = getattr(match, "ruck_state", {})
+    if score <= 0.0 and not rstate.get("won"):
         ds = sorted(defenders, key=lambda p: _d2(p.location[0], p.location[1], bx, by))
         for i, p in enumerate(ds):
             d2 = _d2(p.location[0], p.location[1], bx, by)
@@ -111,6 +122,55 @@ def plan(match, state_tuple) -> List[DoCall]:
                     p.state_flags["in_ruck"] = True
                     if not any(q.state_flags.get("jackal") for q in defenders):
                         p.state_flags["jackal"] = True
+    # --- Jackal scoring & penalty check ---
+    for p in defenders:
+        if not p.state_flags.get("jackal"):
+            continue
+        if p.state_flags.get("counter_cooldown", 0) > 0:
+            continue
+        rucking = p.norm_attributes.get("rucking", 0.0)
+        balance = p.norm_attributes.get("balance", 0.0)
+        t = p.state_flags.get("time_in_ruck", 0.0)
+        jackal_success = (rucking ** 2 * balance) * t
+        p.state_flags["jackal_success"] = jackal_success
+        if jackal_success >= 1.0:
+            match.pending_penalty = {"mark": (bx, by), "to": p.team_code, "reason": "jackal"}
+            match.ball.set_action("penalty")
+            p.state_flags["counter_cooldown"] = int(2 * tps)
+
+    # --- Barge counter logic ---
+    barge_ds = [p for p in defenders
+                if p.state_flags.get("in_ruck") and not p.state_flags.get("jackal")
+                and not p.state_flags.get("off_feet")
+                and p.state_flags.get("counter_cooldown", 0) <= 0]
+
+    if len(barge_ds) >= 2:
+        atk_rs = [p for p in attackers if p.state_flags.get("in_ruck") and not p.state_flags.get("off_feet")]
+        def _val(player):
+            na = player.norm_attributes
+            return (
+                na.get("aggression", 0.0)
+                * na.get("rucking", 0.0)
+                * na.get("determination", 0.0)
+                * na.get("strength", 0.0)
+            )
+        att_val = sum(_val(p) for p in atk_rs[: len(barge_ds) + 1])
+        def_val = sum(_val(p) for p in barge_ds)
+        round_score = att_val * (random.random() ** (1 / 3)) - def_val * (random.random() ** (1 / 3))
+        match._barge_score = getattr(match, "_barge_score", 0.0) + round_score
+        match._barge_round = getattr(match, "_barge_round", 0) + 1
+        for p in barge_ds:
+            p.state_flags["counter_cooldown"] = int(2 * tps)
+        if match._barge_round >= 3:
+            if match._barge_score < -0.5:
+                # defenders drive over ball
+                match.possession = "b" if atk == "a" else "a"
+                match.ball.set_action("turnover")
+            match._barge_round = 0
+            match._barge_score = 0.0
+    else:
+        match._barge_round = 0
+        match._barge_score = 0.0
 
     return calls
 

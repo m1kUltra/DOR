@@ -1,7 +1,4 @@
 
-+7
--0
-
 # matchEngine/actions/tackle_action.py
 from typing import Optional, Tuple
 
