@@ -358,13 +358,15 @@ def counter_shove_check(match, atk_code: str) -> Tuple[float,float]:
         if not p:
             opp_vals.append(0.0)
             continue
-        aggression = float(p.attributes.get("aggression", 0.0))
-        scrum = float(p.attributes.get("scrum", 0.0))
-        opp_vals.append(aggression * scrum / 150.0)
+        attrs = getattr(p, "norm_attributes", {})
+        aggression = float(attrs.get("aggression", 0.0))
+        scrum = float(attrs.get("scrummaging", 0.0) or attrs.get("scrum", 0.0))
+        opp_vals.append(aggression * scrum)
 
     opposing_scrum = opp_vals[0] * opp_vals[1] if len(opp_vals) == 2 else 0.0
 
-    return (feeding_scrum, opposing_scrum)
+    scale = max(feeding_scrum, opposing_scrum, 1e-9)
+    return (feeding_scrum / scale, opposing_scrum / scale)
 
 
 def outcome_from_score(val: float) -> Optional[str]:

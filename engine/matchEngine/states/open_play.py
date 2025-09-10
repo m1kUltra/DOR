@@ -84,7 +84,11 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
                 print(loc)
                 b.set_action("pass_error")
                 return True
-
+    if curr.get("action") in ("tackle_broken", "passive_tackle"):
+        for p in match.players:
+            p.state_flags["being_tackled"] = False
+            p.state_flags["tackling"] = False
+        return False
     # B1) line break → set action on the ball
     hid = getattr(b, "holder", None)
     if isinstance(hid, str) and len(hid) >= 2:

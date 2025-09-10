@@ -88,7 +88,10 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("lineout_forming", "lineout_over"): "lineout.over",
     ("lineout_over", "_"):           "lineout.out",   
        
-       
+    ("in_a_tackle", "tackle_broken"): SAME,
+    ("_", "passive_tackle"): "ruck.start",
+    ("_", "dominant_tackle"): "ruck.start",
+    ("_", "murder"): "ruck.start",
        # throw contest resolved
 
     # --- existing mappings below ---

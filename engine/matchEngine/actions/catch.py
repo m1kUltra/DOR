@@ -50,7 +50,7 @@ def do_action(
         print ("far", catch_success)
     catch_success = max(0.0, min(1.0, catch_success))
 
-    roll = rng() - .25
+    roll = rng() 
 
     # Resolve outcome
     if roll <= catch_success:

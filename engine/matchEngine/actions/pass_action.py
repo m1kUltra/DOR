@@ -92,7 +92,7 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
         tx += longitudinal
         dist = math.hypot(tx - x, ty - y)
 
-    ball.set_action("passed")
+
     if not _is_backward_pass(attack_dir, tx - x):
         ball.set_action("forward_pass")
         match.advantage = adv_law.start(

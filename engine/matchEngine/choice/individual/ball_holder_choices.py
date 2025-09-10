@@ -36,13 +36,15 @@ def choose(match, holder_id: str, state_tuple) -> Tuple[Optional[Action], Option
 
     # --- 1) If being tackled, attempt a short offload (<=10m, not forward) ---
     if holder.state_flags.get("being_tackled", False):
-        recv = _nearest_legal_receiver_within(match, holder, attack_dir, OFFLOAD_MAX_RANGE)
-        if recv is not None:
-            rx, ry, rz = recv.location
-            return (("offload", None), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
-        else:
-            hx, hy, _ = holder.location
-            return (("tackled", None), match.pitch.clamp_position((hx, hy, 0.0)))
+        ball_action = (getattr(match.ball, "status", {}) or {}).get("action")
+        if ball_action == "passive_tackle":
+            recv = _nearest_legal_receiver_within(match, holder, attack_dir, OFFLOAD_MAX_RANGE)
+            if recv is not None:
+                rx, ry, rz = recv.location
+                return (("offload", None), match.pitch.clamp_position((rx, ry, rz if rz else 1.0)))
+        hx, hy, _ = holder.location
+        return (("tackled", None), match.pitch.clamp_position((hx, hy, 0.0)))
+            
             
     # --- 2) Under pressure → evade or short probe ---
     if _nearest_defender_distance(holder, match) < 5.0:

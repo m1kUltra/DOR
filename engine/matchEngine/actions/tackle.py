@@ -1,7 +1,14 @@
+
++7
+-0
+
 # matchEngine/actions/tackle_action.py
 from typing import Optional, Tuple
 
+from set_pieces.tackle import resolve_tackle
+
 XYZ = Tuple[float, float, float]
+
 
 def do_action(match, tackler_id: str, subtype: Optional[str], location: XYZ, target: XYZ) -> bool:
     """
@@ -31,5 +38,9 @@ def do_action(match, tackler_id: str, subtype: Optional[str], location: XYZ, tar
 
     # signal to FSM
     ball.set_action("in_a_tackle")
+
+    # Immediately resolve tackle outcome
+    resolve_tackle(match, tackler, carrier)
+
     # do NOT release the ball; carrier retains possession during tackle start
     return True

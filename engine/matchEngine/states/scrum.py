@@ -27,6 +27,7 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
     
     if not isinstance(tag, str) or not tag.startswith("scrum."):
         return False
+ 
 
     if tag == START:
         handle_start(match, (tag, loc, ctx)); return True
