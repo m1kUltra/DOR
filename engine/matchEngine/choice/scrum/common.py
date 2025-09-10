@@ -2,11 +2,14 @@
 from typing import List, Tuple, Dict, Optional
 import random
 from team.team_controller import team_by_code
-DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
+from utils.probs.scale import scale_factor_lookup
+
+DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple[float, float, float]]
 
 # -----------------------------
 # Team & formation helpers
 # -----------------------------
+
 
 def _xyz(p):
     return tuple(p) if isinstance(p, (list,tuple)) and len(p) == 3 else (0.0,0.0,0.0)
@@ -164,6 +167,16 @@ class ScrumScore:
         self.value = 0.5
         self.lock_out = False
 
+def _scale_pow(val: float, exponent: int) -> float:
+    """Raise *val* to *exponent* and normalise by the precomputed scale factor."""
+    scale = scale_factor_lookup.get(exponent, 1.0)
+    try:
+        powered = val ** exponent
+    except Exception:
+        powered = 0.0
+    return powered / scale if scale else powered
+
+
 def compute_stage_1(match, atk_code: str, s: ScrumScore) -> None:
     # 1. score = (rn-2(leadership)**2) * (rn-1(scrum) + rn-3(scrum)) / 3
     # Placeholder: attach real computations later
@@ -177,11 +190,14 @@ def compute_stage_1(match, atk_code: str, s: ScrumScore) -> None:
             scrum1 = float(getattr(prop1, "norm_attributes", {}).get("scrummaging", 0.0)) if prop1 else 0.0
             scrum3 = float(getattr(prop3, "norm_attributes", {}).get("scrummaging", 0.0)) if prop3 else 0.0
 
-            return (leadership ** 2) * (scrum1 + scrum3) / 3.0
+            
+            lead_term = _scale_pow(leadership, 2)
+            return lead_term * (scrum1 + scrum3) / 3.0
 
         a = _calc(atk_code)
         b = _calc(other(atk_code))
-        s.value += a - b
+        scale = max(a, b, 1e-9)
+        s.value += (a - b) / scale
 
 def compute_stage_2(match, atk_code: str, s: ScrumScore) -> None:
     # 2. += rn-1(scrum*strength) * rn-3(scrum*strength)
@@ -226,6 +242,7 @@ def compute_stage_3(match, atk_code: str, s: ScrumScore) -> None:
                 total += float(w)
             except Exception:
                 pass
+        
         return total
 
     def prop_scrum_sum(code: str) -> float:
@@ -250,14 +267,10 @@ def compute_stage_3(match, atk_code: str, s: ScrumScore) -> None:
 
     s.value += atk_term - def_term
 
-    if random.random() > 0.5:
+    if random.random() < 0.5:
         s.lock_out = True
 
-
-    # lock_out chance
-
-    if random.random() > 0.5:
-        s.lock_out = True
+   
   
     return None
 
@@ -330,9 +343,10 @@ def counter_shove_check(match, atk_code: str) -> Tuple[float,float]:
         if not p:
             feed_vals.append(0.0)
             continue
-        strength = float(p.attributes.get("strength", 0.0))
-        weight = float(getattr(p, "weight", 0.0) or 0.0)
-        feed_vals.append(strength * weight / 150.0)
+        attrs = getattr(p, "norm_attributes", {})
+        strength = float(attrs.get("strength", 0.0))
+        weight = float(getattr(p, "weight", 0.0) or 0.0) / 150.0
+        feed_vals.append(strength * weight)
 
     feeding_scrum = feed_vals[0] * feed_vals[1] if len(feed_vals) == 2 else 0.0
 

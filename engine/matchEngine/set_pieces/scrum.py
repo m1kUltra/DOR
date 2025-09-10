@@ -282,7 +282,8 @@ def handle_stable(match, state_tuple) -> None:
     s = getattr(match, "_scrum_score", None) or ScrumScore()
     if not getattr(match, "_counter_shove_checked", False):
         feed_val, opp_val = counter_shove_check(match, atk)
-        s.value += feed_val - opp_val
+        scale = max(feed_val, opp_val, 1e-9)
+        s.value += (feed_val - opp_val) / scale
         match._scrum_score = s
         match._counter_shove_checked = True
         outcome = outcome_from_score(s.value)
