@@ -84,7 +84,31 @@ def handle_forming(match, state_tuple) -> None:
                 return
 
 
-
+     # contested resolution or timeout once defenders engage
+    if not rs["won"] and rs["defender_engaged"]:
+        threshold = 30
+        resolved = rs["time"] >= threshold
+        if not resolved:
+            atk_score = sum(
+                p.norm_attributes.get("rucking", 0.0)
+                for p in match.players
+                if p.team_code == atk and p.state_flags.get("in_ruck")
+            )
+            def_score = sum(
+                p.norm_attributes.get("rucking", 0.0)
+                for p in match.players
+                if p.team_code == deff and p.state_flags.get("in_ruck")
+            )
+            resolved = atk_score != def_score
+        if resolved:
+            rs["won"] = True
+            for pl in match.players:
+                pl.state_flags["jackal"] = False
+                pl.state_flags["in_ruck"] = False
+            match.ball.holder = None
+            match.ball.location = (bx, by, 0.0)
+            match.ball.set_action("ruck_over")
+            return
 
 def handle_over(match, state_tuple) -> None:
     calls = over_plan(match, state_tuple) or []

@@ -24,13 +24,43 @@ def _other(code: str) -> str:
 
 # --- placeholder calculation hooks (see calculations.txt lines 181+) ---
 
+import random
+
+
 def _throw_score(match) -> float:
     """Hooker throw accuracy placeholder."""
-    return 0.0
+    
+    team_code = _team_possession(match)
+    team = match.team_a if team_code == "a" else match.team_b
+    hooker = team.get_player_by_rn(2) if team else None
+    if not hooker:
+        return 0.0
+    attrs = getattr(hooker, "norm_attributes", {}) or {}
+    darts = float(attrs.get("darts", 0.0))
+    composure = float(attrs.get("composure", 0.0))
+    decisions = float(attrs.get("decisions", 0.0))
+    skill = (darts * 0.6) + (composure * 0.25) + (decisions * 0.15)
+    return max(0.0, min(1.0, skill * (random.random() ** 0.5)))
+
 
 def _contest_score(match) -> float:
     """Jump/lift contest placeholder."""
-    return 0.0
+    
+    meta = getattr(match, "lineout_meta", {}) or {}
+    team_code = _team_possession(match)
+    atk = match.team_a if team_code == "a" else match.team_b
+    dfn = match.team_b if team_code == "a" else match.team_a
+    jsn = meta.get("jumper_sn")
+    atk_jumper = atk.get_player_by_sn(jsn) if (atk and jsn) else None
+    def_jumper = (dfn.get_player_by_rn(4) or dfn.get_player_by_rn(5) or dfn.get_player_by_rn(6)) if dfn else None
+    if not atk_jumper or not def_jumper:
+        return 0.0
+    a_attrs = getattr(atk_jumper, "norm_attributes", {}) or {}
+    d_attrs = getattr(def_jumper, "norm_attributes", {}) or {}
+    a_skill = float(a_attrs.get("lineouts", 0.0)) * (0.5 + 0.5 * float(a_attrs.get("jumping_reach", 0.0)))
+    d_skill = float(d_attrs.get("lineouts", 0.0)) * (0.5 + 0.5 * float(d_attrs.get("jumping_reach", 0.0)))
+    return max(-1.0, min(1.0, (a_skill * (random.random() ** (1/3))) - (d_skill * (random.random() ** (1/3)))))
+
 
 # --- state handlers ---
 
@@ -56,7 +86,7 @@ def handle_over(match, state_tuple) -> None:
     calls = over_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
         do_action(match, pid, action, loc, target)
-
+    match.ball.set_action("lineout_out")
 
 def handle_out(match, state_tuple) -> None:
     calls = out_plan(match, state_tuple) or []

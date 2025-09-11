@@ -19,7 +19,7 @@ def plan(match, state_tuple) -> List[DoCall]:
 
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
     throw = getattr(match, "possession", "a")
-    call = getattr(match, "lineout_call", {"zone": "mid", "numbers": 7, "length": "mid", "outcome": "off_top"})
+    call = getattr(match, "lineout_call", {"numbers": 5})
 
     layout = get_lineout_formation((bx, by), throw, call, match)
     atk_targets = layout.get("targets", {})

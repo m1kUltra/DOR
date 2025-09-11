@@ -21,7 +21,7 @@ R_ENTER = 1.0     # within 1m => enter ruck (attack side non-DH)
 R_PULL = 10.0     # defenders may join if score <= 0 inside 10m
 R2 = R_ENTER * R_ENTER
 R10_2 = R_PULL * R_PULL
-
+JACKAL_TIME_SCALE = 4.0
 def _xyz(p): 
     return tuple(p) if isinstance(p,(list,tuple)) else (0.0,0.0,0.0)
 
@@ -131,7 +131,7 @@ def plan(match, state_tuple) -> List[DoCall]:
         rucking = p.norm_attributes.get("rucking", 0.0)
         balance = p.norm_attributes.get("balance", 0.0)
         t = p.state_flags.get("time_in_ruck", 0.0)
-        jackal_success = (rucking ** 2 * balance) * t
+        jackal_success = (rucking ** 2 * balance) * (t / JACKAL_TIME_SCALE)
         p.state_flags["jackal_success"] = jackal_success
         if jackal_success >= 1.0:
             match.pending_penalty = {"mark": (bx, by), "to": p.team_code, "reason": "jackal"}

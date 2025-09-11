@@ -25,5 +25,26 @@ def plan(match, state_tuple) -> List[DoCall]:
         jid = f"{jumper.sn}{jumper.team_code}"
         nid = f"{nine.sn}{nine.team_code}"
         calls.append((jid, ("pass", nid), _xyz(jumper.location), _xyz(nine.location)))
+        # identify a first receiver: prefer 10, then 12, 13, 15
+        receiver = (
+            team.get_player_by_rn(10)
+            or team.get_player_by_rn(12)
+            or team.get_player_by_rn(13)
+            or team.get_player_by_rn(15)
+        )
+
+        calls: List[DoCall] = []
+        if jumper and nine:
+            jid = f"{jumper.sn}{jumper.team_code}"
+            nid = f"{nine.sn}{nine.team_code}"
+            calls.append((jid, ("pass", nid), _xyz(jumper.location), _xyz(nine.location)))
+
+     
+            if receiver:
+                rid = f"{receiver.sn}{receiver.team_code}"
+                calls.append((nid, ("pass", rid), _xyz(nine.location), _xyz(receiver.location)))
 
     return calls
+
+
+    
