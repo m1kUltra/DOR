@@ -40,7 +40,10 @@ def goal_line_drop_now(match, to: str = "a") -> None:
 
 def maybe_handle(match, tag, loc, ctx) -> bool:
     if tag in RESTART_TAGS:
-        to = ctx if isinstance(ctx, str) else (getattr(match, "last_restart_to", None) or "a")
+        to = getattr(match, "possession", None)
+        if isinstance(ctx, str) and ctx in ("a", "b"):
+            to = ctx
+        to = to or getattr(match, "last_restart_to", "a")  
         if tag == KICK_OFF:
             kickoff_now(match, to=to)
         elif tag == DROP_22:

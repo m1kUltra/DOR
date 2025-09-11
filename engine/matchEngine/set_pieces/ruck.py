@@ -85,7 +85,7 @@ def handle_forming(match, state_tuple) -> None:
 
 
      # contested resolution or timeout once defenders engage
-    if not rs["won"] and rs["defender_engaged"]:
+    if not rs["won"]:
         threshold = 30
         resolved = rs["time"] >= threshold
         if not resolved:

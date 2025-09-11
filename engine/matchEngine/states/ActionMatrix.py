@@ -6,7 +6,7 @@ SAME: str = "__SAME__"
 ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     # --- Starts / restarts (open-play entry) ---
     (None,     "idle"):         "restart.kick_off",
-    ("dead",   "idle"):         "restart.22Drop",
+    ("dead",   "idle"):         "restart.22_Drop",
     ("idle",   "kicked"):       "open_play.kick_chase",
     ("goal_line", "idle"):      "restart.goal_line_drop",
     ("_", "goal_line"):      "restart.goal_line_drop",   # e.g., 22 drop-out / restart kick
@@ -95,6 +95,8 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
     ("_", "passive_tackle"): "ruck.start",
     ("_", "dominant_tackle"): "ruck.start",
     ("_", "murder"): "ruck.start",
+     ("_",  "dead"):              "restart.22_drop",
+    ("_",  "scrum_pending"):     "scrum.start",
        # throw contest resolved
 
     # --- existing mappings below ---

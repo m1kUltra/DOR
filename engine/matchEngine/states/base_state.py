@@ -6,7 +6,7 @@ from actions.action_controller import do_action
 from states import restart, scoring, nudge, ruck, open_play,  scrum, lineout
 from team.team_controller import sync_flags
 from utils.laws import advantage as adv_law
-
+import boundaries
 
 def _team_attack_dir(match, code: str | None) -> float:
     team = match.team_a if code == "a" else match.team_b
@@ -24,6 +24,8 @@ class BaseState:
 
     def tick(self) -> Tuple[str, Any, Any]:
         # 1) drive controller once
+        boundaries.check(self.match)
+
         self.controller.tick()
         tag, loc, ctx = self.controller.status
       
