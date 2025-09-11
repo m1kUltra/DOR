@@ -36,8 +36,10 @@ def plan(match, state_tuple) -> List[DoCall]:
 
     atk_dir = float(atk_team.tactics.get("attack_dir", +1.0))
     def_dir = float(def_team.tactics.get("attack_dir", -1.0))
-
-    layout = generate_five_man_lineout_shape()
+    layout = generate_five_man_lineout_shape(
+        touch_is_bottom=(y_sign > 0),
+        attack_dir=atk_dir,
+    )
    
     if "team_a" in layout and "team_b" in layout:
         atk_layout = layout["team_a"] if throw == "a" else layout["team_b"]
