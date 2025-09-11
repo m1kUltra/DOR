@@ -82,10 +82,6 @@ def handle_start(match, state_tuple) -> None:
     match.ball.holder = hooker_code
     match.ball.location = hooker_target
     match.ball.set_action("lineout_forming")
-    match.ball.set_action("lineout_forming")
-    calls = start_plan(match, state_tuple) or []
-    for pid, action, loc, target in calls:
-        do_action(match, pid, action, loc, target)
     match.lineout_score = _throw_score(match)
 
 def handle_forming(match, state_tuple) -> None:

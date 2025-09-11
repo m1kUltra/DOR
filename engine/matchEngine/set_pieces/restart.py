@@ -91,7 +91,7 @@ def _drop_out(match, to: str, spot_a: float, spot_b: float) -> bool:
     match.ball.location = kicker.location
 
     target_x = KX + attack_dir * r.uniform(DROP_OUT_MIN, DROP_OUT_MAX)
-    target_y = KY + r.uniform(-8.0, 8.0)
+    target_y =  100 #KY + r.uniform(-8.0, 8.0)
     target: XYZ = (target_x, target_y, 0.0)
 
     kick.do_action(match, kicker_id, "dropout", match.ball.location, target)
