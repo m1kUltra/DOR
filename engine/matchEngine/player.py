@@ -56,6 +56,7 @@ class Player:
     "time_in_ruck":0.0,
     "jackal_success":0.0,
     "counter_cooldown":0,
+    "in_lineout": False,
 }
         self.flags = self.state_flags          # ← alias so p.flags[...] works
         self.code  = f"{self.rn}{self.team_code}"

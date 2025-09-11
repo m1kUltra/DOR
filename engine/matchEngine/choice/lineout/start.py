@@ -2,10 +2,7 @@
 """Lineout start: organise both teams for the throw."""
 
 from typing import List, Tuple, Optional
-from utils.positioning.mental.formations import (
-    get_lineout_formation,
-    place_defensive_setpiece,
-)
+from shapes.lineouts.five_man import 
 
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple[float, float, float]]
 

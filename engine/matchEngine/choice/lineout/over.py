@@ -30,5 +30,7 @@ def plan(match, state_tuple) -> List[DoCall]:
         tgt = atk_targets.get(p) if p.team_code == atk else def_targets.get(p)
         if tgt:
             calls.append((pid, ("move", None), _xyz(p.location), tgt))
+      
+        p.state_flags["in_lineout"] = False
 
     return calls
