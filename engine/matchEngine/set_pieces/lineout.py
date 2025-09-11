@@ -11,7 +11,10 @@ DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple
 def _xyz(p):
     return tuple(p) if isinstance(p, (list, tuple)) else (0.0, 0.0, 0.0)
 
-def _team_possession(match) -> str:
+def _team_possession(match, code: Optional[str] = None) -> str:
+    if code in ("a", "b"):
+        match.possession = code
+        return code
     if getattr(match, "possession", None) in ("a", "b"):
         return match.possession
     hid = getattr(match.ball, "holder", None)
@@ -66,9 +69,19 @@ def _contest_score(match) -> float:
 
 def handle_start(match, state_tuple) -> None:
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
-    _team_possession(match)
-    match.ball.holder = None
-    match.ball.location = (bx, by, 0.0)
+    tag, loc, ctx = state_tuple
+    throw = ctx.get("throw") if isinstance(ctx, dict) else None
+    throw = _team_possession(match, throw)
+    calls = start_plan(match, state_tuple) or []
+    hooker_code = f"2{throw}"
+    hooker_target = (bx, by, 0.0)
+    for pid, action, loc, target in calls:
+        if pid == hooker_code and target:
+            hooker_target = target
+        do_action(match, pid, action, loc, target)
+    match.ball.holder = hooker_code
+    match.ball.location = hooker_target
+    match.ball.set_action("lineout_forming")
     match.ball.set_action("lineout_forming")
     calls = start_plan(match, state_tuple) or []
     for pid, action, loc, target in calls:
