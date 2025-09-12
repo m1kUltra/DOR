@@ -7,7 +7,7 @@ from team.team_controller import set_possession
 from shapes.scrum.default import generate_phase_play_shape
 from shapes.lineout.five_man import generate_five_man_lineout_shape
 from utils.actions.catch_windows import can_catch
-
+from constants import TOUCHLINE_BOTTOM_Y, TOUCHLINE_TOP_Y
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple[float, float, float]]
 
 
@@ -51,11 +51,21 @@ def handle_start(match, state_tuple) -> None:
 
     attack_dir = float(throwing_team.tactics.get("attack_dir", 1.0))
 
-    
+    # Determine which touchline the lineout is on
+    if abs(by - TOUCHLINE_BOTTOM_Y) < abs(by - TOUCHLINE_TOP_Y):
+        y_sign = +1.0
+        touch_is_bottom = True
+    else:
+        y_sign = -1.0
+        touch_is_bottom = False
+
+
     layout = generate_five_man_lineout_shape(
-        touch_is_bottom=(by < 0),  # or compute from pitch constants
+         # or compute from pitch constants
+        touch_is_bottom=touch_is_bottom,
         attack_dir=attack_dir,
        
+
     )
 
     if throw == "a":
@@ -64,6 +74,7 @@ def handle_start(match, state_tuple) -> None:
     else:
         atk_layout = layout["team_b"]
         def_layout = layout["team_a"]
+
     def _apply(team, sub_layout):
         for rn, (lx, ly) in sub_layout.items():
             try:
@@ -75,10 +86,14 @@ def handle_start(match, state_tuple) -> None:
                 continue
             wx = bx + lx
             wy = by + ly
-            if jersey == 2:              # hooker
-                 wy += 0.25 if by < 0 else -0.25
+            if touch_is_bottom == False:
+                wy = TOUCHLINE_TOP_Y -wy
             p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
 
+    
+    
+        
+     
    
     _apply(throwing_team, atk_layout)
     _apply(defending_team, def_layout)
