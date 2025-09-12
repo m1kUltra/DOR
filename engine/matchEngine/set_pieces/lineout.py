@@ -6,7 +6,7 @@ from team.team_controller import set_possession
 
 from shapes.scrum.default import generate_phase_play_shape
 from shapes.lineout.five_man import generate_five_man_lineout_shape
-
+from utils.actions.catch_windows import can_catch
 
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple[float, float, float]]
 
@@ -73,11 +73,12 @@ def handle_start(match, state_tuple) -> None:
        
     )
 
-    atk_layout = layout
-    DEF_GAP_X = 0
-    
-    def_layout = {rn: (-(lx + DEF_GAP_X), ly) for rn, (lx, ly) in atk_layout.items()}
-
+    if throw == "a":
+        atk_layout = layout["team_a"]
+        def_layout = layout["team_b"]
+    else:
+        atk_layout = layout["team_b"]
+        def_layout = layout["team_a"]
     def _apply(team, sub_layout):
         for rn, (lx, ly) in sub_layout.items():
             try:
@@ -135,15 +136,27 @@ def handle_forming(match, state_tuple) -> None:
 
 def handle_over(match, state_tuple) -> None:
   
+   
     """Have the scrum‑half catch the delivered ball before play continues."""
     team = _team_possession(match)
     sh_code = f"9{team}"
     sh = match.get_player_by_code(sh_code)
+    ball = match.ball
 
-    if sh:
-        # The jumper has delivered the ball down; the scrum‑half must still catch it
-        do_action(match, sh_code, ("catch", None), match.ball.location, sh.location)
+    if not sh:
+        return
 
+    # Wait for the delivery trajectory to finish unless the ball is already at the scrum-half
+    if ball.transit:
+        bx, by, _ = ball.location
+        sx, sy, _ = sh.location
+        if (bx - sx) ** 2 + (by - sy) ** 2 > 1e-4:
+            return
+
+  
+    # Only attempt the catch if the ball is within the scrum-half's catch radius
+    if can_catch(sh, ball.location):
+        do_action(match, sh_code, ("catch", None), ball.location, sh.location)
 
 
 def handle_out(match, state_tuple) -> None:

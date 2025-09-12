@@ -1,11 +1,20 @@
-# matchEngine/actions/offload.py
+
+"""Throw action for lineouts or restarts."""
+
 from typing import Optional, Tuple
 import math
 
 XYZ = Tuple[float, float, float]
-MAX_OFFLOAD_RANGE = 10.0  # meters
 
-def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, target: XYZ) -> bool:
+
+
+def do_action(
+    match,
+    passer_id: str,
+    subtype: Optional[str],
+    location: XYZ,
+    target: XYZ,
+) -> bool:
     ball = match.ball
     if not ball.is_held():
         return False
@@ -14,20 +23,29 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
     if target is None:
         return False
 
-    # range gate: offloads must be short
-    x, y, _  = location
-    tx, ty, _ = target
+   
     
+    x, y, z = location
+    tx, ty, tz = target
 
-    speed = 26 #constant for now introduce arc later
+    dist = math.hypot(tx - x, ty - y)
+   
+
+
+    speed = 26
+    hang = dist / speed if speed > 0 else 0.0
 
     # mark status so the FSM can pick it up via ActionMatrix ("in_a_tackle" -> "offloaded")
+    # mark status and release the ball
     ball.set_action("thrown")
+    ball.release()
 
-    
-def _speed_for(subtype: Optional[str]) -> float:
-    # mirror your pass speeds; tweak if you like
-    if subtype == None:
-        return 16.0
-    else:
-        return 16.0
+    # ensure starting point is correct and clear holder
+    ball.location = (x, y, max(z, 1.0))
+
+    # launch a simple arc toward the target
+    ball.start_parabola_to((tx, ty, tz), T=hang, H=1.0, gamma=1.0)
+    return True
+
+
+ 
