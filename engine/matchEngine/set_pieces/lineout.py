@@ -51,12 +51,9 @@ def handle_start(match, state_tuple) -> None:
 
     attack_dir = float(throwing_team.tactics.get("attack_dir", 1.0))
 
-    # Determine which touchline the lineout is on
-    if abs(by - TOUCHLINE_BOTTOM_Y) < abs(by - TOUCHLINE_TOP_Y):
-        y_sign = +1.0
+    if by < 1:
         touch_is_bottom = True
-    else:
-        y_sign = -1.0
+    else: 
         touch_is_bottom = False
 
 
@@ -68,12 +65,10 @@ def handle_start(match, state_tuple) -> None:
 
     )
 
-    if throw == "a":
-        atk_layout = layout["team_a"]
-        def_layout = layout["team_b"]
-    else:
-        atk_layout = layout["team_b"]
-        def_layout = layout["team_a"]
+    
+    atk_layout = layout["team_a"]
+    def_layout = layout["team_b"]
+  
 
     def _apply(team, sub_layout):
         for rn, (lx, ly) in sub_layout.items():
@@ -88,6 +83,7 @@ def handle_start(match, state_tuple) -> None:
             wy = by + ly
             if touch_is_bottom == False:
                 wy = TOUCHLINE_TOP_Y -wy
+            
             p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
 
     
