@@ -164,7 +164,7 @@ def kickoff(match, to: str = "b") -> bool:
     """
     target_x = KX + attack_dir * 10     # 10 m forward from the drop-out spot
     target_y = PITCH_WIDTH +25             # 70.0 → top touchline (use 0.0 for bottom)
-    target: XYZ = (target_x, target_y, 0.0)
+    target: XYZ = (target_x, target_y, 5)
 
     # Use the existing kick action; subtype 'kickoff' so your profiles can special-case if needed
     kick.do_action(match, kicker_id, "kickoff", match.ball.location, target)

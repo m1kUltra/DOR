@@ -74,7 +74,7 @@ def handle_start(match, state_tuple) -> None:
     )
 
     atk_layout = layout
-    DEF_GAP_X = 1.5
+    DEF_GAP_X = 0
     def_layout = {rn: (-(lx + DEF_GAP_X), ly) for rn, (lx, ly) in atk_layout.items()}
 
     def _apply(team, sub_layout):
@@ -88,6 +88,8 @@ def handle_start(match, state_tuple) -> None:
                 continue
             wx = bx + lx
             wy = by + ly
+            if jersey == 2:              # hooker
+                 wy += 0.25 if by < 0 else -0.25
             p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
 
    
@@ -125,9 +127,9 @@ def handle_forming(match, state_tuple) -> None:
         catch_point = (hx, jy, 2.0)
         do_action(match, hooker_code, ("throw", None), hooker.location, catch_point)
         if sh:
-            do_action(match, jumper_code, ("deliver", None), catch_point, sh.location)
+            do_action(match, jumper_code, ("deliver", None), jumper.location, sh.location)
 
-    match.ball.set_action("lineout_over")
+
 
 
 def handle_over(match, state_tuple) -> None:
@@ -141,7 +143,6 @@ def handle_over(match, state_tuple) -> None:
         # The jumper has delivered the ball down; the scrum‑half must still catch it
         do_action(match, sh_code, ("catch", None), match.ball.location, sh.location)
 
-    match.ball.set_action("lineout_out")
 
 
 def handle_out(match, state_tuple) -> None:

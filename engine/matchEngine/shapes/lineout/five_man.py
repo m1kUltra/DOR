@@ -49,7 +49,7 @@ def generate_five_man_lineout_shape(
     layout: LineoutLayout = {2: (0.0, 0.0)}
     for i, rn in enumerate(_LINEOUT_ORDER):
       
-        y = i * _GAP_Y * attack_dir
+        y = i * _GAP_Y * attack_dir 
         layout[rn] = (x, y)
 
     return layout

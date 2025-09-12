@@ -85,9 +85,9 @@ ACTION_MATRIX: Dict[Tuple[Optional[str], Optional[str]], str] = {
 
     # --- Line‑out sequence ---
     ("_", "lineout_forming"):        "lineout.forming",
-    ("lineout_forming", "lineout_over"): "lineout.over",
+    ("thrown", "delivered"): "lineout.over",
     
-    ("lineout_over", "_"):           "lineout.out",
+    ("delivered", "_"):           "lineout.out",
     ("lineout_out", "passed"):       "open_play.phase_play",
     ("lineout_out", "_"):            "open_play.phase_play",
        
