@@ -66,11 +66,16 @@ def handle_start(match, state_tuple) -> None:
 
     attack_dir = float(throwing_team.tactics.get("attack_dir", 1.0))
 
-    phase_shape = generate_phase_play_shape("default", attack_dir)
+    
     layout = generate_five_man_lineout_shape(
+        touch_is_bottom=(by < 0),  # or compute from pitch constants
         attack_dir=attack_dir,
-        backline_positions=phase_shape,
+       
     )
+
+    atk_layout = layout
+    DEF_GAP_X = 1.5
+    def_layout = {rn: (-(lx + DEF_GAP_X), ly) for rn, (lx, ly) in atk_layout.items()}
 
     def _apply(team, sub_layout):
         for rn, (lx, ly) in sub_layout.items():
@@ -85,8 +90,9 @@ def handle_start(match, state_tuple) -> None:
             wy = by + ly
             p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
 
-    _apply(throwing_team, layout.get("team_a", {}))
-    _apply(defending_team, layout.get("team_b", {}))
+   
+    _apply(throwing_team, atk_layout)
+    _apply(defending_team, def_layout)
 
     hooker_code = f"2{throw}"
     
