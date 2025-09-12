@@ -21,7 +21,7 @@ class BaseState:
     def __init__(self, match):
         self.match = match
         self.controller = StateController(match)
-
+        
     def tick(self) -> Tuple[str, Any, Any]:
         # 1) drive controller once
         boundaries.check(self.match)

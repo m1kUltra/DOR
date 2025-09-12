@@ -13,6 +13,7 @@ class StateController:
         self.status = ("restart.kick_off",
                        getattr(match.ball, "location", (50.0, 35.0, 0.0)),
                        getattr(match.ball, "holder", None))
+        
 
     def tick(self) -> None:
         if self._event_check():
