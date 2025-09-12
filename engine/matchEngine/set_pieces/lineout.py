@@ -30,21 +30,6 @@ def _team_possession(match, code: Optional[str] = None) -> str:
 def _other(code: str) -> str:
     return "b" if code == "a" else "a"
 
-# --- placeholder calculation hooks (see calculations.txt lines 181+) ---
-
-import random
-
-
-
-
-
-
-# --- state handlers ---
-
-# ---------------------------------------------------------------------------
-# State handlers
-# ---------------------------------------------------------------------------
-
 def handle_start(match, state_tuple) -> None:
     """Initialise a lineout and move players into formation."""
     bx, by, _ = _xyz(getattr(match.ball, "location", None))
@@ -106,6 +91,28 @@ def handle_start(match, state_tuple) -> None:
 
 
     # For now always target jersey 4 of the throwing team
+    back_layout = generate_phase_play_shape("default", attack_dir)
+    if throw == "a":
+        atk_back = back_layout["team_a"]
+        def_back = back_layout["team_b"]
+    else:
+        atk_back = back_layout["team_b"]
+        def_back = back_layout["team_a"]
+
+    def _apply_back(team, sub_layout):
+        for rn, (lx, ly) in sub_layout.items():
+            if rn in {1, 2, 3, 4, 5, 6}:
+                continue
+            p = team.get_player_by_rn(rn)
+            if not p:
+                continue
+            wx = bx + lx
+            wy = by + ly
+            p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
+
+    _apply_back(throwing_team, atk_back)
+    _apply_back(defending_team, def_back)
+
     match.lineout_target = f"4{throw}"
 
 
