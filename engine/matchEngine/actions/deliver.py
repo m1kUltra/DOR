@@ -1,35 +1,38 @@
-# matchEngine/actions/deliver.py
-"""Guaranteed catch-and-pass combo action."""
+# matchEngine/actions/feed.py
 
 import math
 from typing import Optional, Tuple
 
 XYZ = Tuple[float, float, float]
 
-
 def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, target: XYZ) -> bool:
-    """Catch the ball and immediately pass to ``target``.
-
-    This action ignores player attributes and always succeeds. It is
-    primarily for flow control where a player is known to securely catch
-    the ball and deliver it to a pre-defined spot without emitting
-    separate catch and pass actions.
-    """
     ball = match.ball
+    bx, by, _ = ball.location
+    hx, hy, _ = location
+    if math.hypot(bx - hx, by - hy) > 1:
+        return False
 
-    # Snap the ball to the passer to simulate the catch
-    x, y, z = location
-    ball.location = (x, y, z)
-    ball.holder = passer_id
+    speed = 20.0  # units per second
 
-    # Mark as a successful pass and release the ball again
+    # Mark status so the FSM can react
     ball.set_action("delivered")
     ball.release()
 
-    # Constant speed pass toward the target with a gentle arc
-    tx, ty, tz = target
-    speed = 20.0  # m/s constant speed
-    dist = math.hypot(tx - x, ty - y)
-    hang = dist / speed if speed > 0 else 0.0
-    ball.start_parabola_to((tx, ty, tz), T=hang, H=1.1, gamma=1.1)
+    # Preserve x/y; lock z to 0 for start and end
+    x0, y0, z0= location
+    x1, y1, z1= target
+    start = (x0, y0, z0)
+    end   = (x1, y1, z1)
+
+    # (Optional) snap the ball exactly to start if your engine needs it
+
+
+    # Time from full XY distance to keep constant pace
+    dx = x1 - x0
+    dy = y1 - y0
+    dist_xy = math.hypot(dx, dy)
+    T = max(dist_xy / speed, 1e-3)  # avoid zero-duration issues
+
+    # Flat path (H=0), linear timing (gamma=1.0), no vertical drift
+    ball.start_parabola_to(end, T=T, H=0.0, gamma=1.0)
     return True

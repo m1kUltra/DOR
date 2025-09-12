@@ -75,6 +75,7 @@ def handle_start(match, state_tuple) -> None:
 
     atk_layout = layout
     DEF_GAP_X = 0
+    
     def_layout = {rn: (-(lx + DEF_GAP_X), ly) for rn, (lx, ly) in atk_layout.items()}
 
     def _apply(team, sub_layout):

@@ -46,3 +46,5 @@ def do_action(match, player_id: str, subtype: Optional[str], location: XYZ, targ
         return catch.do_action(match, player_id, None, location, target)
     else:
         return catch.do_action(match, player_id, "drop", location, target)
+    
+    
