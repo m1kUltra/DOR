@@ -102,29 +102,10 @@ def handle_start(match, state_tuple) -> None:
 
 
     # For now always target jersey 4 of the throwing team
-    back_layout = generate_phase_play_shape("default", attack_dir)
-    if throw == "a":
-        atk_back = back_layout["team_a"]
-        def_back = back_layout["team_b"]
-    else:
-        atk_back = back_layout["team_b"]
-        def_back = back_layout["team_a"]
+    
 
-    def _apply_back(team, sub_layout):
-        for rn, (lx, ly) in sub_layout.items():
-            if rn in {1, 2, 3, 4, 5, 6}:
-                continue
-            p = team.get_player_by_rn(rn)
-            if not p:
-                continue
-            wx = bx + lx
-            wy = by + ly
-            p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
-
-    _apply_back(throwing_team, atk_back)
-    _apply_back(defending_team, def_back)
-
-    match.lineout_target = f"4{throw}"
+    
+    
 
 
 def handle_forming(match, state_tuple) -> None:
@@ -134,7 +115,7 @@ def handle_forming(match, state_tuple) -> None:
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     throw = _team_possession(match)
     hooker_code = f"2{throw}"
-    jumper_code = getattr(match, "lineout_target", f"4{throw}")
+    jumper_code = f"4{throw}"
     sh_code = f"9{throw}"
 
     hooker = match.get_player_by_code(hooker_code)

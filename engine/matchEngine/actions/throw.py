@@ -41,7 +41,7 @@ def do_action(
     ball.release()
 
     # ensure starting point is correct and clear holder
-    ball.location = (x, y, max(z, 1.0))
+    ball.location = (x, y, z)
 
     # launch a simple arc toward the target
     ball.start_parabola_to((tx, ty, tz), T=hang, H=1.0, gamma=1.0)
