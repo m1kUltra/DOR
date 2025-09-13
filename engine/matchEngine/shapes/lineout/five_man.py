@@ -17,7 +17,7 @@ def generate_five_man_lineout_shape(*, touch_is_bottom: bool, attack_dir: float)
        
        
     1: (gap * attack_dir, 5.0),
-    2: (gap * attack_dir, 0.5),
+    2: (gap, 0.5),
     3: (gap * attack_dir, 15.0),
     4: (gap * attack_dir, 10.0),
     5: (gap * attack_dir, 12.5),

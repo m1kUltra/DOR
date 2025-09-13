@@ -80,9 +80,7 @@ def handle_start(match, state_tuple) -> None:
             if not p:
                 continue
             wx = bx + lx
-            wy = by + ly
-            if touch_is_bottom == False:
-                wy = TOUCHLINE_TOP_Y -wy
+            wy = by + ly if touch_is_bottom else by - ly
             
             p.update_location(match.pitch.clamp_position((wx, wy, 0.0)))
 
@@ -99,8 +97,7 @@ def handle_start(match, state_tuple) -> None:
     match.ball.holder = hooker_code
     match.ball.location = (bx, by, 0.0)
     match.ball.set_action("lineout_forming")
-
-
+ 
     # For now always target jersey 4 of the throwing team
     
 
@@ -121,15 +118,16 @@ def handle_forming(match, state_tuple) -> None:
     hooker = match.get_player_by_code(hooker_code)
     jumper = match.get_player_by_code(jumper_code)
     sh = match.get_player_by_code(sh_code)
-
+   
     if hooker and jumper:
         hx, hy, _ = hooker.location
         jx, jy, _ = jumper.location
-        catch_point = (hx, jy, 2.0)
+        catch_point = (hx, jy, 1.0)
         do_action(match, hooker_code, ("throw", None), hooker.location, catch_point)
-        if sh:
-            do_action(match, jumper_code, ("deliver", None), jumper.location, sh.location)
-
+       
+      
+        do_action(match, jumper_code, ("deliver", None), jumper.location, sh.location)
+        
 
 
 
