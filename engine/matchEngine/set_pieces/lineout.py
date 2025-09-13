@@ -93,10 +93,12 @@ def handle_start(match, state_tuple) -> None:
     _apply(defending_team, def_layout)
 
     hooker_code = f"2{throw}"
-    
+    jumper_code = f"4{throw}"
     match.ball.holder = hooker_code
     match.ball.location = (bx, by, 0.0)
     match.ball.set_action("lineout_forming")
+
+    return hooker_code, jumper_code
  
     # For now always target jersey 4 of the throwing team
     
@@ -105,29 +107,29 @@ def handle_start(match, state_tuple) -> None:
     
 
 
-def handle_forming(match, state_tuple) -> None:
+def handle_forming(match, codes, state_tuple) -> None:
    
     
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     throw = _team_possession(match)
-    hooker_code = f"2{throw}"
-    jumper_code = f"4{throw}"
+    
     sh_code = f"9{throw}"
 
     hooker = match.get_player_by_code(hooker_code)
     jumper = match.get_player_by_code(jumper_code)
     sh = match.get_player_by_code(sh_code)
-   
+    ball = match.ball
     if hooker and jumper:
         hx, hy, _ = hooker.location
         jx, jy, _ = jumper.location
         catch_point = (hx, jy, 1.0)
-        do_action(match, hooker_code, ("throw", None), hooker.location, catch_point)
+        if ball.holder == hooker_code:
+            do_action(match, hooker_code, ("throw", None), hooker.location, catch_point)
        
       
         do_action(match, jumper_code, ("deliver", None), jumper.location, sh.location)
-        
+        print(jumper_code)
 
 
 
