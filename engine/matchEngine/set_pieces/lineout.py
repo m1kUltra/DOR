@@ -113,7 +113,7 @@ def handle_forming(match, codes, state_tuple) -> None:
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     throw = _team_possession(match)
-    
+    hooker_code, jumper_code = codes
     sh_code = f"9{throw}"
 
     hooker = match.get_player_by_code(hooker_code)
