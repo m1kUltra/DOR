@@ -17,11 +17,11 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
         return False
 
     if tag == START:
-        handle_start(match, (tag, loc, ctx))
+        
         match.lineout_roles = handle_start(match, (tag, loc, ctx))
         return True
     if tag == FORMING:
-        codes = getattr(match, "lineout_roles", None)
+        codes = match.lineout_roles
         handle_forming(match, codes, (tag, loc, ctx))
         if hasattr(match, "lineout_roles"):
             delattr(match, "lineout_roles")
