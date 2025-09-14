@@ -128,7 +128,9 @@ def handle_forming(match, codes, state_tuple) -> None:
        
       
         do_action(match, jumper_code, ("deliver", None), jumper.location, sh.location)
-        
+    bx, by, bz = ball.location  
+    if (bz == 0) and  (ball.holder == None):
+        ball.set_action("lineout_exit")
 
 
 
@@ -139,7 +141,7 @@ def handle_over(match, codes, state_tuple) -> None:
     hooker_code, jumper_code, sh_code= codes
     team = _team_possession(match)
     
-    print(sh_code)
+
     sh = match.get_player_by_code(sh_code)
     ball = match.ball
 
@@ -148,7 +150,7 @@ def handle_over(match, codes, state_tuple) -> None:
 
     # Wait for the delivery trajectory to finish unless the ball is already at the scrum-half
     if ball.transit:
-        bx, by, _ = ball.location
+        bx, by, bz = ball.location
         sx, sy, _ = sh.location
         if (bx - sx) ** 2 + (by - sy) ** 2 > 1e-4:
             return
@@ -156,8 +158,11 @@ def handle_over(match, codes, state_tuple) -> None:
   
     # Only attempt the catch if the ball is within the scrum-half's catch radius
     if can_catch(sh, ball.location):
-        print("tried")
+    
         do_action(match, sh_code, ("catch", None), ball.location, sh.location)
+
+    if bz == 0 and ball.holder == None:
+        ball.set_action("lineout_exit")
 
 
 def handle_out(match, state_tuple) -> None:
@@ -168,6 +173,7 @@ def handle_out(match, state_tuple) -> None:
     ten_code = f"10{team}"
     sh = match.get_player_by_code(sh_code)
     ten = match.get_player_by_code(ten_code)
-
+    ball = match.ball
     if sh and ten:
+        ball.set_action("lineout_exit")
         do_action(match, sh_code, ("pass", None), sh.location, ten.location)
