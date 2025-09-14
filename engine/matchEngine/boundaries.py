@@ -32,14 +32,15 @@ def check(match) -> None:
     last_holder = last.get("holder")
     last_team = last_holder[-1] if isinstance(last_holder, str) else None
     restart_team = _opp(last_team)
-    if restart_team:
+    
      
-        set_possession(match, restart_team)
-        match.last_restart_to = restart_team
+    
+      
 
     # --- Touchlines -------------------------------------------------------
     if y <= TOUCHLINE_BOTTOM_Y or y >= TOUCHLINE_TOP_Y:
         ball.set_action("in_touch")
+        set_possession(match, restart_team)
         return
 
     # --- Trylines / dead‑ball lines --------------------------------------
