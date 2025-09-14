@@ -70,8 +70,7 @@ def generate_five_man_lineout_shape(
             extra = backline_positions.get(team_key)
             if not extra:
                 continue
-            if not touch_is_bottom:
-                extra = {rn: (x, -y) for rn, (x, y) in extra.items()}
+            
             layout[team_key].update(extra)
 
     return layout
