@@ -122,13 +122,14 @@ def handle_forming(match, codes, state_tuple) -> None:
     if hooker and jumper:
         hx, hy, _ = hooker.location
         jx, jy, _ = jumper.location
-        catch_point = (hx, jy, 1.0)
+        catch_point = (hx, jy, 1)
         if ball.holder == hooker_code:
             do_action(match, hooker_code, ("throw", None), hooker.location, catch_point)
        
       
         do_action(match, jumper_code, ("deliver", None), jumper.location, sh.location)
     bx, by, bz = ball.location  
+    print(bz)
     if (bz == 0) and  (ball.holder == None):
         ball.set_action("lineout_exit")
 
