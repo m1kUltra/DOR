@@ -5,6 +5,7 @@ from choice.ruck.start import plan as start_plan
 from choice.ruck.forming import plan as forming_plan
 from choice.ruck.over import plan as over_plan
 from choice.ruck.out import plan as out_plan
+from team.team_controller import set_possession
 
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float,float,float], Tuple[float,float,float]]
 
@@ -13,11 +14,14 @@ def _xyz(p):
 
 def _team_possession(match) -> str:
     if getattr(match, "possession", None) in ("a","b"):
+    
         return match.possession
     hid = getattr(match.ball, "holder", None)
     code = hid[-1] if isinstance(hid, str) and hid else "a"
-    match.possession = code
+    
+    set_possession(match, code)
     return code
+
 
 def _other(code: str) -> str: return "b" if code == "a" else "a"
 

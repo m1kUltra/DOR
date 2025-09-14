@@ -31,14 +31,22 @@ def ensure_attack_dirs(match) -> None:
 
 def set_possession(match, code: str | None) -> None:
     """Mark which team is in possession by code ('a'/'b') or clear both when None."""
+    """Mark which team is in possession by code ('a'/'b') or clear both when None.
+
+    This also updates ``match.possession`` so callers no longer need to assign it
+    manually."""
+
     a, b = match.team_a, match.team_b
     if code is None:
         a.in_possession = False
         b.in_possession = False
+        match.possession = None
         return
+
     code = code.lower()
     a.in_possession = (code == "a")
     b.in_possession = (code == "b")
+    match.possession = code
 
 def reset_team_tactics(team, overrides: dict | None = None) -> None:
     """Rebuild a team's tactics from defaults (useful for fixtures/season starts)."""
@@ -74,8 +82,7 @@ def sync_flags(match) -> None:
         if code in ("a", "b"):
             set_possession(match, code)
             # also store a quick alias if you find it handy
-            match.possession = code
-        # mark carrier
+            
         try:
             carrier = match.get_player_by_code(holder_id)
             if carrier is not None and hasattr(carrier, "has_ball"):
@@ -84,9 +91,13 @@ def sync_flags(match) -> None:
             pass
     else:
         # holder None → keep existing possession; just record alias
+        # holder None → keep existing possession; ensure match.possession matches
         if getattr(match.team_a, "in_possession", False):
-            match.possession = "a"
+        
+            set_possession(match, "a")
         elif getattr(match.team_b, "in_possession", False):
-            match.possession = "b"
+            
+            set_possession(match, "b")
         else:
-            match.possession = None
+            
+            set_possession(match, None)

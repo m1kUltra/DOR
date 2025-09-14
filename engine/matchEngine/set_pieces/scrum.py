@@ -37,7 +37,7 @@ def _team_possession(match) -> str:
         return match.possession
     hid = getattr(match.ball, "holder", None)
     code = hid[-1] if isinstance(hid, str) and hid else "a"
-    match.possession = code
+   
     set_possession(match, code)
     return code
 

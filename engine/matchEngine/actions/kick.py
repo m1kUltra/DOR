@@ -125,8 +125,7 @@ def do_action(match, kicker_id: str, subtype: Optional[str], location: XYZ, targ
         elif abs(error) <= 0.75:
             tx += misplaced
             ty += misplaced
-        else:
-            (tx, ty, tz), gamma = slice_kick((sx, sy, sz), range_m)
+        
     # --- Case 1: old behavior for z<=0 ---
     if tz <= 0.0:
         ball.start_parabola_to((tx, ty, 0.0), T=T, H=H, gamma=gamma)

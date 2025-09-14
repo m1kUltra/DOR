@@ -1,14 +1,14 @@
-# engine/matchEngine/choice/scrum/common.py
 from typing import List, Tuple, Dict, Optional
 import random
-from team.team_controller import team_by_code
-from utils.probs.scale import scale_factor_lookup
 
-DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple[float, float, float]]
+from team.team_controller import team_by_code, set_possession
+from utils.probs.scale import scale_factor_lookup
 
 # -----------------------------
 # Team & formation helpers
 # -----------------------------
+
+DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple[float, float, float]]
 
 
 def _xyz(p):
@@ -16,10 +16,12 @@ def _xyz(p):
 
 def team_possession(match) -> str:
     if getattr(match, "possession", None) in ("a","b"):
+  
         return match.possession
     hid = getattr(match.ball, "holder", None)
     code = hid[-1] if isinstance(hid, str) and hid else "a"
-    match.possession = code
+    
+    set_possession(match, code)
     return code
 
 def other(code: str) -> str:

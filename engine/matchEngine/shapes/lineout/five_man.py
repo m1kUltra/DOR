@@ -40,7 +40,7 @@ def generate_five_man_lineout_shape(
 
     a = {
         1: (gap * sign, 5.0),
-        2: (0, 0.5),
+        2: (gap*sign, 0.5),
         3: (gap * sign, 15.0),
         4: (gap * sign, 10.0),
         5: (gap * sign, 12.5),

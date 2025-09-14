@@ -8,6 +8,7 @@ from constants import (
     TOUCHLINE_TOP_Y,
     TOUCHLINE_BOTTOM_Y,
 )
+from team.team_controller import set_possession
 
 def _opp(team: str | None) -> str | None:
     if team == "a":
@@ -32,7 +33,8 @@ def check(match) -> None:
     last_team = last_holder[-1] if isinstance(last_holder, str) else None
     restart_team = _opp(last_team)
     if restart_team:
-        match.possession = restart_team
+     
+        set_possession(match, restart_team)
         match.last_restart_to = restart_team
 
     # --- Touchlines -------------------------------------------------------
@@ -62,7 +64,8 @@ def check(match) -> None:
     if dist <= 30 or is_pen_goal:
         ball.set_action("dead")
         match.last_restart_to = defend_team
-        match.possession = defend_team
+       
+        set_possession(match, defend_team)
     else:
         ball.set_action("scrum_pending")
         match.pending_scrum = {
@@ -71,4 +74,5 @@ def check(match) -> None:
             "put_in": defend_team,
             "reason": "ball_dead",
         }
-        match.possession = defend_team
+       
+        set_possession(match, defend_team)

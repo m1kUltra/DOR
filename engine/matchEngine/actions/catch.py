@@ -50,7 +50,7 @@ def do_action(
         
     catch_success = max(0.0, min(1.0, catch_success))
 
-    roll = rng() 
+    roll = rng() - 0.4
 
     # Resolve outcome
     if roll <= catch_success:
