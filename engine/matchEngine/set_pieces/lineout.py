@@ -15,16 +15,7 @@ def _xyz(p) -> Tuple[float, float, float]:
     return tuple(p) if isinstance(p, (list, tuple)) else (0.0, 0.0, 0.0)
 
 
-def _team_possession(match, code: Optional[str] = None) -> str:
-    if code in ("a", "b"):
-        
-        set_possession(match, code)
-        return code
-    if getattr(match, "possession", None) in ("a", "b"):
-        return match.possession
-    hid = getattr(match.ball, "holder", None)
-    code = hid[-1] if isinstance(hid, str) and hid else "a"
-    
+
     set_possession(match, code)
     return code
 
@@ -42,7 +33,7 @@ def handle_start(match, state_tuple) -> None:
     throw = pending.get("throw")
     if throw is None and isinstance(ctx, dict):
         throw = ctx.get("throw")
-    throw = _team_possession(match, throw)
+    throw = match.possession
     
 
     
@@ -113,7 +104,7 @@ def handle_forming(match, codes, state_tuple) -> None:
     
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     """Execute the throw to the jumper and deliver to the scrum‑half."""
-    throw = _team_possession(match)
+    throw = match.possession
     hooker_code, jumper_code, sh_code= codes
 
 
@@ -142,7 +133,7 @@ def handle_over(match, codes, state_tuple) -> None:
    
     """Have the scrum‑half catch the delivered ball before play continues."""
     hooker_code, jumper_code, sh_code= codes
-    team = _team_possession(match)
+    team = match.possession
     
 
     sh = match.get_player_by_code(sh_code)
@@ -171,7 +162,7 @@ def handle_over(match, codes, state_tuple) -> None:
 def handle_out(match, state_tuple) -> None:
    
     """Simple first pass from the scrum‑half to the fly‑half."""
-    team = _team_possession(match)
+    team = match.possession
     sh_code = f"9{team}"
     ten_code = f"10{team}"
     sh = match.get_player_by_code(sh_code)
