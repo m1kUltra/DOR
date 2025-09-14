@@ -28,6 +28,7 @@ class Ball:
         self.location: tuple[float,float,float] = tuple(map(float, location))
         self.holder: str | None = holder
         self.target: tuple[float,float,float] | None = None
+        self.true_holder = "10a"
        
         self.has_bounced: bool = False
 
@@ -58,8 +59,7 @@ class Ball:
     # -----------------------
     def _commit_status_if_action_changed(self):
         if self.action != self._last_action:
-            if self.holder != None:
-                self.last_status = self.status 
+            self.last_status = self.status 
             
 
             self.status = {
@@ -69,6 +69,9 @@ class Ball:
                 }
           
             self._last_action = self.action
+
+            if self.holder != None:
+                self.true_holder=self.holder
 
     def set_action(self, action: str | None) -> None:
         self.action = action
@@ -230,24 +233,5 @@ class Ball:
         # keep status wrapper consistent (but only changes when action changed externally)
         self._commit_status_if_action_changed()
 
-"""
-ball overhaul. first  keep alot of the same logic but its physics can go aside from bouncing - i dont understand therefore fine
-ball should have:
-holder (player or none)
-location (x,y,z)
-target (x,y,z)
-has_bounced - hit gound while holder == none & state == open_play reset when holder != none 
-transit(type of movement it will do to get from loaction to target- this is where all physics and speed should be dealt with)
-this takes the infor coming from actions and probs and enacts them on the ball  
-action (what has most recently happened to ball) passed, caught, kicked 
-note status is only run if action != prev.action
-status wrap (action, holder, location)
-last_status (save previous action before overwrite)
-"""
-"""add in idle status, does not tell controller.status but held locally"""
-"""
-the following are things that the ball.status can be
-caught , kicked , in_a_tackle, offloaded, dead, idle, in_touch, grounded, dropped
 
-
-"""
+   
