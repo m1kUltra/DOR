@@ -29,7 +29,7 @@ def check(match) -> None:
     x, y, _ = ball.location
 
     
-   
+    last= ball._last_action
     last_team = ball.true_holder[-1] 
     restart_team = _opp(last_team)
     
@@ -45,9 +45,9 @@ def check(match) -> None:
 
     # --- Trylines / dead‑ball lines --------------------------------------
     side = None
-    if x <= TRYLINE_A_X or x <= DEADBALL_LINE_A_X:
+    if  x <= DEADBALL_LINE_A_X:
         side = ("a", TRYLINE_A_X)
-    elif x >= TRYLINE_B_X or x >= DEADBALL_LINE_B_X:
+    elif  x >= DEADBALL_LINE_B_X:
         side = ("b", TRYLINE_B_X)
 
     if side is None:
