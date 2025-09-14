@@ -79,9 +79,7 @@ def handle_forming(match, state_tuple) -> None:
             shut_down = (rucking * aggression * (weight / 150.0)) / t
             if shut_down > 1.0:
                 rs["won"] = True
-                for pl in match.players:
-                    pl.state_flags["jackal"] = False
-                    pl.state_flags["in_ruck"] = False
+                
                 match.ball.holder = None
                 match.ball.location = (bx, by, 0.0)
                 match.ball.set_action("ruck_over")
@@ -106,9 +104,7 @@ def handle_forming(match, state_tuple) -> None:
             resolved = atk_score != def_score
         if resolved:
             rs["won"] = True
-            for pl in match.players:
-                pl.state_flags["jackal"] = False
-                pl.state_flags["in_ruck"] = False
+          
             match.ball.holder = None
             match.ball.location = (bx, by, 0.0)
             match.ball.set_action("ruck_over")

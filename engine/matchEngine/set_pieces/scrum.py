@@ -246,7 +246,7 @@ def _team_ready(match, atk: str, base_xy, dh_id: Optional[str]) -> bool:
     for p in match.players:
         if p.team_code != atk:
             continue
-        if p.state_flags.get("in_ruck", False):
+        if p.state_flags.get("in_scrum", False):
             continue
         pid = f"{p.sn}{p.team_code}"
         if dh_id and pid == dh_id:
@@ -304,7 +304,7 @@ def handle_stable(match, state_tuple) -> None:
     for p in match.players:
         if p.team_code != atk:
             continue
-        if p.state_flags.get("in_ruck", False):
+        if p.state_flags.get("in_scrum", False):
             continue
         pid = f"{p.sn}{p.team_code}"
         if dh_id and pid == dh_id:
@@ -317,7 +317,7 @@ def handle_stable(match, state_tuple) -> None:
     # DEF: players not in ruck -> defence shapes
     def_targets = phase_defence_targets(match, deff, base_xy)
     for p in match.players:
-        if p.team_code != deff or p.state_flags.get("in_ruck", False):
+        if p.team_code != deff or p.state_flags.get("in_scrum", False):
             continue
         calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), def_targets.get(p, _xyz(p.location))))
 
