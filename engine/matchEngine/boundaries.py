@@ -28,10 +28,13 @@ def check(match) -> None:
     ball = match.ball
     x, y, _ = ball.location
 
-    last = getattr(ball, "last_status", {}) or {}
+    last = getattr(ball, "status", {}) or {}
     last_holder = last.get("holder")
+    if ball.holder == None:
+        status = getattr(ball, "last_status", {}) or {}
+        ball_holder = last.get("holder")
    
-    last_team = last_holder[-1] if isinstance(last_holder, str) else None
+    last_team = ball_holder[-1] 
     restart_team = _opp(last_team)
     
      
