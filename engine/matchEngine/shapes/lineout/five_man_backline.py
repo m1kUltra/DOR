@@ -16,12 +16,12 @@ def default_shape(attack_dir: float) -> BacklineLayout:
     """
     attack_dir=-attack_dir
     a = {
-        7: (10.0 * attack_dir, -35.5),   # scrum-half
-        8: (10.0 * attack_dir, -32.5),   # scrum-half
-        10: (10.0 * attack_dir, -25.0),  # fly-half
-        12: (10.0 * attack_dir, -43.0),  # inside centre
-        13: (10.5 * attack_dir, -55.5),  # outside centre
-        11: (20.0 * attack_dir, -25.0),  # left wing
+        7: (10.0 * attack_dir, 35.5),   # scrum-half
+        8: (10.0 * attack_dir, 32.5),   # scrum-half
+        10: (10.0 * attack_dir, 25.0),  # fly-half
+        12: (10.0 * attack_dir, 43.0),  # inside centre
+        13: (10.5 * attack_dir, 55.5),  # outside centre
+        11: (20.0 * attack_dir, 25.0),  # left wing
         14: (10.0 * attack_dir,  65.0),  # right wing
         15: (10.0 * attack_dir, 60.0), # full-back sweeps behind
     }

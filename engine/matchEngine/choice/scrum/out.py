@@ -61,23 +61,8 @@ def _assign_first_receiver(match, atk: str, dh_id: str, base_xy) -> Optional[obj
     r.state_flags["hold_for_pass"] = PRESENT_HOLD_TICKS
     return r
 
-def _team_ready(match, atk: str, base_xy, dh_id: Optional[str]) -> bool:
-    bx, by = base_xy
-    targets = phase_attack_targets(match, atk, (bx, by))
-    ready = total = 0
-    for p in match.players:
-        if p.team_code != atk or p.state_flags.get("in_scrum", False):
-            continue
-        pid = f"{p.sn}{p.team_code}"
-        if dh_id and pid == dh_id:
-            continue
-        tgt = targets.get(p)
-        if not tgt:
-            continue
-        total += 1
-        if _d2((p.location[0],p.location[1]), (tgt[0],tgt[1])) <= READY_D2:
-            ready += 1
-    return (ready >= 10) or (total and ready/total >= 0.66)
+
+        
 
 def _current_dh_id(match) -> Optional[str]:
     for p in match.players:
@@ -138,9 +123,9 @@ def plan(match, state_tuple) -> List[DoCall]:
     # DH gating
     receiver = _assign_first_receiver(match, atk, dh_id, (bx, by))
     if dh_id and getattr(match.ball, "holder", None) == dh_id:
-        ready = _team_ready(match, atk, (bx, by), dh_id)
+       
         timeout = match._scrum_out_wait >= _wait_limit_ticks(match)
-        receiver = _choose_receiver(match, atk, dh_id) if (ready or timeout) else None
+        
 
         if receiver:
             rx, ry, rz = _xyz(receiver.location)
@@ -160,7 +145,6 @@ def plan(match, state_tuple) -> List[DoCall]:
             match._frames_since_ruck = 0
 
     # clear scrum flags once out logic runs
-    for p in match.players:
-        p.state_flags["in_scrum"] = False
+  
 
     return calls

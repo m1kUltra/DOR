@@ -379,7 +379,13 @@ def handle_out(match, state_tuple) -> None:
             # prefer detecting a pass from DH; if DH missing, any pass exits
             if (dh_id and pid == dh_id) or not dh_id:
                 pass_happened = True
+
         do_action(match, pid, action, loc, target)
+    if pass_happened == True:
+        for p in match.players:
+            p.state_flags["in_scrum"] = False
+
+            
 
     # Advance state only once the pass actually goes; otherwise remain protected
     
