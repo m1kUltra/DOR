@@ -58,12 +58,16 @@ class Ball:
     # -----------------------
     def _commit_status_if_action_changed(self):
         if self.action != self._last_action:
-            self.last_status = self.status
+            if self.holder != None:
+                self.last_status = self.status 
+            
+
             self.status = {
-                "action": self.action,
-                "holder": self.holder,
-                "location": self.location,
-            }
+                    "action": self.action,
+                    "holder": self.holder,
+                    "location": self.location,
+                }
+          
             self._last_action = self.action
 
     def set_action(self, action: str | None) -> None:

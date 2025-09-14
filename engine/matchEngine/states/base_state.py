@@ -24,7 +24,7 @@ class BaseState:
         
     def tick(self) -> Tuple[str, Any, Any]:
         # 1) drive controller once
-        boundaries.check(self.match)
+       
 
         self.controller.tick()
         tag, loc, ctx = self.controller.status
@@ -65,8 +65,11 @@ class BaseState:
                 return self.controller.status
 
         # 3) SOFT glue (open_play): may change ball/tag, but NO actions
+        boundaries.check(self.match)
         op_handler = getattr(open_play, "maybe_handle", None)
+
         if op_handler and op_handler(self.match, tag, loc, ctx):
+          
             # tag might have changed (e.g., to open_play.scramble) → re-tick
             self.controller.tick()
             tag, loc, ctx = self.controller.status

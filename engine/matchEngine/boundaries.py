@@ -30,6 +30,7 @@ def check(match) -> None:
 
     last = getattr(ball, "last_status", {}) or {}
     last_holder = last.get("holder")
+   
     last_team = last_holder[-1] if isinstance(last_holder, str) else None
     restart_team = _opp(last_team)
     

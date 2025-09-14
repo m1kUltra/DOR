@@ -170,5 +170,5 @@ def handle_out(match, state_tuple) -> None:
     print(ten_code)
     ball = match.ball
     if sh and ten:
-       
+        ball.set_action("lineout_exit")
         do_action(match, sh_code, ("pass", None), sh.location, ten.location)

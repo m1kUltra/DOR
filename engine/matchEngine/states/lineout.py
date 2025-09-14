@@ -15,7 +15,7 @@ from set_pieces.lineout import handle_start, handle_forming, handle_over, handle
 def maybe_handle(match, tag, loc, ctx) -> bool:
     if not isinstance(tag, str) or not (tag == START or tag.startswith("lineout.")):
         return False
-    print(match.possession)
+    
     codes = match.lineout_roles 
     if tag == START:
         
