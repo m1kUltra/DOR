@@ -4,8 +4,8 @@ from actions.action_controller import do_action
 
 from team.team_controller import set_possession
 
-from shapes.scrum.default import generate_phase_play_shape
 from shapes.lineout.five_man import generate_five_man_lineout_shape
+from shapes.lineout.five_man_backline import generate_phase_play_shape
 from utils.actions.catch_windows import can_catch
 from constants import TOUCHLINE_BOTTOM_Y, TOUCHLINE_TOP_Y
 DoCall = Tuple[str, Tuple[str, Optional[str]], Tuple[float, float, float], Tuple[float, float, float]]
@@ -56,16 +56,14 @@ def handle_start(match, state_tuple) -> None:
     else: 
         touch_is_bottom = False
 
-
+    phase_shape = generate_phase_play_shape("default", attack_dir)
     layout = generate_five_man_lineout_shape(
          # or compute from pitch constants
         touch_is_bottom=touch_is_bottom,
-        attack_dir=attack_dir,
-       
-
-    )
-
-    
+        attack_dir=attack_dir, backline_positions= phase_shape
+       )
+  
+   
     atk_layout = layout["team_a"]
     def_layout = layout["team_b"]
   
@@ -94,11 +92,12 @@ def handle_start(match, state_tuple) -> None:
 
     hooker_code = f"2{throw}"
     jumper_code = f"4{throw}"
+    sh_code = f"9{throw}"
     match.ball.holder = hooker_code
     match.ball.location = (bx, by, 0.0)
     match.ball.set_action("lineout_forming")
 
-    return hooker_code, jumper_code
+    return hooker_code, jumper_code, sh_code
  
     # For now always target jersey 4 of the throwing team
     
@@ -113,8 +112,8 @@ def handle_forming(match, codes, state_tuple) -> None:
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     """Execute the throw to the jumper and deliver to the scrum‑half."""
     throw = _team_possession(match)
-    hooker_code, jumper_code = codes
-    sh_code = f"9{throw}"
+    hooker_code, jumper_code, sh_code= codes
+
 
     hooker = match.get_player_by_code(hooker_code)
     jumper = match.get_player_by_code(jumper_code)
@@ -129,16 +128,18 @@ def handle_forming(match, codes, state_tuple) -> None:
        
       
         do_action(match, jumper_code, ("deliver", None), jumper.location, sh.location)
-        print(jumper_code)
+        
 
 
 
-def handle_over(match, state_tuple) -> None:
+def handle_over(match, codes, state_tuple) -> None:
   
    
     """Have the scrum‑half catch the delivered ball before play continues."""
+    hooker_code, jumper_code, sh_code= codes
     team = _team_possession(match)
-    sh_code = f"9{team}"
+    
+    print(sh_code)
     sh = match.get_player_by_code(sh_code)
     ball = match.ball
 
@@ -155,6 +156,7 @@ def handle_over(match, state_tuple) -> None:
   
     # Only attempt the catch if the ball is within the scrum-half's catch radius
     if can_catch(sh, ball.location):
+        print("tried")
         do_action(match, sh_code, ("catch", None), ball.location, sh.location)
 
 

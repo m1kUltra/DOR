@@ -46,7 +46,7 @@ class Match:
         self.conversion_ctx = None
         self.scoreboard = {"a": 0, "b": 0}
         self.offside = 0 #x point in whhcih the offside line is set 
-        self.lineout_roles: tuple[str, str] | None = None
+        self.lineout_roles: tuple[str, str, str] | None = None
         # optional ruck meta placeholder
         
 

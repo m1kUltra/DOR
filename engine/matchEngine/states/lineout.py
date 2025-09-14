@@ -15,19 +15,19 @@ from set_pieces.lineout import handle_start, handle_forming, handle_over, handle
 def maybe_handle(match, tag, loc, ctx) -> bool:
     if not isinstance(tag, str) or not (tag == START or tag.startswith("lineout.")):
         return False
-
+    codes = match.lineout_roles 
     if tag == START:
         
         match.lineout_roles = handle_start(match, (tag, loc, ctx))
         return True
     if tag == FORMING:
-        codes = match.lineout_roles
+       
         handle_forming(match, codes, (tag, loc, ctx))
-        if hasattr(match, "lineout_roles"):
-            delattr(match, "lineout_roles")
+        
+        
         return True
     if tag == OVER:
-        handle_over(match, (tag, loc, ctx))
+        handle_over(match, codes, (tag, loc, ctx))
         return True
     if tag == OUT:
         handle_out(match, (tag, loc, ctx))
