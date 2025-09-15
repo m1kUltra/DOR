@@ -9,7 +9,7 @@ def do_action(match, passer_id: str, subtype: Optional[str], location: XYZ, targ
     ball = match.ball
     bx, by, _ = ball.location
     hx, hy, _ = location
-    if math.hypot(bx - hx, by - hy) > 0.75:
+    if math.hypot(bx - hx, by - hy) > 2:
         return False
 
     speed = 10.0  # units per second

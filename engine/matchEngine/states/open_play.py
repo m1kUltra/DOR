@@ -105,6 +105,13 @@ def maybe_handle(match, tag, loc, ctx) -> bool:
     if curr_holder and prev_side and curr_side and (prev_side != curr_side) and not _recently_left_ruck(match):
         b.set_action("turnover")
         return True
+    
+       # B3) idle loose ball on ground → scramble
+    if isinstance(tag, str) and tag.startswith("open_play"):
+        if getattr(b, "holder", None) is None and last.get("action") != "kicked":
+            if _z(getattr(b, "location", loc)) == 0.0 and curr.get("action") != "dropped":
+                b.set_action("dropped")
+                return True
 
     # C) grace counter
     match._frames_since_ruck = getattr(match, "_frames_since_ruck", 0) + 1

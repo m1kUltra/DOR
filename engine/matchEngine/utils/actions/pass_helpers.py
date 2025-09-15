@@ -12,7 +12,7 @@ def pass_speed(passing: float, technique: float) -> float:
 
 def pass_range(passing: float, technique: float) -> float:
     """Maximum effective passing range in meters."""
-    return 10.0 + 45.0 * _clamp01(passing) * _clamp01(technique)
+    return 50.0 + 45.0 * _clamp01(passing) * _clamp01(technique)
 
 
 def pass_scope(technique: float) -> float:

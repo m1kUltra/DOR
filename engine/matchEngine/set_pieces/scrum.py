@@ -104,6 +104,14 @@ def handle_start(match, state_tuple) -> None:
     
     _apply(attack_team, layout['team_a'])
     _apply(defend_team, layout['team_b'])
+    for rn in range(1, 9):
+        atk_p = attack_team.get_player_by_rn(rn)
+        if atk_p:
+            atk_p.state_flags["in_scrum"] = True
+        def_p = defend_team.get_player_by_rn(rn)
+        if def_p:
+            def_p.state_flags["in_scrum"] = True
+
     match.ball.holder = sh
     match.ball.set_action("scrum.crouch")
     set_possession(match, atk)
@@ -158,10 +166,8 @@ def handle_set(match, state_tuple) -> None:
         return
 
     s = getattr(match, "_scrum_score", None)
-    if getattr(s, "lock_out", False):
-        match.ball.set_action("scrum.stable")
-    else:
-        match.ball.set_action("scrum.feed")
+    
+
 
     # Optionally transition to FEED when stability threshold achieved
     # if _is_stable_enough(match): match.ball.set_action("scrum_feed_ready")
@@ -172,11 +178,14 @@ def handle_feed(match, state_tuple) -> None:
     """
     atk = _team_possession(match)                  # 'a' or 'b'
     n8_code = f"8{atk}"                            # scrum‑half code
-    hk_code = f"2{atk}"                            # hooker code
+    hk_code = f"2{atk}"     
+                         # hooker code
 
     n8 = match.get_player_by_code(n8_code)
     hk = match.get_player_by_code(hk_code)
+  
     if n8 and hk:
+        print("tried")
         do_action(
             match,
             hk_code,                               # passer is the scrum‑half
@@ -315,12 +324,7 @@ def handle_stable(match, state_tuple) -> None:
         calls.append((pid, ("move", None), _xyz(p.location), tgt))
 
     # DEF: players not in ruck -> defence shapes
-    def_targets = phase_defence_targets(match, deff, base_xy)
-    for p in match.players:
-        if p.team_code != deff or p.state_flags.get("in_scrum", False):
-            continue
-        calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), def_targets.get(p, _xyz(p.location))))
-
+    
     # DH waits until ready or timeout, then PICK
     if dh_id:
         dh = match.get_player_by_code(dh_id)

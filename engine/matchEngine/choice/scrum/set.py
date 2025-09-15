@@ -21,6 +21,5 @@ def plan(match, state_tuple) -> List[DoCall]:
         match._scrum_outcome = outcome
         return calls
 
-    if s.lock_out:
-        match.ball.set_action("scrum.stable")
+   
     return calls

@@ -29,7 +29,8 @@ def can_catch(player_or_loc: Any, ball_loc: Any, *, radius: float = 1.0, max_hei
         if flags.get("off_feet", False):      return False
         if flags.get("being_tackled", False): return False
         if flags.get("tackling", False):      return False
-
+        if flags.get("in_scrum", False):    return False
+        if flags.get("in_ruck", False):    return False
     px, py, _  = _xyz(player_or_loc)
     bx, by, bz = _xyz(ball_loc)
 

@@ -91,8 +91,7 @@ def _drop_out(match, to: str, spot_a: float, spot_b: float) -> bool:
     match.ball.location = kicker.location
 
     target_x = KX + attack_dir * r.uniform(DROP_OUT_MIN, DROP_OUT_MAX)
-    target_x = KX + attack_dir * 10     # 10 m forward from the drop-out spot
-    target_y = PITCH_WIDTH +25             # 70.0 → top touchline (use 0.0 for bottom)
+    target_y = KY + r.uniform(-8.0, 8.0)
     target: XYZ = (target_x, target_y, 0.0)
 
     kick.do_action(match, kicker_id, "dropout", match.ball.location, target)
@@ -157,14 +156,9 @@ def kickoff(match, to: str = "b") -> bool:
 
     # --- fire the kickoff punt immediately ---
     # Aim deep into receiving half, center-ish Y
-    """
     target_x = PITCH_LENGTH - 1.0 if attack_dir > 0 else 1.0
     target_y = KY + r.uniform(-8.0, 8.0)
     target: XYZ = (target_x, target_y, 0.0)
-    """
-    target_x = KX + attack_dir * 10     # 10 m forward from the drop-out spot
-    target_y = PITCH_WIDTH +25             # 70.0 → top touchline (use 0.0 for bottom)
-    target: XYZ = (target_x, target_y, 0)
 
     # Use the existing kick action; subtype 'kickoff' so your profiles can special-case if needed
     kick.do_action(match, kicker_id, "kickoff", match.ball.location, target)

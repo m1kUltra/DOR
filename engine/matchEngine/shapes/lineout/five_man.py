@@ -45,7 +45,7 @@ def generate_five_man_lineout_shape(
         4: (gap * sign, 10.0),
         5: (gap * sign, 12.5),
         6: (gap * sign, 7.5),
-        9: (3 * gap * sign, 6.0),
+        9: (3 * gap * sign, 10.0),
     }
      # team_b = defensive pack, mirrored along x and y to face team_a
 
