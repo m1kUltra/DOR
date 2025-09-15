@@ -23,15 +23,18 @@ def check(match) -> None:
     This updates ``match.ball.action`` and related restart metadata when the
     ball leaves the playing area.  Touchline checks trigger ``in_touch``; going
     over the tryline or dead‑ball line triggers either a 22‑drop or a scrum
-    restart depending on the origin of the kick.
+    restart depending on the origin of the kick, inferred from the ball's last
+    recorded status.
     """
     ball = match.ball
     x, y, _ = ball.location
 
-    
-    last= ball._last_action
-    last_team = ball.true_holder[-1] 
-    restart_team = _opp(last_team)
+    # Examine the ball's previously committed status to figure out where the
+    # last play occurred.  ``last_status`` may be ``None`` if no action has been
+    # recorded yet, so fall back to an empty dict to avoid attribute errors.
+    last_status = ball.last_status or {}
+    prev_team = ball.true_holder[-1]
+    restart_team = _opp(prev_team)
     
      
     
@@ -54,9 +57,9 @@ def check(match) -> None:
         return
 
     defend_team, try_x = side
-    last_loc = last.get("location") or (x, y, 0.0)
-    last_x = last_loc[0]
-    dist = abs(last_x - try_x)
+    prev_loc = last_status.get("location", (x, y, 0.0))
+    prev_x = prev_loc[0]
+    dist = abs(prev_x - try_x)
 
     is_pen_goal = getattr(ball, "_last_action", None) == "penalty_goal"
 
@@ -67,6 +70,7 @@ def check(match) -> None:
         match.last_restart_to = defend_team
        
         set_possession(match, defend_team)
+
     else:
         ball.set_action("scrum_pending")
         match.pending_scrum = {

@@ -62,7 +62,23 @@ def _assign_first_receiver(match, atk: str, dh_id: str, base_xy) -> Optional[obj
     return r
 
 
-        
+def _team_ready(match, atk: str, base_xy, dh_id: Optional[str]) -> bool:
+    bx, by = base_xy
+    targets = phase_attack_targets(match, atk, (bx, by))
+    ready = total = 0
+    for p in match.players:
+        if p.team_code != atk or p.state_flags.get("in_scrum", False):
+            continue
+        pid = f"{p.sn}{p.team_code}"
+        if dh_id and pid == dh_id:
+            continue
+        tgt = targets.get(p)
+        if not tgt:
+            continue
+        total += 1
+        if _d2((p.location[0], p.location[1]), (tgt[0], tgt[1])) <= READY_D2:
+            ready += 1
+    return (ready >= 10) or (total and ready/total >= 0.66)
 
 def _current_dh_id(match) -> Optional[str]:
     for p in match.players:
@@ -71,6 +87,7 @@ def _current_dh_id(match) -> Optional[str]:
     return None
 
 def _choose_receiver(match, atk: str, dh_id: str):
+    """Prefer flagged first_receiver, else nearest eligible attacker."""
     dh = match.get_player_by_code(dh_id)
     dx, dy, _ = _xyz(dh.location)
     best = None
@@ -120,31 +137,33 @@ def plan(match, state_tuple) -> List[DoCall]:
         if tgt:
             calls.append((f"{p.sn}{p.team_code}", ("move", None), _xyz(p.location), tgt))
 
-    # DH gating
-    receiver = _assign_first_receiver(match, atk, dh_id, (bx, by))
+    # DH gating similar to ruck/out
+    _assign_first_receiver(match, atk, dh_id, (bx, by))
     if dh_id and getattr(match.ball, "holder", None) == dh_id:
-       
+        ready = _team_ready(match, atk, (bx, by), dh_id)
         timeout = match._scrum_out_wait >= _wait_limit_ticks(match)
-        
+        receiver = _choose_receiver(match, atk, dh_id) if (ready or timeout) else None
+
+        dh = match.get_player_by_code(dh_id)
+        px, py, pz = _xyz(dh.location)
 
         if receiver:
             rx, ry, rz = _xyz(receiver.location)
-            
-            dh = match.get_player_by_code(dh_id)
-            px, py, pz = _xyz(dh.location)
-            dist = math.hypot(rx - px, ry - py)
-           
-            tz = rz if rz else 1.0
-            
-            calls.append((dh_id, ("pass", "spin"), (px, py, pz), (rx, ry, tz)))
+            calls.append((dh_id, ("pass", "spin"), (px, py, pz), (rx, ry, rz if rz else 1.0)))
         else:
-            dh = match.get_player_by_code(dh_id)
-            px, py, _ = _xyz(dh.location)
-            calls.append((dh_id, ("move", None), (px,py,0.0), (bx+0.001,by+0.001,0.0)))
+            if timeout:
+                dir_ = 1.0 if atk == "a" else -1.0
+                tgt = (px + dir_, py, pz)
+            else:
+                tgt = (bx + 0.001, by + 0.001, 0.0)
+            calls.append((dh_id, ("move", None), (px, py, pz), tgt))
             match._scrum_out_wait += 1
             match._frames_since_ruck = 0
 
     # clear scrum flags once out logic runs
-  
+    for p in match.players:
+        p.state_flags["in_scrum"] = False
+        p.state_flags["being_tackled"] = False
+        p.state_flags["tackling"] = False
 
     return calls

@@ -1,5 +1,6 @@
+
 # utils/actions/scoring_check.py
-from constants import TRYLINE_A_X, TRYLINE_B_X, POST_GAP,CROSSBAR
+from constants import PITCH_WIDTH, TRYLINE_A_X, TRYLINE_B_X, POST_GAP, CROSSBAR
 
 def _is_over_correct_tryline(x: float, atk_sign: int) -> bool:
     return (x >= TRYLINE_B_X) if atk_sign > 0 else (x <= TRYLINE_A_X)
@@ -18,6 +19,8 @@ def check_try(match) -> bool:
 
 
 def conversion_checker(match, tol_x: float = 0.75) -> bool:
+    """Return True if the ball passed between the posts and above the crossbar."""
+
     b = match.ball
 
     # Previous and current locations (fallback to current if last missing)
@@ -31,35 +34,31 @@ def conversion_checker(match, tol_x: float = 0.75) -> bool:
     elif team_code == "b":
         team = match.team_b
     else:
-        # fallback: whoever is/was in possession
+        # Fallback: whoever is/was in possession
         team = match.team_a if getattr(match.team_a, "in_possession", False) else match.team_b
 
     attack_dir = float(getattr(getattr(team, "tactics", {}), "get", lambda *_: +1.0)("attack_dir"))
     try_x = TRYLINE_B_X if attack_dir > 0 else TRYLINE_A_X
 
     # Did the motion between frames cross the plane x = try_x?
-    attack_dir = float((getattr(team, "tactics", {}) or {}).get("attack_dir", +1.0))
+    dx = x1 - x0
+    crossed = (x0 - try_x) * (x1 - try_x) <= 0 and abs(dx) > 1e-6
     if crossed:
-        t = (try_x - x0) / (x1 - x0)
-        # clamp to [0,1] just in case of tiny numeric drift
-        if t < 0.0: t = 0.0
-        elif t > 1.0: t = 1.0
+        t = (try_x - x0) / dx
+        # Clamp to [0,1] to avoid tiny numeric drift
+        if t < 0.0:
+            t = 0.0
+        elif t > 1.0:
+            t = 1.0
         y = y0 + t * (y1 - y0)
         z = z0 + t * (z1 - z0)
     else:
-        # Fallback: accept "close enough to plane" at current frame
+        # Fallback: accept "close enough" to the plane at current frame
         if abs(x1 - try_x) > tol_x:
             return False
         y, z = y1, z1
 
     center_y = PITCH_WIDTH * 0.5
     between_posts = (center_y - POST_GAP) <= y <= (center_y + POST_GAP)
-    above_bar     = z >= CROSSBAR
+    above_bar = z >= CROSSBAR
     return bool(between_posts and above_bar)
-
-
-
-   
-    
-
-       # <- property on Team

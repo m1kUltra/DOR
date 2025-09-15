@@ -132,19 +132,17 @@ from utils.actions.scoring_check import conversion_checker
 def conversion_transit(match, side, success: bool | None = None) -> bool:
     b = match.ball
     z = float(b.location[2])
-   
 
     # Only when LANDED:
     if z <= 0.10 and not b.is_held():
         if success is None:
             success = conversion_checker(match)
         setattr(match, "last_conversion_success", bool(success))
-        b.set_action("idle") 
-        from utils.core.scoreboard import score_update
-        score_update(match,side, "conversion")
+        b.set_action("idle")
+        if success:
+            from utils.core.scoreboard import score_update
+            score_update(match, side, "conversion")
         match.last_restart_to = side
-      
-          # IMPORTANT: call, don't assign
         return True
 
     return False
