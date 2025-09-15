@@ -59,6 +59,8 @@ def check(match) -> None:
     defend_team, try_x = side
     prev_loc = last_status.get("location", (x, y, 0.0))
     prev_x = prev_loc[0]
+    prev_y= prev_loc[1]
+    print(prev_x)
     dist = abs(prev_x - try_x)
 
     is_pen_goal = getattr(ball, "_last_action", None) == "penalty_goal"
@@ -73,9 +75,10 @@ def check(match) -> None:
 
     else:
         ball.set_action("scrum_pending")
+        print(prev_x)
         match.pending_scrum = {
-            "x": x,
-            "y": y,
+            "x": prev_x,
+            "y": prev_y,
             "put_in": defend_team,
             "reason": "ball_dead",
         }

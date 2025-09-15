@@ -70,13 +70,66 @@ def serialize_tick(match):
                 "team_code": p.team_code,
                 "action": p.action,
                 "location": p.location,
-                "orientation" : p.orientation_deg
+               "orientation": p.orientation_deg,
             }
             for p in match.players
         ],
         "state": _state_tag(match),  # falls back to current_state.name like before
     }
+
+
 def dump_tick_json(match, *, flush=True):
     blob = serialize_tick(match)  # or serialize_tick_legacy(...) if you prefer that shape
     print(json.dumps(blob, separators=(",", ":"), ensure_ascii=False), flush=flush)
     return blob
+
+
+def analyse_ticks(ticks: list[dict]) -> list[tuple[str, float, float]]:
+    """Summarise state durations from a sequence of tick snapshots.
+
+    Args:
+        ticks: Iterable of tick dictionaries as emitted by ``serialize_tick``.
+
+    Returns:
+        A list of ``(state, start_time, duration)`` tuples ordered chronologically.
+    """
+
+    timeline: list[tuple[str, float, float]] = []
+    if not ticks:
+        print(f"{'State':<30} {'Start (s)':>10} {'Duration (s)':>12}")
+        return timeline
+
+    last_state: str | None = None
+    state_start_time: float | None = None
+    final_match_time = 0.0
+
+    for tick in ticks:
+        state = tick.get("state")
+        state_label = "<unknown>" if state is None else str(state)
+        raw_time = tick.get("time")
+        current_time = float(raw_time) if raw_time is not None else final_match_time
+        final_match_time = current_time
+
+        if last_state is None:
+            last_state = state_label
+            state_start_time = current_time
+            continue
+
+        if state_label != last_state:
+            # Close out the previous state using the start time of the new state
+            duration = max(0.0, current_time - (state_start_time or 0.0))
+            timeline.append((last_state, state_start_time or 0.0, duration))
+            last_state = state_label
+            state_start_time = current_time
+
+    if last_state is not None:
+        duration = max(0.0, final_match_time - (state_start_time or 0.0))
+        timeline.append((last_state, state_start_time or 0.0, duration))
+
+    # Print a simple table view for debugging/CLI usage
+    header = f"{'State':<30} {'Start (s)':>10} {'Duration (s)':>12}"
+    print(header)
+    for state, start, duration in timeline:
+        print(f"{state:<30} {start:>10.2f} {duration:>12.2f}")
+
+    return timeline
