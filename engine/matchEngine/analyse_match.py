@@ -1,10 +1,26 @@
-"""Utilities to analyse match tick logs produced by the match engine."""
+"""Utilities to analyse match tick logs produced by the match engine.
+
+Run from the repository root with::
+
+    python -m engine.matchEngine.analyse_match path/to/ticks.jsonl
+
+Omitting the ``path`` argument will attempt to load ``tmp/sample_ticks.jsonl``
+from the repository root, allowing for a quick look at the bundled sample data
+when it is available.
+
+The command prints the final score, a state-duration timeline, and an action
+summary table derived from the captured tick data.
+"""
 
 import argparse
 import json
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, Sequence
+
+from utils.core.logger import (
+    analyse_ticks as summarise_state_timeline,
+)
 
 
 Tick = Mapping[str, object]
@@ -51,6 +67,30 @@ def analyse_ticks(ticks: Iterable[Tick]) -> dict[str, Counter[str]]:
     return actions
 
 
+def _format_score_value(value: object) -> str:
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and value.is_integer():
+            return f"{int(value)}"
+        return f"{value}"
+    return str(value)
+
+
+def extract_final_score(ticks: Sequence[Tick]) -> list[tuple[str, str]]:
+    """Return the most recent scoreboard entries as ``(side, score)`` pairs."""
+
+    for tick in reversed(ticks):
+        if not isinstance(tick, Mapping):
+            continue
+        score = tick.get("score")
+        if not isinstance(score, Mapping):
+            continue
+        entries: list[tuple[str, str]] = []
+        for side, value in score.items():
+            entries.append((str(side), _format_score_value(value)))
+        return entries
+    return []
+
+
 def build_action_table(
     actions: Mapping[str, Counter[str]],
     action_names: Iterable[str],
@@ -89,13 +129,50 @@ def format_table(headers: list[str], rows: list[list[str]]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Analyse match tick logs")
     parser.add_argument(
-        "path", type=Path, help="Path to the newline separated tick JSON file"
+        "path",
+        nargs="?",
+        type=Path,
+        help=(
+            "Path to the newline separated tick JSON file. Defaults to "
+            "tmp/sample_ticks.jsonl when omitted."
+        ),
     )
     args = parser.parse_args()
 
-    ticks = load_ticks(args.path)
+    tick_path = args.path
+    if tick_path is None:
+        default_path = Path("tmp/sample_ticks.jsonl")
+        if default_path.exists():
+            print(f"No path supplied; defaulting to {default_path}")
+            tick_path = default_path
+        else:
+            parser.error(
+                "No path provided and the default tmp/sample_ticks.jsonl sample was not found."
+            )
+
+    try:
+        ticks = load_ticks(tick_path)
+    except FileNotFoundError:
+        parser.error(f"Could not open tick log at '{tick_path}'.")
     actions = analyse_ticks(ticks)
 
+    final_score_entries = extract_final_score(ticks)
+    if final_score_entries:
+        formatted_score = ", ".join(
+            f"{side} {score}" for side, score in final_score_entries
+        )
+    else:
+        formatted_score = "unavailable"
+    print(f"Final score: {formatted_score}")
+
+    print()
+    print("State durations:")
+    timeline = summarise_state_timeline(ticks)
+    if not timeline:
+        print("No state transitions recorded.")
+
+    print()
+    print("Action counts:")
     action_names = sorted({name for counts in actions.values() for name in counts})
     if "move" in action_names:
         action_names.remove("move")
