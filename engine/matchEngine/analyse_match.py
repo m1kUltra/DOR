@@ -4,20 +4,19 @@ Run from the repository root with::
 
     python -m engine.matchEngine.analyse_match path/to/ticks.jsonl
 
-Omitting the ``path`` argument will attempt to load ``tmp/sample_ticks.jsonl``
-from the repository root, allowing for a quick look at the bundled sample data
-when it is available.
-
-The command prints the final score, a state-duration timeline, and an action
-summary table derived from the captured tick data.
+Provide the path to a newline separated tick log captured from a real match
+run. The command prints the final score, a state-duration timeline, and an
+action summary table derived from the captured tick data.
 """
 
 import argparse
 import json
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Iterable, Mapping, Sequence
 
+from json import JSONDecodeError
 from utils.core.logger import (
     analyse_ticks as summarise_state_timeline,
 )
@@ -29,12 +28,36 @@ Tick = Mapping[str, object]
 def load_ticks(path: Path) -> list[Tick]:
     """Load newline separated JSON tick blobs from *path*."""
     ticks: list[Tick] = []
+    skipped_non_json = 0
+    skipped_non_mapping = 0
     with path.open("r", encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
             if not line:
                 continue
-            ticks.append(json.loads(line))
+            try:
+                blob = json.loads(line)
+            except JSONDecodeError:
+                skipped_non_json += 1
+                continue
+            if isinstance(blob, Mapping):
+                ticks.append(blob)
+            else:
+                skipped_non_mapping += 1
+    if skipped_non_json or skipped_non_mapping:
+        parts: list[str] = []
+        if skipped_non_json:
+            parts.append(
+                f"{skipped_non_json} non-JSON line{'s' if skipped_non_json != 1 else ''}"
+            )
+        if skipped_non_mapping:
+            parts.append(
+                f"{skipped_non_mapping} non-object line{'s' if skipped_non_mapping != 1 else ''}"
+            )
+        print(
+            f"Skipped {' and '.join(parts)} while reading {path}.",
+            file=sys.stderr,
+        )
     return ticks
 
 
@@ -130,25 +153,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Analyse match tick logs")
     parser.add_argument(
         "path",
-        nargs="?",
         type=Path,
         help=(
-            "Path to the newline separated tick JSON file. Defaults to "
-            "tmp/sample_ticks.jsonl when omitted."
+            "Path to the newline separated tick JSON file produced by the match "
+            "engine."
         ),
     )
     args = parser.parse_args()
 
     tick_path = args.path
-    if tick_path is None:
-        default_path = Path("tmp/sample_ticks.jsonl")
-        if default_path.exists():
-            print(f"No path supplied; defaulting to {default_path}")
-            tick_path = default_path
-        else:
-            parser.error(
-                "No path provided and the default tmp/sample_ticks.jsonl sample was not found."
-            )
 
     try:
         ticks = load_ticks(tick_path)
