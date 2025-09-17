@@ -1,200 +1,81 @@
-"""Utilities to analyse match tick logs produced by the match engine.
-
-Run from the repository root with::
-
-    python -m engine.matchEngine.analyse_match path/to/ticks.jsonl
-
-Provide the path to a newline separated tick log captured from a real match
-run. The command prints the final score, a state-duration timeline, and an
-action summary table derived from the captured tick data.
-"""
-
 import argparse
+import contextlib
 import json
+import collections
 import sys
-from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Iterable, Mapping, Sequence
 
-from json import JSONDecodeError
-from utils.core.logger import (
-    analyse_ticks as summarise_state_timeline,
-)
+# The match engine expects its own root directory on sys.path so that
+# imports like ``utils.core.logger`` resolve correctly.
+ENGINE_ROOT = Path(__file__).resolve().parent / "engine" / "matchEngine"
+sys.path.append(str(ENGINE_ROOT))
 
-
-Tick = Mapping[str, object]
+from match import Match
 
 
-def load_ticks(path: Path) -> list[Tick]:
-    """Load newline separated JSON tick blobs from *path*."""
-    ticks: list[Tick] = []
-    skipped_non_json = 0
-    skipped_non_mapping = 0
-    with path.open("r", encoding="utf-8") as fh:
+def run_match(db_path: str, team_a: int, team_b: int, ticks: int, log_file: Path) -> None:
+    """Run the match engine in headless mode and log each tick to ``log_file``.
+
+    The Match class already emits a JSON blob per tick to stdout via
+    ``dump_tick_json``. We redirect stdout to ``log_file`` so the entire match
+    can be analysed later.
+    """
+    log_file = Path(log_file)
+    with log_file.open("w", encoding="utf-8") as fh, contextlib.redirect_stdout(fh):
+        match = Match(db_path, team_a_id=team_a, team_b_id=team_b)
+        match.run(ticks=ticks, realtime=False)
+
+
+def analyse_ticks(log_file: Path):
+    """Parse the tick log and produce final score, state timeline, and player action counts."""
+    actions = collections.defaultdict(collections.Counter)
+    timeline = []
+    prev_state = None
+    last_tick = None
+
+    with Path(log_file).open(encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
-            if not line:
+            if not line or not line.startswith("{"):
                 continue
-            try:
-                blob = json.loads(line)
-            except JSONDecodeError:
-                skipped_non_json += 1
-                continue
-            if isinstance(blob, Mapping):
-                ticks.append(blob)
-            else:
-                skipped_non_mapping += 1
-    if skipped_non_json or skipped_non_mapping:
-        parts: list[str] = []
-        if skipped_non_json:
-            parts.append(
-                f"{skipped_non_json} non-JSON line{'s' if skipped_non_json != 1 else ''}"
-            )
-        if skipped_non_mapping:
-            parts.append(
-                f"{skipped_non_mapping} non-object line{'s' if skipped_non_mapping != 1 else ''}"
-            )
-        print(
-            f"Skipped {' and '.join(parts)} while reading {path}.",
-            file=sys.stderr,
-        )
-    return ticks
+            tick = json.loads(line)
+            last_tick = tick
 
+            state = tick.get("state")
+            if state != prev_state:
+                timeline.append((tick["time"], state))
+                prev_state = state
 
-def analyse_ticks(ticks: Iterable[Tick]) -> dict[str, Counter[str]]:
-    """Aggregate player action counts from raw tick logs."""
-    actions: dict[str, Counter[str]] = defaultdict(Counter)
-    for tick in ticks:
-        players = tick.get("players") if isinstance(tick, Mapping) else None
-        if not players:
-            continue
-        for player in players:  # type: ignore[assignment]
-            if not isinstance(player, Mapping):
-                continue
-            action = player.get("action")
-            if not action or action == "move":
-                continue
-            name = player.get("name")
-            sn = player.get("sn")
-            team_code = player.get("team_code")
-            label_parts = [
-                str(sn) + str(team_code)
-                if sn is not None and team_code is not None
-                else None,
-                name,
-            ]
-            label = next((part for part in label_parts if part), None)
-            if label is None:
-                label = str(player.get("pid", "unknown"))
-            actions[label][str(action)] += 1
-    return actions
+            for p in tick.get("players", []):
+                act = p.get("action")
+                if act and act != "move":
+                    actions[p["name"]][act] += 1
 
-
-def _format_score_value(value: object) -> str:
-    if isinstance(value, (int, float)):
-        if isinstance(value, float) and value.is_integer():
-            return f"{int(value)}"
-        return f"{value}"
-    return str(value)
-
-
-def extract_final_score(ticks: Sequence[Tick]) -> list[tuple[str, str]]:
-    """Return the most recent scoreboard entries as ``(side, score)`` pairs."""
-
-    for tick in reversed(ticks):
-        if not isinstance(tick, Mapping):
-            continue
-        score = tick.get("score")
-        if not isinstance(score, Mapping):
-            continue
-        entries: list[tuple[str, str]] = []
-        for side, value in score.items():
-            entries.append((str(side), _format_score_value(value)))
-        return entries
-    return []
-
-
-def build_action_table(
-    actions: Mapping[str, Counter[str]],
-    action_names: Iterable[str],
-) -> tuple[list[str], list[list[str]]]:
-    """Return headers and rows representing a table of action counts."""
-    action_names = list(action_names)
-    headers = ["Player", *action_names]
-
-    rows: list[list[str]] = []
-    for player in sorted(actions):
-        counter = actions[player]
-        row = [player, *[str(counter.get(action, 0)) for action in action_names]]
-        rows.append(row)
-    return headers, rows
-
-
-def format_table(headers: list[str], rows: list[list[str]]) -> str:
-    if not headers:
-        return ""
-
-    widths = [len(h) for h in headers]
-    for row in rows:
-        for idx, cell in enumerate(row):
-            widths[idx] = max(widths[idx], len(cell))
-
-    def _fmt(row: list[str]) -> str:
-        return " | ".join(cell.ljust(widths[idx]) for idx, cell in enumerate(row))
-
-    sep = "-+-".join("-" * width for width in widths)
-    lines = [_fmt(headers), sep]
-    for row in rows:
-        lines.append(_fmt(row))
-    return "\n".join(lines)
+    final_score = last_tick["score"] if last_tick else None
+    return final_score, timeline, actions
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Analyse match tick logs")
-    parser.add_argument(
-        "path",
-        type=Path,
-        help=(
-            "Path to the newline separated tick JSON file produced by the match "
-            "engine."
-        ),
-    )
+    parser = argparse.ArgumentParser(description="Run a match headlessly and summarise stats")
+    parser.add_argument("--db", default="tmp/temp.db", help="Path to database used for match setup")
+    parser.add_argument("--team-a", type=int, default=2, dest="team_a", help="Team A ID")
+    parser.add_argument("--team-b", type=int, default=1, dest="team_b", help="Team B ID")
+    parser.add_argument("--ticks", type=int, default=6000, help="Number of ticks to simulate")
+    parser.add_argument("--log", default="ticks.jsonl", help="File to write tick JSON data")
     args = parser.parse_args()
 
-    tick_path = args.path
+    run_match(args.db, args.team_a, args.team_b, args.ticks, args.log)
+    score, timeline, actions = analyse_ticks(args.log)
 
-    try:
-        ticks = load_ticks(tick_path)
-    except FileNotFoundError:
-        parser.error(f"Could not open tick log at '{tick_path}'.")
-    actions = analyse_ticks(ticks)
-
-    final_score_entries = extract_final_score(ticks)
-    if final_score_entries:
-        formatted_score = ", ".join(
-            f"{side} {score}" for side, score in final_score_entries
-        )
-    else:
-        formatted_score = "unavailable"
-    print(f"Final score: {formatted_score}")
-
-    print()
-    print("State durations:")
-    timeline = summarise_state_timeline(ticks)
-    if not timeline:
-        print("No state transitions recorded.")
-
-    print()
-    print("Action counts:")
-    action_names = sorted({name for counts in actions.values() for name in counts})
-    if "move" in action_names:
-        action_names.remove("move")
-
-    headers, rows = build_action_table(actions, action_names)
-    if rows:
-        print(format_table(headers, rows))
-    else:
-        print("No player actions recorded.")
+    print("Scoreboard:", score)
+    print("State timeline:")
+    for t, state in timeline:
+        print(f"  {t:.2f}s -> {state}")
+    print("Player actions:")
+    for player, counts in actions.items():
+        print(f"  {player}:")
+        for action, count in counts.items():
+            print(f"    {action}: {count}")
 
 
 if __name__ == "__main__":
